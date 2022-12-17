@@ -1,0 +1,35 @@
+
+1 Default storage class is automatically used. - check IsDefaultClass for Kadalu on Gluster
+2 Ensure the persistentVolumeReclaimPolicy is set to Retain (otherwise the data will be deleted if the Statefule set set is scaled down)
+
+
+ $ kubectl get sc
+
+NAME                 TYPE
+
+gold                 kubernetes.io/gce-pd   
+
+standard (default)   kubernetes.io/gce-pd
+
+$ kubectl describe storageclass standard
+
+Name:     standard
+
+IsDefaultClass: Yes
+
+
+
+
+
+alternatively - can specify the volume claim template to use a specific storage class with storageClassName:
+
+volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: standard

@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pv-rabbit
+  namespace: rabbit
+spec:
+     claimRef: null
+  # Add 'kadalu.' to name from KadaluStorage kind
+     storageClassName: kadalu.storage-g1
+     accessModes:
+        - ReadWriteMany
+     resources:
+        requests:
+           storage: 30Gi

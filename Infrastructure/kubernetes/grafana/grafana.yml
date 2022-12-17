@@ -1,0 +1,43 @@
+image:
+  repository: grafana/grafana
+  # Overrides the Grafana image tag whose default is the chart appVersion
+  tag: ""
+  sha: ""
+  pullPolicy: IfNotPresent
+
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+    # targetPort: 4181 To be used with a proxy extraContainer
+    #   ## Service annotations. Can be templated.
+  annotations: {}
+  labels: {}
+  portName: service
+    #           # Adds the appProtocol field to the service. This allows to work with istio protocol selection. Ex: "http" or "tcp"
+  appProtocol: ""
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations: {}
+  labels: {}
+  path: /
+  hosts:
+    - "grafana.localdomain"
+
+
+persistence:
+  type: pvc
+  enabled: true
+  storageClassName: kadalu.storage-g1
+  accessModes:
+    - ReadWriteMany
+  size: 10Gi
+  existingClaim: pv-grafana
+
+# setup better password if exposing externally
+adminUser: admin
+adminPassword: REMOVED

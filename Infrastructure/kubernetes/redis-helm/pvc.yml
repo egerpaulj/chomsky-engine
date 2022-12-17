@@ -1,0 +1,30 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pv-redis
+  namespace: redis
+spec:
+     claimRef: null
+  # Add 'kadalu.' to name from KadaluStorage kind
+     storageClassName: kadalu.storage-g1
+     accessModes:
+        - ReadWriteOnce
+     resources:
+        requests:
+           storage: 8Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pv-redis-master
+  namespace: redis
+spec:
+     claimRef: null
+  # Add 'kadalu.' to name from KadaluStorage kind
+     storageClassName: kadalu.storage-g1
+     accessModes:
+        - ReadWriteOnce
+     resources:
+        requests:
+           storage: 8Gi
+

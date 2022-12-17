@@ -1,0 +1,52 @@
+---
+clusterName: "es8"
+nodeGroup: "master"
+
+image: "elasticsearch"
+imageTag: "8.4.3"
+
+
+roles:
+  - master
+    #  - data
+    #  - data_content
+    #  - data_hot
+    #  - data_warm
+    #  - data_cold
+    #  - data_frozen
+    #  - ingest
+
+replicas: 2
+minimumMasterNodes: 1
+
+secret:
+  enabled: true
+  password: "REMOVED" # generated randomly if not defined
+
+
+
+resources:
+  requests:
+    cpu: "1000m"
+    memory: "4Gi"
+  limits:
+    cpu: "2000m"
+    memory: "8Gi"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: "kadalu.storage-g1"
+
+persistence:
+  enabled: true
+  labels:
+    # Add default labels for the volumeClaimTemplate of the StatefulSet
+    enabled: false
+  annotations: {}
+
+tests:
+  enabled: false
+
