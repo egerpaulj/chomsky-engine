@@ -56,11 +56,12 @@ pipeline {
 
     stage('Containerize') {
       steps {
-        sh 'docker build --tag crawler/config_server:${BRANCH_NAME}_$BUILD_ID Crawler.Configuration/Crawler.Configuration.Server/.'
-        sh 'docker build --tag crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID Crawler.WebDriver/Crawler.WebDriver.Grpc.Server/.'
-        sh 'docker build --tag crawler/request_server:${BRANCH_NAME}_$BUILD_ID Crawler.RequestManager.Grpc.Server/.'
-        sh 'docker build --tag crawler/management_service:${BRANCH_NAME}_$BUILD_ID Crawler.Management.Service/.'
-        sh 'docker build --tag crawler/test_server:${BRANCH_NAME}_$BUILD_ID Crawler.IntegrationTest/Crawler.IntegrationTest.Server/.'
+        sh 'docker build --tag registry:5000/crawler/config_server:${BRANCH_NAME}_$BUILD_ID Crawler.Configuration/Crawler.Configuration.Server/.'
+        sh 'docker build --tag registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID Crawler.WebDriver/Crawler.WebDriver.Grpc.Server/.'
+        sh 'docker build --tag registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID Crawler.RequestManager.Grpc.Server/.'
+        sh 'docker build --tag registry:5000/crawler/management_service:${BRANCH_NAME}_$BUILD_ID Crawler.Management.Service/.'
+        sh 'docker build --tag registry:5000/crawler/test_server:${BRANCH_NAME}_$BUILD_ID Crawler.IntegrationTest/Crawler.IntegrationTest.Server/.'
+        sh 'docker build --tag registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID Crawler.Scheduler/Crawler.Scheduler.Service/.'
       }
     }
 
@@ -91,11 +92,11 @@ pipeline {
 
     stage('Bootstrap Test') {
       steps {
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name config_server crawler/config_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name webdriver_server crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name request_server crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name management_service -v /home/user/docker/volumes/crawler:/App/RequestRepository crawler/management_service:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name test_server crawler/test_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name config_server registry:5000/crawler/config_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name webdriver_server registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name request_server registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name management_service -v /home/user/docker/volumes/crawler:/App/RequestRepository registry:5000/crawler/management_service:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name test_server registry:5000/crawler/test_server:${BRANCH_NAME}_$BUILD_ID'
       }
     }
 
@@ -104,17 +105,27 @@ pipeline {
         sh 'rm -rf TestResults'
         dotnetBuild(sdk: 'dotnet6', project: 'chomsky.sln')
 
-	catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-	  sh '/usr/bin/dotnet test -o TestResults -r TestResults -l trx chomsky.sln'
-	}
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          sh '/usr/bin/dotnet test -o TestResults -r TestResults -l trx chomsky.sln'
+        }
 
-	mstest(testResultsFile: 'TestResults/*.trx', failOnError: true)
+	      mstest(testResultsFile: 'TestResults/*.trx', failOnError: true)
+      }
+    }
+
+    stage('Push containers') {
+      steps {
+        sh 'docker push registry:5000/crawler/config_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry:5000/crawler/management_service:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
       }
     }
 
     stage('Deploy to Kubernetes') {
       steps {
-        sh 'echo todo'
+        sh 'kubectl apply -f crawler.yml'
       }
     }
 

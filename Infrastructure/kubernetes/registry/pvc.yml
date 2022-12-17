@@ -1,0 +1,13 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pv-registry
+  namespace: docker-reg
+spec:
+  # Add 'kadalu.' to name from KadaluStorage kind
+     storageClassName: kadalu.storage-g1
+     accessModes:
+        - ReadWriteMany
+     resources:
+        requests:
+           storage: 50Gi

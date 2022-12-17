@@ -1,0 +1,150 @@
+apiVersion: v1
+# 3 servers
+kind: Service
+metadata:
+  name: 
+  namespace: crawler
+  labels:
+    app: request_server
+spec:
+  ports:
+    —port: 443
+    name: request_server
+  selector:
+    app: request_server
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: 
+  namespace: crawler
+  labels:
+    app: config_server
+spec:
+  ports:
+    —port: 443
+    name: config_server
+  selector:
+    app: config_server
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: 
+  namespace: crawler
+  labels:
+    app: webdriver_server
+spec:
+  ports:
+    —port: 443
+    name: webdriver_server
+  selector:
+    app: webdriver_server
+---
+
+# REQUEST SERVER
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: request_server
+spec:
+  selector:
+    matchLabels:
+      app: request_server # has to match .spec.template.metadata.labels
+  serviceName: "request_server"
+  replicas: 1 
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: request_server # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        —name: request_server
+        image: registry:5000/crawler/request_server
+        ports:
+          —containerPort: 443
+          name: request_server
+---
+
+# WEBDRIVER SERVER
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webdriver_server
+spec:
+  selector:
+    matchLabels:
+      app: webdriver_server # has to match .spec.template.metadata.labels
+  serviceName: "webdriver_server"
+  replicas: 1 
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: webdriver_server # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        —name: webdriver_server
+        image: registry:5000/crawler/webdriver_server
+        ports:
+          —containerPort: 443
+          name: webdriver_server
+---
+
+# CONFIGURATION SERVER
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config_server
+spec:
+  selector:
+    matchLabels:
+      app: config_server # has to match .spec.template.metadata.labels
+  serviceName: "config_server"
+  replicas: 1 
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: config_server # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        —name: config_server
+        image: registry:5000/crawler/config_server
+        ports:
+          —containerPort: 443
+          name: config_server
+
+---
+# Scheduler
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+spec:
+  selector:
+    matchLabels:
+      app: scheduler # has to match .spec.template.metadata.labels
+  serviceName: "scheduler"
+  replicas: 1 
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: scheduler # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        —name: scheduler
+        image: registry:5000/crawler/scheduler
+        ports:
+          —containerPort: 443
+          name: scheduler
+
+# TODO Management Worker -> Obsolete -> use Exchange instead
