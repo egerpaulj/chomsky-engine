@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crawler.DataModel\Crawler.DataModel.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
+    <PackageReference Include="Quartz" Version="3.4.0" />
+    <PackageReference Include="Quartz.Jobs" Version="3.4.0" />
+  </ItemGroup>
+
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+
+
+</Project>

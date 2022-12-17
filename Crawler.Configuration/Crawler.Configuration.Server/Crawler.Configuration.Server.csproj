@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.8" NoWarn="NU1605" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.8" NoWarn="NU1605" />
+    <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.8" NoWarn="NU1701" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microservice.Serialization\Microservice.Serialization.csproj" />
+    <ProjectReference Include="..\..\Microservice.Core\Microservice.Core\Microservice.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Core\Crawler.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.DataModel\Crawler.DataModel.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration.Repository\Crawler.Configuration.Repository.csproj" />
+    <ProjectReference Include="..\..\Microservice.Mongodb\Microservice.Mongodb.Repo\Microservice.Mongodb.Repo.csproj" />
+    <ProjectReference Include="..\..\Microservice.DataModel.Core\Microservice.DataModel.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Microservice.Core\Crawler.Microservice.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Scheduler\Crawler.Scheduler.Repository\Crawler.Scheduler.Repository.csproj" />
+  </ItemGroup>
+
+</Project>

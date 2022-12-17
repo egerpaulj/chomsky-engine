@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
+    <PackageReference Include="Moq" Version="4.16.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crawler.Core\Crawler.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Stategies.Core\Crawler.Stategies.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core.UnitTest\Crawler.Core.UnitTest.csproj" />
+    <ProjectReference Include="..\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+  </ItemGroup>
+
+
+</Project>

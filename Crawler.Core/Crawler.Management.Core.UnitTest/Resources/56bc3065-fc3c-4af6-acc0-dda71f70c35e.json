@@ -1,0 +1,50 @@
+{
+    "CrawlId": [
+        "56bc3065-fc3c-4af6-acc0-dda71f70c35e"
+    ],
+    "CorrelationCrawlId": [],
+    "LoadPageRequest": [
+        {   
+            "Uri": [
+                "https://something"
+            ]
+        }
+    ],
+    "RequestDocument": [
+        {
+            "CssUriList": [],
+            "JsUriList": [],
+            "XmlDocument": [],
+            "RequestDocumentPart": [
+                {
+                    "BaseUri": [
+                        "https://something"
+                    ],
+                    "Raw": [],
+                    "StyleList": [],
+                    "SubParts": [],
+                    "Anomalies": [
+                        []
+                    ],
+                    "docPartType": [
+                        5
+                    ],
+                    "Selector": [
+                        {
+                            "Content": [],
+                            "Attributes": [],
+                            "Names": []
+                        }
+                    ]
+                }
+            ],
+            "DownloadContent": [
+                false
+            ]
+        }
+    ],
+    "ScrapeCss": false,
+    "ScrapeJs": false,
+    "ProvideRaw": false,
+    "Error": []
+}

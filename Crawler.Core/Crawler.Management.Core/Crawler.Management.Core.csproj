@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crawler.Core\Crawler.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Stategies.Core\Crawler.Stategies.Core.csproj" />
+    <ProjectReference Include="..\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\Crawler.DataModel\Crawler.DataModel.csproj" />
+    <ProjectReference Include="..\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+    <ProjectReference Include="..\..\Microservice.Elasticsearch\Microservice.Elasticsearch.Repo\Microservice.Elasticsearch.Repo.csproj" />
+    <ProjectReference Include="..\..\Microservice.Amqp\Microservice.Amqp\Microservice.Amqp.csproj" />
+    <ProjectReference Include="..\..\Microservice.Mongodb\Microservice.Mongodb.Repo\Microservice.Mongodb.Repo.csproj" />
+    <ProjectReference Include="..\..\Microservice.DataModel.Core\Microservice.DataModel.Core.csproj" />
+    <ProjectReference Include="..\..\Microservice.Serialization\Microservice.Serialization.csproj" />
+    <ProjectReference Include="..\..\Microservice.DataModel.Core\Microservice.DataModel.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="System.Reactive.Interfaces" Version="5.0.0" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+	  
+  </ItemGroup>
+
+</Project>

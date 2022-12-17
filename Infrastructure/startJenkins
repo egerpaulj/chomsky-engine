@@ -1,0 +1,7 @@
+docker run -d --rm --network development_network --hostname jenkins --name jenkins -p 8080:8080 -p 50000:50000 -v /var/run/docker.sock:/var/run/docker.sock -v /home/user/docker/volumes/jenkins:/var/jenkins_home -e ASPNETCORE_ENVIRONMENT='Test' jenkins/jenkins
+
+sleep 2
+
+docker exec -u root -ti jenkins /bin/bash -c 'chown jenkins /var/run/docker.sock'
+docker exec -u root -ti jenkins /bin/bash -c 'chmod 757 /etc/ssl/certs/'
+docker exec -u root -ti jenkins /bin/bash -c 'chmod 757 /usr/local/share/ca-certificates/'

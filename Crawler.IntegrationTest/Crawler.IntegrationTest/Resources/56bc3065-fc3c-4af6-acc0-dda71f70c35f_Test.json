@@ -1,0 +1,50 @@
+{
+    "CrawlId": [
+        "56bc3065-fc3c-4af6-acc0-dda71f70c35f"
+    ],
+    "CorrelationCrawlId": [],
+    "LoadPageRequest": [
+        {   
+            "Uri": [
+                "http://nginx/activemq.html"
+            ]
+        }
+    ],
+    "RequestDocument": [
+        {
+            "CssUriList": [],
+            "JsUriList": [],
+            "XmlDocument": [],
+            "RequestDocumentPart": [
+                {
+                    "BaseUri": [
+                        "http://nginx/activemq.html"
+                    ],
+                    "Raw": [],
+                    "StyleList": [],
+                    "SubParts": [],
+                    "Anomalies": [
+                        []
+                    ],
+                    "DocPartType": [
+                        6
+                    ],
+                    "Selector": [
+                        {
+                            "Content": [],
+                            "Attributes": [],
+                            "Names": []
+                        }
+                    ]
+                }
+            ],
+            "DownloadContent": [
+                false
+            ]
+        }
+    ],
+    "ScrapeCss": false,
+    "ScrapeJs": false,
+    "ProvideRaw": false,
+    "Error": []
+}

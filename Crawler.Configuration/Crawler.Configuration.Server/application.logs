@@ -1,0 +1,44 @@
+2021-11-04 20:58:57.464 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:04:17.254 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:09:02.976 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:09:03.178 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-04 21:09:03.180 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-04 21:09:03.181 +01:00 [INF] Hosting environment: Development
+2021-11-04 21:09:03.182 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-04 21:14:46.315 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:14:46.429 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-04 21:14:46.430 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-04 21:14:46.430 +01:00 [INF] Hosting environment: Development
+2021-11-04 21:14:46.430 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-04 21:21:43.504 +01:00 [INF] HTTP GET /CrawlConfiguration/getcrawlrequest responded 200 in 1187.4353 ms
+2021-11-04 21:22:49.655 +01:00 [INF] HTTP GET /CrawlConfiguration/getcrawlrequest responded 200 in 85.0376 ms
+2021-11-04 21:24:56.694 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:24:56.899 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-04 21:24:56.922 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-04 21:24:56.923 +01:00 [INF] Hosting environment: Development
+2021-11-04 21:24:56.923 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-04 21:27:03.740 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:27:03.890 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-04 21:27:03.913 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-04 21:27:03.913 +01:00 [INF] Hosting environment: Development
+2021-11-04 21:27:03.913 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-04 21:30:22.354 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-04 21:30:22.622 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-04 21:30:22.653 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-04 21:30:22.655 +01:00 [INF] Hosting environment: Development
+2021-11-04 21:30:22.656 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-06 14:55:15.259 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-06 14:55:15.462 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-06 14:55:15.465 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-06 14:55:15.467 +01:00 [INF] Hosting environment: Development
+2021-11-06 14:55:15.467 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-06 16:05:19.706 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-06 16:05:19.935 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-06 16:05:19.936 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-06 16:05:19.937 +01:00 [INF] Hosting environment: Development
+2021-11-06 16:05:19.938 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server
+2021-11-06 16:13:05.490 +01:00 [WRN] Overriding address(es) 'https://localhost:5001, http://localhost:5000'. Binding to endpoints defined in UseKestrel() instead.
+2021-11-06 16:13:05.855 +01:00 [INF] Now listening on: https://0.0.0.0:8880
+2021-11-06 16:13:05.862 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2021-11-06 16:13:05.862 +01:00 [INF] Hosting environment: Development
+2021-11-06 16:13:05.863 +01:00 [INF] Content root path: /home/user/vscode/csharp/crawler/Crawler.Configuration.Server

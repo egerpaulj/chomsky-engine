@@ -1,0 +1,1 @@
+docker run -d --rm --network development_network --name es -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" es:7.10.2

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.48.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microservice.Core\Microservice.Core\Microservice.Core.csproj" />
+    <ProjectReference Include="..\Microservice.Grpc\Microservice.Grpc.Core\Microservice.Grpc.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Core\Crawler.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
+    <ProjectReference Include="..\Crawler.WebDriver\Crawler.WebDriver.Grpc.Client\Crawler.WebDriver.Grpc.Client.csproj" />
+    <ProjectReference Include="..\Caching\Caching.Core\Caching.Core.csproj" />
+    <ProjectReference Include="..\Caching\Caching.Redis\Caching.Redis.csproj" />
+  </ItemGroup>
+  
+
+
+</Project>

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option csharp_namespace = "Microservice.Grpc.Core";
+
+package rpc;
+
+service Rpc {
+  rpc Execute (RpcRequest) returns (RpcReply);
+}
+
+message RpcRequest {
+  string request = 1;
+  string correlationid = 2;
+}
+
+message RpcReply {
+  string reponse = 1;
+  string correlationid = 2;
+  string errors = 3;
+}

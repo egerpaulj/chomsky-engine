@@ -1,0 +1,45 @@
+global:
+        scrape_interval:        15s
+
+        external_labels:
+                monitor: 'prom'
+
+scrape_configs:
+        - job_name: 'prometheus'
+          scrape_interval: 5s
+          static_configs:
+                - targets: ['localhost:9090']
+
+        - job_name: 'configurationServer'
+          scrape_interval: 5s
+          scheme: 'https'
+          tls_config:
+                insecure_skip_verify: true
+          metrics_path: '/metrics'
+          static_configs:
+                - targets: ['config_server:443']
+
+        - job_name: 'requestManagerServer'
+          scrape_interval: 5s
+          scheme: 'https'
+          tls_config:
+                insecure_skip_verify: true
+          metrics_path: '/metrics'
+          static_configs:
+                - targets: ['request_server:443']
+
+        - job_name: 'webDriverServer'
+          scrape_interval: 5s
+          scheme: 'https'
+          tls_config:
+                insecure_skip_verify: true
+          metrics_path: '/metrics'
+          static_configs:
+                - targets: ['webdriver_server:443']
+
+        - job_name: 'crawlerManager'
+          scrape_interval: 5s
+          scheme: 'http'
+          metrics_path: '/metrics'
+          static_configs:
+                - targets: ['management_service:7777']
