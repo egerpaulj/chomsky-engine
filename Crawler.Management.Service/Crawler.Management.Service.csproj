@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+    <PackageReference Include="SeriLog" Version="2.11.0" />
+    <PackageReference Include="prometheus-net" Version="6.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.48" />
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crawler.Core\Crawler.Management.Core\Crawler.Management.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
+    <ProjectReference Include="..\Crawler.WebDriver\Crawler.WebDriver.Grpc.Client\Crawler.WebDriver.Grpc.Client.csproj" />
+    <ProjectReference Include="..\Microservice.Grpc\Microservice.Grpc.Core\Microservice.Grpc.Core.csproj" />
+    <ProjectReference Include="..\Caching\Caching.Core\Caching.Core.csproj" />
+    <ProjectReference Include="..\Caching\Caching.Redis\Caching.Redis.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Strategies.General\Crawler.Strategies.General.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration\Crawler.Configuration.Client\Crawler.Configuration.Client.csproj" />
+    <ProjectReference Include="..\Microservice.Core\Microservice.Core\Microservice.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Microservice.Core\Crawler.Microservice.Core.csproj" />
+    <ProjectReference Include="..\Microservice.Serialization\Microservice.Serialization.csproj" />
+    <ProjectReference Include="..\Microservice.Amqp\Microservice.Amqp\Microservice.Amqp.csproj" />
+    <ProjectReference Include="..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+    
+  </ItemGroup>
+</Project>

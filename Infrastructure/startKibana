@@ -1,0 +1,1 @@
+docker run -d --rm --network development_network --link es --name kibana -p 5601:5601 -v /home/user/docker/volumes/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml kibana:7.17.4

@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
+    <PackageReference Include="Moq" Version="4.16.1" />
+    <PackageReference Include="SeriLog" Version="2.11.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.48" />
+    <PackageReference Include="MongoDB.Driver" Version="2.17.1" />
+    <PackageReference Include="DotNetSeleniumExtras.PageObjects.Core" Version="4.3.0" />
+    <PackageReference Include="DotNetSeleniumExtras.WaitHelpers" Version="3.11.0" />
+    <PackageReference Include="Selenium.Firefox.WebDriver" Version="0.27.0" />
+    <PackageReference Include="selenium.support" Version="4.3.0" />
+    <PackageReference Include="selenium.webdriver" Version="4.3.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.4.0" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+    <PackageReference Include="System.Reactive.Core" Version="5.0.0" />
+    <PackageReference Include="System.Reactive.Providers" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Management.Core\Crawler.Management.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Core.UnitTest\Crawler.Core.UnitTest.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Stategies.Core.UnitTest\Crawler.Stategies.Core.UnitTest.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Strategies.General\Crawler.Strategies.General.csproj" />
+    <ProjectReference Include="..\..\Crawler.WebDriver\Crawler.WebDriver.Grpc.Client\Crawler.WebDriver.Grpc.Client.csproj" />
+    <ProjectReference Include="..\..\Microservice.Core\Microservice.Core\Microservice.Core.csproj" />
+    <ProjectReference Include="..\..\Microservice.Serialization\Microservice.Serialization.csproj" />
+    <ProjectReference Include="..\..\Microservice.Grpc\Microservice.Grpc.Core\Microservice.Grpc.Core.csproj" />
+    <ProjectReference Include="..\..\Caching\Caching.Core\Caching.Core.csproj" />
+    <ProjectReference Include="..\..\Caching\Caching.Redis\Caching.Redis.csproj" />
+    <ProjectReference Include="..\..\Crawler.Configuration\Crawler.Configuration.Client\Crawler.Configuration.Client.csproj" />
+    <ProjectReference Include="..\..\Crawler.Configuration\Crawler.Configuration.Repository\Crawler.Configuration.Repository.csproj" />
+    <ProjectReference Include="..\..\Crawler.WebDriver\Crawler.WebDriver.Selenium.Firefox\Crawler.WebDriver.Selenium.Firefox.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.DataModel\Crawler.DataModel.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Microservice.Core\Crawler.Microservice.Core.csproj" />
+    <ProjectReference Include="..\..\Microservice.Mongodb\Microservice.Mongodb.Repo\Microservice.Mongodb.Repo.csproj" />
+    <ProjectReference Include="..\..\Microservice.Amqp\Microservice.Amqp\Microservice.Amqp.csproj" />
+    <ProjectReference Include="..\..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Scheduler\Crawler.Scheduler.Repository\Crawler.Scheduler.Repository.csproj" />
+    <ProjectReference Include="..\..\Microservice.TestHelper\Microservice.TestHelper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+   <ItemGroup>
+    <Content Include="Resources\*.*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.Test.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

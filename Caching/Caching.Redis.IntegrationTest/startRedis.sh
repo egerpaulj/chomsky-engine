@@ -1,0 +1,1 @@
+docker run -d --rm --network development_network --name redis -p 6379:6379

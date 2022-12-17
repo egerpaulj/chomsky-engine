@@ -1,0 +1,1 @@
+docker run -d --rm --network development_network --name nginx -p 800:80 -v /home/user/docker/volumes/nginx:/usr/share/nginx/html:ro nginx

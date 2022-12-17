@@ -1,0 +1,37 @@
+# using nodes would not encrypt the private key; hence the password is not required
+openssl req -nodes -x509  -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+
+# If CA trusted - e.g. let's Encrypt etc. Then can specify keys directly in configuration
+  "Kestrel": {
+    "Certificates": {
+      "Default": {
+        "Path": "../Infrastructure/Certs/cert.pem",
+        "KeyPath": "../Infrastructure/Certs/key.pem"
+      }
+    }
+  },
+
+# don't need to be secure in LAN
+# If exposing then generate another key for that service
+
+sudo cp cert.pem /etc/pki/ca-trust/source/anchors/crawler.pem
+sudo update-ca-trust
+
+
+
+#in debian copy to /usr/share/ca-certificates/certificate.crt then dpkg-reconfigure ca-certificates
+#
+#
+#
+#Generate with file based passwords
+openssl rand -base64 32 > passphrase
+openssl rand -base64 32 > exportphrase
+
+openssl req -x509  -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -passout file:passphrase -subj "/C=CH/ST=zurich/L=zurich/O=stgermain/OU=crawler/CN=localhost"
+
+openssl pkcs12 -export -out certificate.pfx -inkey key.pem -in cert.pem -passin file:passphrase -passout file:exportphrase
+
+sudo cp -f cert.pem /etc/pki/ca-trust/source/anchors/cert.cer
+
+sudo update-ca-trust
+
