@@ -52,7 +52,6 @@ namespace Microservice.Exchange.Test
 
             var mongoRepo = new MongoDbRepository<TestOutputMessage>(_configuration, mongodbConfigMock.Object, new EmptyJsonConverterProvider() );
             await mongoRepo.Delete(Builders<BsonDocument>.Filter.Where(r => true)).Match(r => {}, () => {});
-
         }
 
         [TestMethod]
@@ -92,7 +91,7 @@ namespace Microservice.Exchange.Test
             File.WriteAllText($"testData/mongodb/{fileNameAsGuid}", dataIn);
             File.Move($"testData/mongodb/{fileNameAsGuid}", $"testData/mongodb/in/{fileNameAsGuid}");
 
-            await Task.Delay(1500);
+            await Task.Delay(2000);
 
             // ASSERT - Verify Data is Transformed and Written to output
             var result = await File.ReadAllTextAsync($"testData/mongodb/out/{fileNameAsGuid}");

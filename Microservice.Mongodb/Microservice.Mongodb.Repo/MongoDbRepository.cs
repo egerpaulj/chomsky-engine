@@ -113,7 +113,11 @@ namespace Microservice.Mongodb.Repo
                 }
                 else
                 {
-                    await collection.FindOneAndReplaceAsync(GetModelIdFilter(model), GetBsonDocument(model));
+                    var found = await collection.Find(GetModelIdFilter(model)).FirstOrDefaultAsync();
+                    if(found != null)
+                        await collection.FindOneAndReplaceAsync(GetModelIdFilter(model), GetBsonDocument(model));
+                    else
+                        await collection.InsertOneAsync(GetBsonDocument(model));
                     return model.Id;
                 }
             };
