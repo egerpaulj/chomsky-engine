@@ -109,6 +109,7 @@ pipeline {
     stage('Run Integration Tests') {
       steps {
         sh 'rm -rf TestResults'
+        sh 'ASPNETCORE_ENVIRONMENT=Test'
 
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           sh '/usr/bin/dotnet test -o TestResults -r TestResults -l trx chomsky.sln'
