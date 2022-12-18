@@ -30,7 +30,7 @@ namespace Microservice.Mongodb.Repo
 {
     public class MongoDbRepository<T> : IMongoDbRepository<T> where T : IDataModel
     {
-        private const string DefaultConnectionString = "mongodb://10.137.0.50:27017";
+        private const string DefaultConnectionString = "mongodb://mongodb:27017";
         private const string ConnectionStringKey = "MongoDbConnectionString";
         private readonly string _databaseName = "default";
         private readonly string _documentName = "default_document";
