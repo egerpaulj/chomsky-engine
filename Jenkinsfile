@@ -118,22 +118,6 @@ pipeline {
       }
     }
 
-    stage('Push containers') {
-      steps {
-        // sh 'docker push registry:5000/crawler/config_server:${BRANCH_NAME}_$BUILD_ID'
-        // sh 'docker push registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
-        // sh 'docker push registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
-        // sh 'docker push registry:5000/crawler/management_service:${BRANCH_NAME}_$BUILD_ID'
-        // sh 'docker push registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
-      }
-    }
-
-    stage('Deploy to Kubernetes') {
-      steps {
-        // sh 'kubectl apply -f crawler.yml'
-      }
-    }
-
   }
   environment {
     TestBranchName = '${BRANCH_NAME}'
