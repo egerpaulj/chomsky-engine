@@ -109,7 +109,6 @@ pipeline {
     stage('Run Integration Tests') {
       steps {
         sh 'rm -rf TestResults'
-        dotnetBuild(sdk: '.net6', project: 'chomsky.sln')
 
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           sh '/usr/bin/dotnet test -o TestResults -r TestResults -l trx chomsky.sln'
@@ -121,17 +120,17 @@ pipeline {
 
     stage('Push containers') {
       steps {
-        sh 'docker push registry:5000/crawler/config_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker push registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker push registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker push registry:5000/crawler/management_service:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker push registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
+        // sh 'docker push registry:5000/crawler/config_server:${BRANCH_NAME}_$BUILD_ID'
+        // sh 'docker push registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
+        // sh 'docker push registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
+        // sh 'docker push registry:5000/crawler/management_service:${BRANCH_NAME}_$BUILD_ID'
+        // sh 'docker push registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
       }
     }
 
     stage('Deploy to Kubernetes') {
       steps {
-        sh 'kubectl apply -f crawler.yml'
+        // sh 'kubectl apply -f crawler.yml'
       }
     }
 
