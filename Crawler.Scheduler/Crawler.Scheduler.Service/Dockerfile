@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
-COPY bin/Release/net5.0/publish/ App/
+COPY bin/Release/net6.0/publish/ App/
 WORKDIR /App
 COPY requestmanagercert.pem /usr/local/share/ca-certificates/requestmanager.crt
 COPY configservercert.pem /usr/local/share/ca-certificates/configserver.crt

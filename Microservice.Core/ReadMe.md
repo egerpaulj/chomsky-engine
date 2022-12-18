@@ -309,7 +309,7 @@ Once the certificate is generated, then it can be copied to the runtime folder/d
 E.g.
 ```
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
-COPY bin/Release/net5.0/publish/ App/
+COPY bin/Release/net6.0/publish/ App/
 WORKDIR /App
 
 COPY certificate.pfx /opt/certs/certificate.pfx
