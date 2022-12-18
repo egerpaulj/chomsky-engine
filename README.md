@@ -206,7 +206,8 @@ GRPC requires valid HTTPS certificates. Hence the containers need to be started 
 Note: replace the hosting logic, CI/CD pipelines to host HTTPS with a fixed/different certificate
 
 e.g.
-'''
+
+``` 
 stage('Generate Certificates') {
       steps {
         sh 'openssl rand -base64 32 > passphrase'
@@ -229,16 +230,16 @@ stage('Generate Certificates') {
         sh 'update-ca-certificates'
       }
     }
-'''
+``'''``
 
 The docker file copies the generated certificate
-'''
+```
 COPY webdriver.pfx /opt/certs/certificate.pfx
 COPY exportphrase /opt/certs/exportphrase
-'''
+```
 
 The Generic Microservice configurator, configures HTTPS with kestrel
-'''
+```
 public static IWebHostBuilder UseKestrelHttps(this IWebHostBuilder builder)
         {
             builder.UseKestrel((context, options) =>
@@ -261,4 +262,4 @@ public static IWebHostBuilder UseKestrelHttps(this IWebHostBuilder builder)
 
             return builder;
         }
-'''
+```
