@@ -22,6 +22,7 @@ using System.Linq;
 using System;
 using Microsoft.Extensions.Configuration;
 using Microservice.Serialization;
+using System.Text;
 
 namespace Microservice.Amqp.Rabbitmq
 {
@@ -149,7 +150,7 @@ namespace Microservice.Amqp.Rabbitmq
 
             if (section == null)
             {
-                throw new Exception("Configuration missing for AMQP RabbitMq Provider");
+                throw new Exception($"Configuration missing for AMQP RabbitMq Provider. {configuration.GetChildren().Aggregate(new StringBuilder(), (sb, section) => sb.AppendLine(section.Key), sb => sb.ToString() )}");
             }
 
             return new RabbitmqConfig
