@@ -34,7 +34,9 @@ namespace Amqp.IntegrationTest
         private AmqpProvider _amqpProvider;
         private AmqpBootstrapper _amqpBootstrapper;
         private Task<IMessagePublisher> _publisher;
-        public IntegrationTest()
+
+        [TestInitialize]
+        public async Task Init()
         {
             var configuration = Microservice.TestHelper.TestHelper.GetConfiguration();
 
@@ -42,11 +44,7 @@ namespace Amqp.IntegrationTest
             _amqpBootstrapper = new AmqpBootstrapper(configuration);
 
             _publisher = _amqpProvider.GetPublisher("CrawlRequest").Match(p => p, () => throw new System.Exception("Publisher missing"));
-        }
 
-        [TestInitialize]
-        public async Task Init()
-        {
             await _amqpBootstrapper.Bootstrap().Match(a => a, () => Unit.Default);
         }
 
