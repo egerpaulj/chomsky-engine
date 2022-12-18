@@ -109,7 +109,7 @@ pipeline {
     stage('Run Integration Tests') {
       steps {
         sh 'rm -rf TestResults'
-        dotnetBuild(sdk: 'dotnet6', project: 'chomsky.sln')
+        dotnetBuild(sdk: '.net6', project: 'chomsky.sln')
 
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           sh '/usr/bin/dotnet test -o TestResults -r TestResults -l trx chomsky.sln'
