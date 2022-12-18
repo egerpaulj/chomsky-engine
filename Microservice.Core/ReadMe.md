@@ -308,7 +308,7 @@ Once the certificate is generated, then it can be copied to the runtime folder/d
 
 E.g.
 ```
-FROM mcr.microsoft.com/dotnet/aspnet:5.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0
 COPY bin/Release/net5.0/publish/ App/
 WORKDIR /App
 
@@ -332,7 +332,7 @@ Client containers, that communicate with the kestrel service; should trust the n
 
 E.g.
 ```
-FROM mcr.microsoft.com/dotnet/aspnet:5.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0
 
 COPY certificate.pem /usr/local/share/ca-certificates/configurationservice.crt
 RUN update-ca-certificates

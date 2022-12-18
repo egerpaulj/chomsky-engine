@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:5.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0
 COPY bin/Release/net5.0/publish/ App/
 WORKDIR /App
 COPY requestmanagercert.pem /usr/local/share/ca-certificates/requestmanager.crt
