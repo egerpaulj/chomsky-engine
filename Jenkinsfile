@@ -25,6 +25,12 @@ pipeline {
       }
     }
 
+    stage('Scheduler') {
+      steps {
+        sh 'dotnet publish -c Release Crawler.Scheduler/Crawler.Scheduler.Service/Crawler.Scheduler.Service.csproj'
+      }
+    }
+
     stage('Integration Test Server') {
       steps {
         sh 'dotnet publish -c Test Crawler.IntegrationTest/Crawler.IntegrationTest.Server/Crawler.IntegrationTest.Server.csproj'
