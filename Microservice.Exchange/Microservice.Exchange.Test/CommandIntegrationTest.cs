@@ -64,6 +64,8 @@ namespace Microservice.Exchange.Test
                             () => throw new Exception("Failed to Create MessageExchange"),
                             ex => throw ex);
 
+            await Task.Delay(1000);
+
             // ACT - Create and start Exchange. From Queue => File
             await factory
                     .CreateMessageExchange<CommandData, CommandData>(
@@ -75,7 +77,9 @@ namespace Microservice.Exchange.Test
                             () => throw new Exception("Failed to Create MessageExchange"),
                             ex => throw ex);
 
-            await Task.Delay(2000);
+                await Task.Delay(2000);
+
+            
 
             // ASSERT - Verify Data is Transformed and Written to output
             var outputfile = Directory.GetFiles($"testData/command/out/").FirstOrDefault();
