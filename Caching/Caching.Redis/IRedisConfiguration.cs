@@ -31,7 +31,7 @@ namespace Caching.Redis
         string RedisHostname { get; }
         int RedisPort { get; }
 
-        string Uri => $"{RedisHostname}:{RedisPort}";
+        string Uri => $"{RedisHostname}:{RedisPort},abortConnect=false";
 
         int RedisDatabaseNumber { get; }
 
