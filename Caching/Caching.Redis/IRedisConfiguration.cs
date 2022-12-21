@@ -18,7 +18,7 @@ namespace Caching.Redis
 {
     public interface IRedisConfiguration
     {
-        internal const string HostDefault = "localhost";
+        internal const string HostDefault = "10.137.0.50";
         internal const string HostnameKey = "RedisHostName";
 
         internal const string PortDefault = "6379";
