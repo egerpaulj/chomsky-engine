@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
@@ -28,7 +25,6 @@
     <PackageReference Include="System.Reactive.Providers" Version="5.0.0" />
     <PackageReference Include="prometheus-net" Version="6.0.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\Microservice.Serialization\Microservice.Serialization.csproj" />
     <ProjectReference Include="..\..\Microservice.TestHelper\Microservice.TestHelper.csproj" />
@@ -41,81 +37,78 @@
     <ProjectReference Include="..\..\Microservice.DataModel.Core\Microservice.DataModel.Core.csproj" />
     <ProjectReference Include="..\..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
     <ProjectReference Include="..\..\Microservice.Elasticsearch\Microservice.Elasticsearch.Repo\Microservice.Elasticsearch.Repo.csproj" />
-
-
+    <ProjectReference Include="..\Microservice.Exchange.Endpoints.Csv\Microservice.Exchange.Endpoints.Csv.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Development.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Test.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Simple.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Development.Rabbitmq.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Test.Rabbitmq.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Development.Mongodb.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Test.Mongodb.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Development.Elasticsearch.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Test.Elasticsearch.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Development.Command.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Test.Command.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="68bfb27d-c3a6-44d5-9942-402a134f9a28">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.Csv.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="test.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
-
+  
 </Project>
