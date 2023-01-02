@@ -31,6 +31,9 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly string _routingKey;
         private readonly IConnectionFactory _connectionFactory;
         private readonly IJsonConverterProvider _jsonConverterProvider;
+        private IConnection _connection;
+        private IModel _channel;
+        private bool disposedValue;
 
         public MessagePublisher(RabbitMqPublisherConfig rabbitmqConfig, IRabbitMqConnectionFactory connectionFactory, IJsonConverterProvider jsonConverterProvider)
         {
@@ -65,36 +68,72 @@ namespace Microservice.Amqp.Rabbitmq
 
         private Unit Publish<T>(string exchange, string routingKey, Message<T> message)
         {
-            using (var connection = _connectionFactory.CreateConnection())
-            using (var channel = connection.CreateModel())
+            if (_channel == null)
             {
-
-                var corrId = message.CorrelationId.Match(c => c, () => Guid.NewGuid());
-                var id = message.Id.Match(c => c, () => Guid.NewGuid());
-
-                // Create Custom Properties for the message.
-                var properties = channel.CreateBasicProperties();
-                properties.Persistent = true;
-                properties.ContentType = message.MessageType;
-                properties.CorrelationId = corrId.ToString();
-                // need to use AMQP timestamps for RabbitMQ to recognize it
-                properties.Timestamp = new AmqpTimestamp((Int32)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
-                properties.Headers = new Dictionary<string, object>();
-                properties.Headers.Add("RetryCount", message.RetryCount.Match(r => r, () => 0));
-                properties.Headers.Add("Id", Encoding.UTF8.GetBytes(id.ToString()));
-                message.Context.Match(c => properties.Headers.Add("Context", Encoding.UTF8.GetBytes(c)), () => { });
-
-                channel.BasicPublish(
-                    exchange,
-                    routingKey,
-                    false,
-                    properties,
-                    Encoding.UTF8.GetBytes(
-                        _jsonConverterProvider.Serialize(
-                            message.Payload.Match(p => p, () => throw new Exception("Not allowed to publish a message without a payload")))));
+                lock (this)
+                {
+                    if (_channel == null)
+                    {
+                        _connection = _connectionFactory.CreateConnection();
+                        _channel = _connection.CreateModel();
+                    }
+                }
             }
 
+            var corrId = message.CorrelationId.Match(c => c, () => Guid.NewGuid());
+            var id = message.Id.Match(c => c, () => Guid.NewGuid());
+
+            // Create Custom Properties for the message.
+            var properties = _channel.CreateBasicProperties();
+            properties.Persistent = true;
+            properties.ContentType = message.MessageType;
+            properties.CorrelationId = corrId.ToString();
+            // need to use AMQP timestamps for RabbitMQ to recognize it
+            properties.Timestamp = new AmqpTimestamp((Int32)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
+            properties.Headers = new Dictionary<string, object>();
+            properties.Headers.Add("RetryCount", message.RetryCount.Match(r => r, () => 0));
+            properties.Headers.Add("Id", Encoding.UTF8.GetBytes(id.ToString()));
+            message.Context.Match(c => properties.Headers.Add("Context", Encoding.UTF8.GetBytes(c)), () => { });
+
+            _channel.BasicPublish(
+                exchange,
+                routingKey,
+                false,
+                properties,
+                Encoding.UTF8.GetBytes(
+                    _jsonConverterProvider.Serialize(
+                        message.Payload.Match(p => p, () => throw new Exception("Not allowed to publish a message without a payload")))));
+
+
             return Unit.Default;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _channel.Dispose();
+                    _connection.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~MessagePublisher()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
