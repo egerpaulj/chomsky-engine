@@ -27,7 +27,6 @@ namespace Crawler.Scheduler.Core
 {
     public class UnscheduledUriCrawlJob : IJob
     {
-        internal const int IntervalInMinutes = 10;
         private ILogger<UnscheduledUriCrawlJob> _logger;
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
 

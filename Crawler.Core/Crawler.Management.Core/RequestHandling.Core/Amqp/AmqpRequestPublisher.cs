@@ -14,79 +14,48 @@
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Crawler.Configuration.Core;
-
-using Crawler.DataModel.Scheduler;
+using Crawler.Core.Requests;
+using Crawler.Core.Results;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
-using Microsoft.Extensions.Logging;
-using Quartz;
-using Quartz.Impl;
+using Microservice.Amqp;
 
-namespace Crawler.Scheduler.Core
+namespace Crawler.Management.Core.RequestHandling.Core.Amqp
 {
-    public class CrawlerScheduler : ICrawlScheduler
+    public class AmqpRequestPublisher : IRequestPublisher, IDisposable
     {
-        private readonly ILogger<CrawlerScheduler> _logger;
-        private readonly IJobFactory _jobFactory;
-        private readonly IRequestPublisher _requestPublisher;
-        private readonly StdSchedulerFactory _factory;
-        private IScheduler _scheduler;
+        private readonly IMessagePublisher _requestPublisher;
+        private bool disposedValue;
 
-        public CrawlerScheduler(ILogger<CrawlerScheduler> logger, IJobFactory jobFactory, IRequestPublisher requestPublisher)
+        public AmqpRequestPublisher(IAmqpProvider amqpProvider)
         {
-            _logger = logger;
-            _jobFactory = jobFactory;
-            _requestPublisher = requestPublisher;
-            _factory = new StdSchedulerFactory();
+            _requestPublisher = amqpProvider.GetPublisher(AmqpRequestProvider.RequestProviderContext).Match(p => p, ()=> throw new System.Exception("Failed to get AMQP request publisher"), ex => {throw ex;}).Result;
         }
 
-        public TryOptionAsync<Unit> Start()
+
+        public TryOptionAsync<Unit> PublishRequest(Option<CrawlRequest> request)
         {
-            return async () =>
+            return _requestPublisher.Publish<CrawlRequest>(request);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
-                _logger.LogInformation("starting scheduler");   
-                _scheduler = await _factory.GetScheduler();
-                _scheduler.JobFactory = _jobFactory as Quartz.Spi.IJobFactory;
+                if (disposing)
+                {
+                    _requestPublisher.Dispose();
+                }
 
-                await Schedule(_jobFactory.GetUnscheduledCrawlsJob());
-                await Schedule(await _jobFactory.GetPeriodicUriJobs());
-                await Schedule(await _jobFactory.GetUriCollectorJobs());
-
-                await _scheduler.Start();
-
-                _logger.LogInformation("Scheduler Initialized");
-                return Unit.Default;
-            };
-        }
-
-        public TryOptionAsync<Unit> Stop()
-        {
-            return async () =>
-            {
-                await _scheduler.Shutdown();
-                _logger.LogInformation("Scheduler Shutdown");
-                return Unit.Default;
-            };
-        }
-
-        private async Task<DateTimeOffset> Schedule(Tuple<IJobDetail, ITrigger> jobDefinition)
-        {
-            return await _scheduler.ScheduleJob(jobDefinition.Item1, jobDefinition.Item2);
-        }
-
-        private async Task Schedule(IEnumerable<Tuple<IJobDetail, ITrigger>> jobDefinitions)
-        {
-            if(jobDefinitions == null)
-                return;
-                
-            foreach(var job in jobDefinitions)
-            {
-                await Schedule(job);
+                disposedValue = true;
             }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

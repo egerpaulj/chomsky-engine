@@ -1,0 +1,28 @@
+
+#crawl_uri
+{
+    _id: '0cfb4776-1bca-443a-b40e-98b48ee348a2',
+    UriId: '1f010ea4-1c5e-4d73-94c9-15a29b05bf6b',
+    ScheduledTimestamp: null,
+    CompletedTimestamp: null
+}
+
+#source_data
+{
+    _id: '0cfb4776-1bca-443a-b40e-98b48ee348a2',
+    UriId: '1f010ea4-1c5e-4d73-94c9-15a29b05bf6b',
+    Name: 'FT Uri Collector',
+    Uri: 'https://test2.com',
+    SourceTypeId: 2,
+    CronPeriod: '0/15 * * * * ?'
+}
+
+# uri
+{
+    _id: '1f010ea4-1c5e-4d73-94c9-15a29b05bf6b',
+    Uri: 'https://www.test2.com/somelink',
+    RoutingKey: null,
+    SourceId: '00000000-0000-0000-0000-000000000000',
+    UriTypeId: 2,
+    CronPeriod: '0 1 * * * ?'
+}
