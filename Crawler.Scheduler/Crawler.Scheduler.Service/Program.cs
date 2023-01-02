@@ -1,7 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Crawler.Configuration.Core;
+using Crawler.Configuration.Repository;
+using Crawler.DataModel;
+using Crawler.DataModel.Scheduler;
+using Crawler.Management.Core.RequestHandling.Core.Amqp;
+using Crawler.RequestHandling.Core;
+using Crawler.Scheduler.Core;
+using Crawler.Scheduler.Repository;
+using Microservice.Amqp;
+using Microservice.Amqp.Rabbitmq;
+using Microservice.Mongodb.Repo;
+using Microservice.Serialization;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -14,11 +28,51 @@ namespace Crawler.Scheduler.Service
             CreateHostBuilder(args).Build().Run();
         }
 
+        // <summary>
+        /// Gets the value stored in the Environment Variable: ASPNETCORE_ENVIRONMENT.
+        /// TODO move deplicate code to a generic location.
+        /// </summary>
+        private static string GetEnvironment()
+        {
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            Console.WriteLine($"Configured environment ASPNETCORE_ENVIRONMENT: {environment}");
+            return environment ?? "Development";
+        }
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration(configurationBuilder => 
+                {
+                    configurationBuilder.SetBasePath(Directory.GetCurrentDirectory());
+                    configurationBuilder.AddJsonFile($"appsettings.{GetEnvironment()}.json");
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>();
+                    services.AddTransient<ICrawlScheduler, CrawlerScheduler>();
+                    services.AddTransient<ICrawlerConfigurationService, CrawlerConfigurationService>();
+                    services.AddTransient<IJobFactory, JobFactory>();
+                    
+                    services.AddTransient<ISchedulerRepository, SchedulerRepository>();
+                    services.AddTransient<IJsonConverterProvider, EmptyJsonConverterProvider>();
+                    services.AddSingleton<IRequestPublisher, AmqpRequestPublisher>();
+                    services.AddSingleton<IAmqpProvider, AmqpProvider>();
+                    services.AddTransient<IAmqpBootstrapper, AmqpBootstrapper>();
+                    services.AddTransient<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
+                    services.AddTransient<UnscheduledUriCrawlJob>();
+                    services.AddTransient<PeriodUriCrawlJob>();
+                    services.AddTransient<UriCollectionJob>();
+
+                    var databaseConfiguration = new DatabaseConfiguration
+                    {
+                        DatabaseName = "Crawler",
+                        DocumentName = "crawl_request"
+                    };
+
+                    services.AddTransient<IConfigurationRepository, MongoDbConfigurationRepository>();
+                    services.AddTransient<IMongoDbRepository<CrawlRequestModel>, MongoDbRepository<CrawlRequestModel>>();
+
+                    services.AddSingleton<IDatabaseConfiguration>(databaseConfiguration);
                 });
     }
 }

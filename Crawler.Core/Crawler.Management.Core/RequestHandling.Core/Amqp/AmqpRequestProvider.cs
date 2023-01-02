@@ -26,7 +26,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
 {
     public class AmqpRequestProvider : IRequestProvider, IDisposable
     {
-        private const string RequestProviderContext = "CrawlRequest";
+        internal const string RequestProviderContext = "CrawlRequest";
 
         private IMessageSubscriber<CrawlRequest, CrawlRequest> _subscriber;
         private bool disposedValue;

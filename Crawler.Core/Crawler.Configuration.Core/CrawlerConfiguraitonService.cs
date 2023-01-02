@@ -64,7 +64,12 @@ namespace Crawler.Configuration.Core
         {
             return uri.ToTryOptionAsync().Bind((Func<string, TryOptionAsync<CrawlRequestModel>>)(u => async () =>
            {
-               return await _configurationRepository.GetCollectorCrawlRequest(uri).Match(r => r,
+               return await _configurationRepository.GetCollectorCrawlRequest(uri).Match(r => 
+               {
+                    r.ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly;
+                    return r;
+
+               },
                CreateDefaultCollectorRequest(u));
            }));
         }

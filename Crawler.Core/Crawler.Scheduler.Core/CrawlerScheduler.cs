@@ -31,18 +31,15 @@ namespace Crawler.Scheduler.Core
     public class CrawlerScheduler : ICrawlScheduler
     {
         private readonly ILogger<CrawlerScheduler> _logger;
-
-        private readonly ICrawlerConfigurationService _crawlerConfiguration;
-
+        private readonly IJobFactory _jobFactory;
         private readonly IRequestPublisher _requestPublisher;
-
         private readonly StdSchedulerFactory _factory;
         private IScheduler _scheduler;
 
-        public CrawlerScheduler(ILogger<CrawlerScheduler> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher)
+        public CrawlerScheduler(ILogger<CrawlerScheduler> logger, IJobFactory jobFactory, IRequestPublisher requestPublisher)
         {
             _logger = logger;
-            _crawlerConfiguration = crawlerConfiguration;
+            _jobFactory = jobFactory;
             _requestPublisher = requestPublisher;
             _factory = new StdSchedulerFactory();
         }
@@ -53,26 +50,13 @@ namespace Crawler.Scheduler.Core
             {
                 _logger.LogInformation("starting scheduler");   
                 _scheduler = await _factory.GetScheduler();
+                _scheduler.JobFactory = _jobFactory as Quartz.Spi.IJobFactory;
+
+                await Schedule(_jobFactory.GetUnscheduledCrawlsJob());
+                await Schedule(await _jobFactory.GetPeriodicUriJobs());
+                await Schedule(await _jobFactory.GetUriCollectorJobs());
 
                 await _scheduler.Start();
-
-                await _scheduler.ScheduleJob(
-                    JobBuilder.Create()
-                        .WithIdentity("Schedule pending Uris")
-                        .Build(),
-                    TriggerBuilder.Create()
-                        .StartNow()
-                        .WithSimpleSchedule(x => x
-                            .WithIntervalInMinutes(UnscheduledUriCrawlJob.IntervalInMinutes)
-                            .RepeatForever())
-                        .Build()
-                );
-
-                var scheduleUriCollectorJobs = await ScheduleUriCollectors();
-                await Task.WhenAll(scheduleUriCollectorJobs);
-
-                var schedulePeriodicUriJobs = await ScheduleUriCollectors();
-                await Task.WhenAll(schedulePeriodicUriJobs);
 
                 _logger.LogInformation("Scheduler Initialized");
                 return Unit.Default;
@@ -89,46 +73,20 @@ namespace Crawler.Scheduler.Core
             };
         }
 
-        private async Task<IEnumerable<Task<DateTimeOffset>>> SchedulePeriodicUri()
+        private async Task<DateTimeOffset> Schedule(Tuple<IJobDetail, ITrigger> jobDefinition)
         {
-            var sourceData = await _crawlerConfiguration
-                            .GetPeriodicUri()
-                            .Match(r => r, () => throw new Exception("Failed to get Periodic Uri data"), ex => throw ex);
-
-            var periodicUriJobs = sourceData.Select(s =>
-                new Tuple<IJobDetail, ITrigger>(
-                    JobBuilder.Create<PeriodUriCrawlJob>()
-                        .UsingJobData(UriCollectionJob.JobDataIdKey, s.Id)
-                        .UsingJobData(UriCollectionJob.JobDataUriKey, s.Uri)
-                        .Build(),
-                    TriggerBuilder.Create()
-                        .WithIdentity($"Uri Schedule job: {s.Uri}", "PeriodicUri")
-                        .WithCronSchedule(s.CronPeriod, x => x.WithMisfireHandlingInstructionDoNothing())
-                        .Build()));
-
-            var scheduleUriCollectorJobs = periodicUriJobs.Select(jobTuple => _scheduler.ScheduleJob(jobDetail: jobTuple.Item1, trigger: jobTuple.Item2));
-            return scheduleUriCollectorJobs;
+            return await _scheduler.ScheduleJob(jobDefinition.Item1, jobDefinition.Item2);
         }
 
-        private async Task<IEnumerable<Task<DateTimeOffset>>> ScheduleUriCollectors()
+        private async Task Schedule(IEnumerable<Tuple<IJobDetail, ITrigger>> jobDefinitions)
         {
-            var sourceData = await _crawlerConfiguration
-                            .GetCollectorSourceData()
-                            .Match(r => r, () => throw new Exception("Failed to get Url collector data"), ex => throw ex);
-
-            var uriCollectorJobs = sourceData.Select(s =>
-                new Tuple<IJobDetail, ITrigger>(
-                    JobBuilder.Create<UriCollectionJob>()
-                        .UsingJobData(UriCollectionJob.JobDataIdKey, s.Id)
-                        .UsingJobData(UriCollectionJob.JobDataUriKey, s.Uri)
-                        .Build(),
-                    TriggerBuilder.Create()
-                        .WithIdentity($"Collector job: {s.Uri}", "UriCollector")
-                        .WithCronSchedule(s.CronPeriod, x => x.WithMisfireHandlingInstructionDoNothing())
-                        .Build()));
-
-            var scheduleUriCollectorJobs = uriCollectorJobs.Select(jobTuple => _scheduler.ScheduleJob(jobDetail: jobTuple.Item1, trigger: jobTuple.Item2));
-            return scheduleUriCollectorJobs;
+            if(jobDefinitions == null)
+                return;
+                
+            foreach(var job in jobDefinitions)
+            {
+                await Schedule(job);
+            }
         }
     }
 }
