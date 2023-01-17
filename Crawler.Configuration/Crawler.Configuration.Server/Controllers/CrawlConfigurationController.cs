@@ -67,10 +67,7 @@ namespace Crawler.Configuration.Server.Controllers
             var crawlId = request.CrawlId.Match(g => g, () => Guid.Empty);
             
             return await _configurationService.GetExpectedDocumentPart(uri.AbsoluteUri, HttpContext.GetCorrelationId(), crawlId).Match(r => r, 
-            () => new DocumentPartAutodetect()
-            {
-                BaseUri = uri.AbsoluteUri,
-            }, 
+            () => new DocumentPartAutodetect(uri.AbsoluteUri), 
             e => throw new Exception($"Error obtaining UiActions for: {uri}", e));
         }
 
