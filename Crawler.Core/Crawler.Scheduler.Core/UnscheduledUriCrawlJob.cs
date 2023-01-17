@@ -41,6 +41,7 @@ namespace Crawler.Scheduler.Core
 
         public async Task Execute(IJobExecutionContext context)
         {
+            _logger.LogInformation($"Running Unscheduled job in crawl_uri");
             await ScheduleUriCrawls().Match(r => r, () => throw new Exception($"Failed to schedule pending Uris"));
         }
 

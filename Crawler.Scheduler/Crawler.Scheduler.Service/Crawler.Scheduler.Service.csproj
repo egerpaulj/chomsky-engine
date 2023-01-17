@@ -14,10 +14,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Crawler.Core\Crawler.Scheduler.Core\Crawler.Scheduler.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Core\Crawler.Microservice.Core\Crawler.Microservice.Core.csproj" />
     <ProjectReference Include="..\..\Crawler.Configuration\Crawler.Configuration.Repository\Crawler.Configuration.Repository.csproj" />
     <ProjectReference Include="..\Crawler.Scheduler.Repository\Crawler.Scheduler.Repository.csproj" />
     <ProjectReference Include="..\..\Microservice.Serialization\Microservice.Serialization.csproj" />
     <ProjectReference Include="..\..\Crawler.Core\Crawler.Management.Core\Crawler.Management.Core.csproj" />
     <ProjectReference Include="..\..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
+    <ProjectReference Include="..\..\Microservice.Core\Microservice.Core\Microservice.Core.csproj" />
   </ItemGroup>
 </Project>
