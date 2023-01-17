@@ -22,11 +22,11 @@ namespace Crawler.Core.Requests
 {
     public enum CrawlContinuationStrategy
     {
-        None,
-        All,
-        DomainOnly,
-        TrackLinksOnly,
-        Custom
+        None = 1,
+        All = 2,
+        DomainOnly = 3,
+        TrackLinksOnly = 4,
+        Custom = 5
     }
 
     public class CrawlRequest
