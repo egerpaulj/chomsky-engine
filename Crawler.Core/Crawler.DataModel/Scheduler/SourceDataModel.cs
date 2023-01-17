@@ -36,8 +36,5 @@ namespace Crawler.DataModel.Scheduler
         public SourceType SourceTypeId { get; set; }
 
         public string CronPeriod { get; set; }
-
-
-
     }
 }

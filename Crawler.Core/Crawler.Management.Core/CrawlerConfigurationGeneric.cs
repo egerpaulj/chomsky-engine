@@ -79,7 +79,7 @@ namespace Crawler.Core.Management
                     CorrelationCrawlId = corrId,
                     RequestDocument = new Document
                     {
-                        RequestDocumentPart = new DocumentPartAutodetect(),
+                        RequestDocumentPart = new DocumentPartAutodetect(uri),
                         DownloadContent = true,
                     }
                 });
@@ -103,7 +103,7 @@ namespace Crawler.Core.Management
 
         public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(Option<string> uri, Option<Guid> guid)
         {
-            return async () => await Task.FromResult(new DocumentPartAutodetect());
+            return async () => await Task.FromResult(new DocumentPartAutodetect(uri));
         }
 
         public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)

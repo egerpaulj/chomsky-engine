@@ -131,9 +131,8 @@ namespace Crawler.Core.UnitTest
             request.LoadPageRequest = new LoadPageRequest{Uri = "some uri"};
             request.RequestDocument = new Document()
             {
-                RequestDocumentPart = new DocumentPartTable()
+                RequestDocumentPart = new DocumentPartTable("some uri")
                 {
-                    BaseUri = "some uri",
                     Selector = new DocumentPartSelector()
                     {
                         Xpath= "//table",

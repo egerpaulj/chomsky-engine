@@ -121,10 +121,8 @@ namespace Crawler.Configuration.Core
                        {
                            UriTypeId = UriType.Onetime,
                            Uri = link.Uri.Match(u => u, () => throw new Exception("Uri can't be empty")),
-
-
                        })
-                       .Match(r => r, () => throw new Exception("Failed to add link")));
+                       .Match(r => r, () => throw new Exception("Failed to add link to DB")), ex => throw ex);
                });
 
                return await Task.FromResult(Unit.Default);
@@ -156,7 +154,7 @@ namespace Crawler.Configuration.Core
                 CorrelationCrawlId = correlationId,
                 RequestDocument = new Document
                 {
-                    RequestDocumentPart = new DocumentPartAutodetect()
+                    RequestDocumentPart = new DocumentPartAutodetect(uri)
                 }
             };
         }
@@ -168,7 +166,7 @@ namespace Crawler.Configuration.Core
                 Uri = u,
                 Host = new Uri(u).Host,
                 ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,
-                DocumentPartDefinition = new DocumentPartLink
+                DocumentPartDefinition = new DocumentPartLink (u)
                 {
                     Selector = new DocumentPartSelector
                     {

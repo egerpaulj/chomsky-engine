@@ -33,7 +33,7 @@ namespace Crawler.Core.UnitTest
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
-                RequestDocumentPart = new DocumentPartText()
+                RequestDocumentPart = new DocumentPartText(uri)
                 {
                     Selector = new DocumentPartSelector()
                     {
@@ -55,9 +55,8 @@ namespace Crawler.Core.UnitTest
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
-                RequestDocumentPart = new DocumentPartLink()
+                RequestDocumentPart = new DocumentPartLink(uri)
                 {
-                    BaseUri = uri,
                     Selector = new DocumentPartSelector()
                     {
                         Xpath = xpath,
@@ -72,14 +71,13 @@ namespace Crawler.Core.UnitTest
 
         public static CrawlRequest CreateRequestDocumentPartFile(string uri = null, string content = null)
         {
-            var documentPartFile = new DocumentPartFile()
+            var documentPartFile = new DocumentPartFile(uri)
             {
                 Selector = new DocumentPartSelector()
                 {
                     Xpath ="//*[self::a or self::img]" ,
                     ContentSpecificMatch = content
-                },
-                BaseUri = uri,
+                }
             };
 
             var request = new CrawlRequest();
@@ -100,20 +98,18 @@ namespace Crawler.Core.UnitTest
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
-                RequestDocumentPart = new DocumentPartArticle()
+                RequestDocumentPart = new DocumentPartArticle("test")
                 {
                     BaseUri = uri,
-                    Title = new DocumentPartText()
+                    Title = new DocumentPartText(uri)
                     {
-                        BaseUri = uri,
                         Selector = new DocumentPartSelector()
                         {
                             Xpath = "//*[@class='titleClass']"
                         }
                     },
-                    Content = new DocumentPartText()
+                    Content = new DocumentPartText(uri)
                     {
-                        BaseUri = uri,
                         Selector = new DocumentPartSelector()
                         {
                             Xpath = "//*[@class='content']"
@@ -121,26 +117,22 @@ namespace Crawler.Core.UnitTest
                         SubParts = new List<DocumentPart>()
                         {
                             // Select all images within content
-                            new DocumentPartFile
+                            new DocumentPartFile (uri)
                             {
-                                BaseUri = uri,
                                 Selector = new DocumentPartSelector
                                 {
                                     Xpath=".//img"
                                 }
                             },
                             // Select all links within content
-                            new DocumentPartLink
+                            new DocumentPartLink (uri)
                             {
-                                BaseUri = uri,
                                 Selector = new DocumentPartSelector
                                 {
                                     Xpath=".//a"
                                 }
                             },
-                            new DocumentPartTable{
-                                BaseUri = uri
-                            }
+                            new DocumentPartTable (uri)
                         }
                     }
 
@@ -152,10 +144,7 @@ namespace Crawler.Core.UnitTest
 
         public static CrawlRequest CreateRequestDocumentAutoDetect(string uri)
         {
-            var documentPartAutoDetect = new DocumentPartAutodetect
-            {
-                BaseUri = uri
-            };
+            var documentPartAutoDetect = new DocumentPartAutodetect(uri);
 
             var request = new CrawlRequest();
             request.CrawlId = Guid.NewGuid();

@@ -69,10 +69,7 @@ namespace Crawler.Strategies.General.UnitTest
                 },
                 RequestDocument = new Document
                 {
-                    RequestDocumentPart = new DocumentPartAutodetect()
-                    {
-                        BaseUri = "https://continueTestCase"
-                    },
+                    RequestDocumentPart = new DocumentPartAutodetect("https://continueTestCase"),
                     DownloadContent = false,
                 }
             };
