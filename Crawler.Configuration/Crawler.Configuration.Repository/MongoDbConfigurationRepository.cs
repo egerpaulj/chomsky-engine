@@ -81,8 +81,8 @@ namespace Crawler.Configuration.Repository
             return async () =>
             {
                 var host = new Uri(uri).Host;
-                var filter = Builders<BsonDocument>.Filter.Eq("Host", host);
-                filter &= (Builders<BsonDocument>.Filter.Eq("Uri", uri) | Builders<BsonDocument>.Filter.Eq("Uri", CrawlRequestModel.AllUriMatch));
+                var filter = Builders<BsonDocument>.Filter.Eq("Host", host.ToLowerInvariant());
+                filter &= (Builders<BsonDocument>.Filter.Eq("Uri", uri.ToLowerInvariant()) | Builders<BsonDocument>.Filter.Eq("Uri", CrawlRequestModel.AllUriMatch));
 
                 if(isCollector)
                     filter &= Builders<BsonDocument>.Filter.Eq("IsUrlCollector", "True");
