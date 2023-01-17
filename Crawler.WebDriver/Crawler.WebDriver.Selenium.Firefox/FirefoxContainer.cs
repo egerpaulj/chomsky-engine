@@ -18,8 +18,10 @@ using OpenQA.Selenium.Firefox;
 
 namespace Crawler.WebDriver.Selenium.Firefox
 {
-    public class FirefoxContainer
+    public class FirefoxContainer : IDisposable
     {
+        private bool disposedValue;
+
         internal FirefoxDriver Driver { get; }
         internal DateTime CreatedTimeUtc { get; }
         internal string HostUri { get; }
@@ -37,5 +39,36 @@ namespace Crawler.WebDriver.Selenium.Firefox
         }
 
         public void Discard() { MarkedForRemoval = true;}
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+                Driver?.Close();
+                Driver?.Quit();
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~FirefoxContainer()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }
