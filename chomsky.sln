@@ -81,6 +81,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler.Scheduler.Core.Unit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler.Scheduler.Core", "Crawler.Core\Crawler.Scheduler.Core\Crawler.Scheduler.Core.csproj", "{1C72C3BE-1868-4AA9-A816-F86478B1A337}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microservice.Exchange.Core", "Microservice.Exchange\Microservice.Exchange.Core\Microservice.Exchange.Core.csproj", "{27D83234-800B-4C47-9C27-57CD52CC400F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -202,6 +204,10 @@ Global
 		{1C72C3BE-1868-4AA9-A816-F86478B1A337}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C72C3BE-1868-4AA9-A816-F86478B1A337}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C72C3BE-1868-4AA9-A816-F86478B1A337}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27D83234-800B-4C47-9C27-57CD52CC400F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27D83234-800B-4C47-9C27-57CD52CC400F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27D83234-800B-4C47-9C27-57CD52CC400F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27D83234-800B-4C47-9C27-57CD52CC400F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{ACD53C5A-3611-4031-8A09-A3DC2BEB4191} = {D5BE38AC-7CC6-44A1-8B7A-97D112791490}
@@ -230,5 +236,6 @@ Global
 		{CE23FC66-0C35-430A-B4B6-6F13FCFDB224} = {6A068F68-BC85-4CD2-BB15-9DDD386E4D66}
 		{D56EFB30-8D61-4F7C-ACA6-78FE3496F689} = {4DD90F9C-9335-4DFC-BAAA-D8490561105E}
 		{1C72C3BE-1868-4AA9-A816-F86478B1A337} = {4DD90F9C-9335-4DFC-BAAA-D8490561105E}
+		{27D83234-800B-4C47-9C27-57CD52CC400F} = {6A068F68-BC85-4CD2-BB15-9DDD386E4D66}
 	EndGlobalSection
 EndGlobal

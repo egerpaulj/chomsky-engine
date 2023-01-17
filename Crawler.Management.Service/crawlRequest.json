@@ -1,0 +1,23 @@
+{
+    "_id": "0cfb4776-1bca-443a-b40e-98b32ee348b3",
+    "ContinuationStrategy": 3,
+    "Uri": "*",
+    "Host": "https://www.theguardian.com",
+    "ShouldDownloadContent": false,
+    "ShouldProvideRawSource": false,
+    "IsUrlCollector": false,
+    "DocumentPartDefinition": [
+        {
+            "RequestDocumentPart": [
+                {
+                    "DocPartType": [
+                        7
+                    ]
+                }
+            ],
+            "DownloadContent": [
+                false
+            ]
+        }
+    ]
+}
