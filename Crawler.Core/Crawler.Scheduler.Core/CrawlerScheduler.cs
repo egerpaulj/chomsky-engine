@@ -32,14 +32,16 @@ namespace Crawler.Scheduler.Core
     {
         private readonly ILogger<CrawlerScheduler> _logger;
         private readonly IJobFactory _jobFactory;
+        private readonly Quartz.Spi.IJobFactory _quartzJobFactory;
         private readonly IRequestPublisher _requestPublisher;
         private readonly StdSchedulerFactory _factory;
         private IScheduler _scheduler;
 
-        public CrawlerScheduler(ILogger<CrawlerScheduler> logger, IJobFactory jobFactory, IRequestPublisher requestPublisher)
+        public CrawlerScheduler(ILogger<CrawlerScheduler> logger, IJobFactory jobFactory, Quartz.Spi.IJobFactory quartzJobFactory, IRequestPublisher requestPublisher)
         {
             _logger = logger;
             _jobFactory = jobFactory;
+            _quartzJobFactory = quartzJobFactory;
             _requestPublisher = requestPublisher;
             _factory = new StdSchedulerFactory();
         }
@@ -50,7 +52,9 @@ namespace Crawler.Scheduler.Core
             {
                 _logger.LogInformation("starting scheduler");   
                 _scheduler = await _factory.GetScheduler();
-                _scheduler.JobFactory = _jobFactory as Quartz.Spi.IJobFactory;
+
+                if(_quartzJobFactory != null)
+                    _scheduler.JobFactory = _quartzJobFactory;
 
                 await Schedule(_jobFactory.GetUnscheduledCrawlsJob());
                 await Schedule(await _jobFactory.GetPeriodicUriJobs());
@@ -75,6 +79,7 @@ namespace Crawler.Scheduler.Core
 
         private async Task<DateTimeOffset> Schedule(Tuple<IJobDetail, ITrigger> jobDefinition)
         {
+            _logger.LogInformation($"Scheduling: {jobDefinition.Item1.Description}. Next Fire Time: {jobDefinition.Item2.GetNextFireTimeUtc().ToString()}");
             return await _scheduler.ScheduleJob(jobDefinition.Item1, jobDefinition.Item2);
         }
 

@@ -55,15 +55,12 @@ public interface IJobFactory
     Task<IEnumerable<Tuple<IJobDetail, ITrigger>>> GetUriCollectorJobs();
 }
 
-public class JobFactory : IJobFactory, Quartz.Spi.IJobFactory
+public class JobFactory : IJobFactory
 {
     private readonly ICrawlerConfigurationService _crawlConfiguration;
-    private readonly IServiceProvider _serviceProvider;
-
-    public JobFactory(ICrawlerConfigurationService crawlConfiguration, IServiceProvider serviceProvider)
+    public JobFactory(ICrawlerConfigurationService crawlConfiguration)
     {
         _crawlConfiguration = crawlConfiguration;
-        _serviceProvider = serviceProvider;
     }
 
     public async Task<IEnumerable<Tuple<IJobDetail, ITrigger>>> GetUriCollectorJobs()
@@ -115,26 +112,12 @@ public class JobFactory : IJobFactory, Quartz.Spi.IJobFactory
         var unscheduledTrigger = TriggerBuilder.Create()
                 .WithSimpleSchedule(s => 
                 {
-                    s.WithIntervalInSeconds(5);
+                    s.WithIntervalInSeconds(15);
                     s.RepeatForever();
                 })
                 .ForJob(unscheduledJob)
                 .Build();
 
         return new Tuple<IJobDetail, ITrigger>(unscheduledJob, unscheduledTrigger);
-    }
-
-    public IJob NewJob(Quartz.Spi.TriggerFiredBundle bundle, IScheduler scheduler)
-    {
-        var job = _serviceProvider.GetService(bundle.JobDetail.JobType) as IJob;
-
-        return job;
-    }
-
-    public void ReturnJob(IJob job)
-    {
-        var disposableJob = job as IDisposable;
-
-        disposableJob?.Dispose();
     }
 }
