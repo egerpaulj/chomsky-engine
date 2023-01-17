@@ -1,18 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="6.0.0" />
     <PackageReference Include="SeriLog" Version="2.11.0" />
     <PackageReference Include="prometheus-net" Version="6.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.48" />
-    
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Crawler.Core\Crawler.Management.Core\Crawler.Management.Core.csproj" />
     <ProjectReference Include="..\Crawler.Core\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
@@ -29,6 +27,12 @@
     <ProjectReference Include="..\Microservice.Amqp\Microservice.Amqp\Microservice.Amqp.csproj" />
     <ProjectReference Include="..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
     <ProjectReference Include="..\Crawler.Core\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
-    
+    <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Core\Microservice.Exchange.Core.csproj" />
+    <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Endpoints.Rabbitmq\Microservice.Exchange.Endpoints.Rabbitmq.csproj" />
+    <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Endpoints.Elasticsearch\Microservice.Exchange.Endpoints.Elasticsearch.csproj" />
+    <ProjectReference Include="..\Crawler.Scheduler\Crawler.Scheduler.Repository\Crawler.Scheduler.Repository.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration\Crawler.Configuration.Repository\Crawler.Configuration.Repository.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Scheduler.Core\Crawler.Scheduler.Core.csproj" />
+
   </ItemGroup>
 </Project>

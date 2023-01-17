@@ -8,17 +8,12 @@
             "name": "Config Server",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Crawler.Configuration/Crawler.Configuration.Server/bin/Debug/net6.0/Crawler.Configuration.Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Crawler.Configuration/Crawler.Configuration.Server",
             "stopAtEntry": false,
-            // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },
@@ -33,17 +28,12 @@
             "name": "Web Driver",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "buildWebDriver",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Crawler.WebDriver/Crawler.WebDriver.Grpc.Server/bin/Debug/net6.0/Crawler.WebDriver.Grpc.Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Crawler.WebDriver/Crawler.WebDriver.Grpc.Server",
             "stopAtEntry": false,
-            // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },
@@ -58,17 +48,12 @@
             "name": "Request Manager",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Crawler.RequestManager.Grpc.Server/bin/Debug/net6.0/Crawler.RequestManager.Grpc.Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Crawler.RequestManager.Grpc.Server",
             "stopAtEntry": false,
-            // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },
@@ -83,7 +68,7 @@
             "name": "Scheduler",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "buildScheduler",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Crawler.Scheduler/Crawler.Scheduler.Service/bin/Debug/net6.0/Crawler.Scheduler.Service.dll",
             "args": [],
@@ -108,17 +93,12 @@
             "name": "Crawler Manager",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "buildCrawlerManager",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Crawler.Management.Service/bin/Debug/net6.0/Crawler.Management.Service.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Crawler.Management.Service",
             "stopAtEntry": false,
-            // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },
@@ -134,17 +114,12 @@
             "name": "Mock Server",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Crawler.IntegrationTest/Crawler.IntegrationTest.Server/bin/Debug/net6.0/Crawler.IntegrationTest.Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Crawler.IntegrationTest/Crawler.IntegrationTest.Server",
             "stopAtEntry": false,
-            // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },

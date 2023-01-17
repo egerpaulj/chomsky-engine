@@ -1,0 +1,24 @@
+{
+    _id: 'bff0ed86-e62d-4047-87d9-5561981fcf03',
+    ContinuationStrategyDefinition: 3,
+    Uri: '*',
+    Host: 'www.theguardian.com',
+    DocumentPartDefinition: {
+      BaseUri: [ 'https://www.theguardian.com/uk' ],
+      Raw: [],
+      StyleList: [],
+      SubParts: [],
+      Anomalies: [ [] ],
+      DocPartType: [ 7 ],
+      Selector: [
+        {
+          Xpath: [ './/*[not(self::html)]' ],
+          ContentSpecificMatch: []
+        }
+      ]
+    },
+    UiActions: null,
+    ShouldDownloadContent: false,
+    ShouldProvideRawSource: false,
+    IsUrlCollector: false
+  }
