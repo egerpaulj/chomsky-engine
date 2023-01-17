@@ -40,6 +40,7 @@ namespace Crawler.Scheduler.Service
                     services.AddTransient<ICrawlScheduler, CrawlerScheduler>();
                     services.AddTransient<ICrawlerConfigurationService, CrawlerConfigurationService>();
                     services.AddTransient<IJobFactory, JobFactory>();
+                    services.AddTransient<Quartz.Spi.IJobFactory, QuartzJobFactory>();
                     
                     services.AddTransient<ISchedulerRepository, SchedulerRepository>();
                     services.AddTransient<IJsonConverterProvider, JsonConverterProvider>();

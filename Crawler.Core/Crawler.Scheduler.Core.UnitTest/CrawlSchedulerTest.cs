@@ -90,7 +90,7 @@ public class CrawlSchedulerTest
                 testJob,
                 trigger));
 
-        var testee = new CrawlerScheduler(Mock.Of<ILogger<CrawlerScheduler>>(), jobFactoryMock.Object, Mock.Of<IRequestPublisher>());
+        var testee = new CrawlerScheduler(Mock.Of<ILogger<CrawlerScheduler>>(), jobFactoryMock.Object, null, Mock.Of<IRequestPublisher>());
         return testee;
     }
 }
