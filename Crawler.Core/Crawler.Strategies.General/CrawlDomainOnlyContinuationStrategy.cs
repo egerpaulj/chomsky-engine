@@ -34,11 +34,9 @@ namespace Crawler.Strategies.General
 
         protected override IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)
         {
-            // ToDo Potential speedup
-            var baseUri = documentPart.BaseUri.Match(bu => bu, "httpdsds://///////Cantbe");
-            var uri = new Uri(baseUri);
+            var baseUri = documentPart.BaseUri.Match(u => u , () => throw new CrawlStrategyException("Document Part must has a Base Uri"));
             return base.GetRelevantDocumentPartLinks(documentPart)
-            .Where(l => l.Uri.Bind<bool>(u => u.Contains(uri.Host)).Match(t =>t, false));
+            .Where(l => l.Uri.Bind<bool>(u => u.ToLowerInvariant().Contains(baseUri.ToLowerInvariant())).Match(t =>t, false));
         }
     }
 }

@@ -61,18 +61,18 @@ namespace Crawler.IntegrationTest
                     CrawlerId = Guid.NewGuid(),
                     Result = new Document
                     {
-                        RequestDocumentPart = new DocumentPartArticle
+                        RequestDocumentPart = new DocumentPartArticle("")
                         {
-                            Title = new DocumentPartText
+                            Title = new DocumentPartText("")
                             {
                                 Text = "SOme test title"
                             },
-                            Content = new DocumentPartText
+                            Content = new DocumentPartText("")
                             {
                                 Text = $"Some Content{i}",
                                 SubParts = new List<DocumentPart>
                             {
-                                new DocumentPartLink{
+                                new DocumentPartLink(""){
                                     Text = "I am a link to nowhere",
                                     Uri = "Http://nowhereman"
                                 }
