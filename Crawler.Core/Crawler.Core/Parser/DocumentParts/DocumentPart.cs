@@ -62,15 +62,15 @@ namespace Crawler.Core.Parser.DocumentParts
 
     public enum DocumentPartType
     {
-        Text,
-        Link, // ToDo Button Links <button onclick="document.location=''"> or onclick="javascriptFunc()" => then need to parse Javascript for function() => then URI [or continuation strategy]
-        File,
-        Table,
-        Row,
-        Article,
-        AutoDetect,
-        Stream,
-        Form
+        Text = 1,
+        Link = 2, // ToDo Button Links <button onclick="document.location=''"> or onclick="javascriptFunc()" => then need to parse Javascript for function() => then URI [or continuation strategy]
+        File = 3,
+        Table = 4,
+        Row = 5,
+        Article = 6,
+        AutoDetect = 7,
+        Stream = 8,
+        Form = 9
     }
 
     [JsonConverter(typeof(BaseClassConverter))]
@@ -85,10 +85,15 @@ namespace Crawler.Core.Parser.DocumentParts
 
         public Option<DocumentPartSelector> Selector { get; set; }
 
-        public DocumentPart()
+        public DocumentPart(Option<string> baseUri)
         {
             Anomalies = new List<Anomaly>();
             Selector = new DocumentPartSelector();
+            
+            // if(baseUri.IsNone)
+            //     throw new ArgumentException("Base uri missing");
+
+            BaseUri = baseUri;
         }
 
         public TryOptionAsync<Unit> Parse(Option<HtmlDocument> document)
@@ -146,44 +151,42 @@ namespace Crawler.Core.Parser.DocumentParts
             }
 
             else if (images != null && images.Any() )
-                docPart = new DocumentPartFile { BaseUri = BaseUri };
+                docPart = new DocumentPartFile (BaseUri);
 
             else if (anchors != null && anchors.Any() )
-                docPart = new DocumentPartLink { BaseUri = BaseUri };
+                docPart = new DocumentPartLink (BaseUri);
 
             if (element.Name.ToLower().Equals("table"))
-                docPart = new DocumentPartTable { BaseUri = BaseUri };
+                docPart = new DocumentPartTable (BaseUri);
 
             if (docPart == null)
-                docPart = new DocumentPartText();
+                docPart = new DocumentPartText(BaseUri);
 
             return docPart;
         }
 
         protected DocumentPart CreateDefaultArticle()
         {
-            return new DocumentPartArticle
+            return new DocumentPartArticle(this.BaseUri)
             {
                 BaseUri = this.BaseUri,
-                Title = new DocumentPartText
+                Title = new DocumentPartText(BaseUri)
                 {
-                    BaseUri = this.BaseUri,
                     Selector = new DocumentPartSelector
                     {
                         Xpath = "//title"
                     }
                 },
-                Content = new DocumentPartText
+                Content = new DocumentPartText (BaseUri)
                 {
-                    BaseUri = this.BaseUri,
                     Selector = new DocumentPartSelector()
                     {
                         Xpath = "//body"
                     },
                     SubParts = new List<DocumentPart>
                         {
-                            new DocumentPartLink() {BaseUri = this.BaseUri},
-                            new DocumentPartFile() {BaseUri = this.BaseUri},
+                            new DocumentPartLink(BaseUri),
+                            new DocumentPartFile(BaseUri),
                         }
                 }
             };

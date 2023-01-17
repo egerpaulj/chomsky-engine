@@ -27,7 +27,7 @@ namespace Crawler.Core.Parser.DocumentParts
         public Option<DocumentPartText> Title { get; set; }
         public Option<DocumentPart> Content { get; set; }
 
-        public DocumentPartArticle()
+        public DocumentPartArticle(Option<string> baseUri) : base (baseUri)
         {
             DocPartType = DocumentPartType.Article;
         }
@@ -63,7 +63,7 @@ namespace Crawler.Core.Parser.DocumentParts
         public override string GetBriefSummary()
         {
             var title = Title.Bind(t => t.Text).Match(t => t, string.Empty);
-            var contentPart = Content.Match(c => c, () => new DocumentPartText());
+            var contentPart = Content.Match(c => c, () => new DocumentPartText(BaseUri));
             var content = contentPart.GetBriefSummary();
 
             var links = DocumentPartExtensions.GetAllParts<DocumentPartLink>(contentPart).SelectMany(t => t.GetBriefSummary() + "\n").ConvertToString();

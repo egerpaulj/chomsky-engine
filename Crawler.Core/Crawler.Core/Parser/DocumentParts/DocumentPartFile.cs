@@ -25,7 +25,7 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public class DocumentPartFile : DocumentPart
     {
-        public DocumentPartFile()
+        public DocumentPartFile(Option<string> baseUri) : base (baseUri)
         {
             DocPartType = DocumentPartType.File;
 
@@ -74,7 +74,7 @@ namespace Crawler.Core.Parser.DocumentParts
                 if (n.Name.ToLower() == "img")
                 {
                     var uri = ResolveUri(BaseUri, n.Attributes["src"]?.Value);
-                    var part = new DocumentPartLink()
+                    var part = new DocumentPartLink(BaseUri)
                     {
                         Text = DocumentPartText.GetContent(n),
                         Uri = uri,
@@ -91,7 +91,7 @@ namespace Crawler.Core.Parser.DocumentParts
 
 
                 var uriHref = ResolveUri(BaseUri, n.Attributes["href"]?.Value);
-                var partLink = new DocumentPartLink()
+                var partLink = new DocumentPartLink(BaseUri)
                 {
 
                     Text = DocumentPartText.GetContent(n),

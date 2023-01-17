@@ -106,7 +106,7 @@ namespace Crawler.IntegrationTest
             var testee = CreateTestee();
             var data = await testee.StoreDetectedUrls(new List<DocumentPartLink>
             {
-                new DocumentPartLink
+                new DocumentPartLink("https://www.test2.com")
                 {
                     Uri = "https://www.test2.com/somelink",
                     Text = "Test Link"

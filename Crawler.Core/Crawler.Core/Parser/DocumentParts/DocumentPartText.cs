@@ -29,7 +29,7 @@ namespace Crawler.Core.Parser.DocumentParts
     {
         public Option<string> Text { get; set; }
 
-        public DocumentPartText()
+        public DocumentPartText(Option<string> baseUri) : base (baseUri)
         {
             DocPartType = DocumentPartType.Text;
             Selector = new DocumentPartSelector()
@@ -112,13 +112,6 @@ namespace Crawler.Core.Parser.DocumentParts
             }
 
             return string.Empty;
-        }
-
-        private static DocumentPartTable GetParsedDocumentPartTable(HtmlNode n)
-        {
-            var documentPartTable = new DocumentPartTable();
-            var _ = documentPartTable.Parse(CreateDocument(new List<HtmlNode> { n })).Match(t => t, () => Unit.Default).Result;
-            return documentPartTable;
         }
 
         public override string GetBriefSummary()

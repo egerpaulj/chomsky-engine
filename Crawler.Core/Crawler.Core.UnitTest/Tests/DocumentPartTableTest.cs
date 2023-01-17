@@ -77,9 +77,9 @@ namespace Crawler.Core.UnitTest
             if (documentPart is DocumentPartArticle)
             {
                 var article = documentPart as DocumentPartArticle;
-                var content = article.Content.Match(c => c, () => new DocumentPartText());
+                var content = article.Content.Match(c => c, () => new DocumentPartText(""));
                 if (content is DocumentPartText)
-                    return (article.Content.Match(c => c, () => new DocumentPartText()) as DocumentPartText).Text;
+                    return (article.Content.Match(c => c, () => new DocumentPartText("")) as DocumentPartText).Text;
                 return content.GetAllParts<DocumentPartText>().FirstOrDefault()?.Text ?? string.Empty;
 
             }
