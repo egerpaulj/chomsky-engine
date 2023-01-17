@@ -22,7 +22,7 @@ using Microservice.Amqp;
 
 namespace Crawler.Management.Core.RequestHandling.Core.Amqp
 {
-    public class AmqpRequestPublisher : IRequestPublisher, IDisposable
+    public class AmqpRequestPublisher : IRequestPublisher
     {
         private readonly IMessagePublisher _requestPublisher;
         private bool disposedValue;
@@ -36,26 +36,6 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
         public TryOptionAsync<Unit> PublishRequest(Option<CrawlRequest> request)
         {
             return _requestPublisher.Publish<CrawlRequest>(request);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _requestPublisher.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }
