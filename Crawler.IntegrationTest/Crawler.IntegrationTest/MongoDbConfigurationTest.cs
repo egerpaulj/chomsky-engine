@@ -91,7 +91,7 @@ namespace Crawler.IntegrationTest
             {
                 Host = new Uri(uri).Host,
                 Uri = "*",
-                DocumentPartDefinition = new DocumentPartText
+                DocumentPartDefinition = new DocumentPartText(uri)
                 {
                     Selector = new DocumentPartSelector
                     {
@@ -99,7 +99,7 @@ namespace Crawler.IntegrationTest
                     },
                     SubParts = new List<DocumentPart>
                     {
-                        new DocumentPartLink
+                        new DocumentPartLink(uri)
                         {
                             Selector = new DocumentPartSelector
                             {
