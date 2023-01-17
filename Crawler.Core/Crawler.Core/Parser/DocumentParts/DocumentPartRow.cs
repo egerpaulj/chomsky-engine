@@ -23,7 +23,7 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public class DocumentPartTableRow : DocumentPart
     {
-        public DocumentPartTableRow()
+        public DocumentPartTableRow(Option<string> baseUri) : base (baseUri)
         {
             this.DocPartType = DocumentPartType.Row;
 

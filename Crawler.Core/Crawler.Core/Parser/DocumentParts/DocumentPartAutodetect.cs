@@ -24,7 +24,7 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public class DocumentPartAutodetect : DocumentPart
     {
-        public DocumentPartAutodetect()
+        public DocumentPartAutodetect(Option<string> baseUri) : base (baseUri)
         {
             DocPartType = DocumentPartType.AutoDetect;
             Selector = new DocumentPartSelector()
@@ -45,21 +45,19 @@ namespace Crawler.Core.Parser.DocumentParts
                             {
                                 var subparts = new List<DocumentPart>();
 
-                                var documentPartArticle = new DocumentPartArticle
+                                var documentPartArticle = new DocumentPartArticle(BaseUri)
                                 {
                                     IsParsedSubpart = true,
                                     BaseUri = this.BaseUri,
-                                    Title = new DocumentPartText
+                                    Title = new DocumentPartText (BaseUri)
                                     {
-                                        BaseUri = this.BaseUri,
                                         Selector = new DocumentPartSelector
                                         {
                                             Xpath = "//title"
                                         }
                                     },
-                                    Content = new DocumentPartText
+                                    Content = new DocumentPartText(BaseUri)
                                     {
-                                        BaseUri = this.BaseUri,
                                         Selector = new DocumentPartSelector()
                                         {
                                             Xpath = "//body"
@@ -79,9 +77,8 @@ namespace Crawler.Core.Parser.DocumentParts
                                 {
                                     var tableParts = tableNodes.Select(t =>
                                     {
-                                        var documentPart = new DocumentPartTable()
+                                        var documentPart = new DocumentPartTable(BaseUri)
                                         {
-                                            BaseUri = BaseUri,
                                             IsParsedSubpart = true
                                         };
 
@@ -111,9 +108,8 @@ namespace Crawler.Core.Parser.DocumentParts
 
                                     var linkParts = await linkNodes.SelectAsync(t =>
                                     {
-                                        var documentPart = new DocumentPartFile()
+                                        var documentPart = new DocumentPartFile(BaseUri)
                                         {
-                                            BaseUri = BaseUri,
                                             IsParsedSubpart = true
                                         };
 

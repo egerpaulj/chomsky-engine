@@ -24,7 +24,7 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public class DocumentPartTable : DocumentPart
     {
-        public DocumentPartTable()
+        public DocumentPartTable(Option<string> baseUri) : base (baseUri)
         {
             DocPartType = DocumentPartType.Table;
             Selector = new DocumentPartSelector
@@ -64,10 +64,7 @@ namespace Crawler.Core.Parser.DocumentParts
 
                                 Rows = (await tableElement.ChildNodes.Where(n => n.Name == "tr").SelectAsync(async n =>
                                 {
-                                    var docpart = new DocumentPartTableRow()
-                                    {
-                                        BaseUri = BaseUri
-                                    };
+                                    var docpart = new DocumentPartTableRow(BaseUri);
                                     await docpart.Parse(CreateDocument(new List<HtmlNode> { n })).Match(u => { }, () => AppendAnomaly(AnomalyType.MissingRow, "Failed to parse row"));
                                     return docpart;
                                 }))
@@ -75,10 +72,7 @@ namespace Crawler.Core.Parser.DocumentParts
 
                                 SubParts = (await tableElements.Where(t => t != tableElement).SelectAsync(async n =>
                                {
-                                   var documentPartTable = new DocumentPartTable()
-                                   {
-                                       BaseUri = BaseUri
-                                   };
+                                   var documentPartTable = new DocumentPartTable(BaseUri);
                                    
                                    await documentPartTable.Parse(CreateDocument(new List<HtmlNode> { n })).Match(u => { }, () => AppendAnomaly(AnomalyType.MissingTable, "Failed to parse Additionally matched table"));
                                    documentPartTable.IsParsedSubpart = true;

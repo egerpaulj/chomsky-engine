@@ -31,7 +31,7 @@ namespace Crawler.Core.Parser.DocumentParts
 
         public Option<string> Uri { get; set; }
 
-        public DocumentPartLink()
+        public DocumentPartLink(Option<string> baseUri) : base (baseUri)
         {
             DocPartType = DocumentPartType.Link;
 
@@ -39,12 +39,6 @@ namespace Crawler.Core.Parser.DocumentParts
             {
                 Xpath = "//a"
             };
-        }
-
-        public DocumentPartLink(Option<string> baseUri)
-        {
-            BaseUri = baseUri;
-            DocPartType = DocumentPartType.Link;
         }
 
         public override string ToString()
@@ -62,7 +56,7 @@ namespace Crawler.Core.Parser.DocumentParts
                         {
                             return await MonitorPerformance.MonitorAsync(async () =>
                             {
-                                var anchors = nodes.ToList();
+                                var anchors = nodes.Where(n => n.Attributes["href"] != null).ToList();
 
                                 if (!anchors.Any())
                                 {
@@ -77,9 +71,8 @@ namespace Crawler.Core.Parser.DocumentParts
                                     Uri = ResolveUri(BaseUri, first.Attributes["href"].Value);
                                     SubParts = anchors.Where(a => a != first).Select(n =>
                                     {
-                                        var documentPartLink = new DocumentPartLink()
+                                        var documentPartLink = new DocumentPartLink(BaseUri)
                                         {
-                                            BaseUri = BaseUri,
                                             IsParsedSubpart = true
                                         };
                                         documentPartLink.Text = DocumentPartText.GetContent(n);
