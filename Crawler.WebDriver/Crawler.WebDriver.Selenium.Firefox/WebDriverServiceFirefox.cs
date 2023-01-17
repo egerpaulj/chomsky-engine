@@ -96,7 +96,12 @@ namespace Crawler.WebDriver.Selenium.Firefox
                         .SelectMany(driver =>
                             LoadPage(driver, uri, correlationId), (d, d2) => d2), (u, d) => d)
                 .SelectMany(driver => ExecuteUserActions(driver, userActions, correlationId), (d, _) => d)
-                .Bind<FirefoxContainer, string>(driver => async () => await Task.FromResult(driver.Driver.PageSource));
+                .Bind<FirefoxContainer, string>(driver => async () => 
+                {
+                    var source = driver.Driver.PageSource;
+                    driver.Driver.Quit();
+                    return await Task.FromResult(source);
+                });
         }
 
         private static TryOptionAsync<FileData> CreateFileData(string binaryData, Option<string> uri)
@@ -187,23 +192,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
         {
             return async () =>
             {
-                try
-                {
-                    await _firefoxContainerSemaphoreSlim.WaitAsync();
-
-                    var indicator = new Uri(uri);
-
-                    if (_activeDrivers.ContainsKey(indicator.Host))
-                        return _activeDrivers[indicator.Host];
-                    FirefoxContainer container = CreateFirefoxContainer(indicator);
-                    _activeDrivers.Add(indicator.Host, container);
-
-                    return container;
-                }
-                finally
-                {
-                    _firefoxContainerSemaphoreSlim.Release();
-                }
+                return CreateFirefoxContainer(new Uri(uri));
             };
         }
 
