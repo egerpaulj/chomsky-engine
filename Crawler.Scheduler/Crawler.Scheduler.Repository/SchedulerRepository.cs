@@ -53,19 +53,21 @@ namespace Crawler.Scheduler.Repository
                if (!Uri.TryCreate(m.Uri, UriKind.Absolute, out var uri))
                    throw new Exception($"Failed to add Bad Uri: {m.Uri}");
 
-               Guid sourceDataId;
+               Guid sourceDataId = Guid.Empty;
 
-               await _sourceDataRepository.Get(m.SourceId).MatchAsync(s => sourceDataId = s.Id, async () =>
+               await _sourceDataRepository.Get(GetSourceFilter(uri)).MatchAsync(s => sourceDataId = s.Id, async () =>
                {
                    sourceDataId = await _sourceDataRepository.AddOrUpdate(new SourceDataModel
                    {
                        Uri = m.Uri,
-                       Name = uri.Host,
+                       Name = uri.Host.ToLowerInvariant(),
                        SourceTypeId = SourceType.Custom,
                    }).Match(r => r, () => throw new Exception("Failed to add to source data model"));
                });
 
-               var guid = await _uriDataRepository.AddOrUpdate(model).Match(g => g, () => throw new Exception("Failed to add Uri Data model"));
+               m.SourceId = sourceDataId;
+                
+               var guid = await _uriDataRepository.AddOrUpdate(m).Match(g => g, () => throw new Exception("Failed to add Uri Data model"));
 
                await GetUriFilter(uri.AbsoluteUri).Bind(filter => _crawlUriRepository.Get(filter)).Match(r => { }, async () =>
                 {
@@ -91,7 +93,7 @@ namespace Crawler.Scheduler.Repository
 
         public TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData()
         {
-            return GetCollectorSourceDataFilter().Bind(filter => _sourceDataRepository.GetMany(filter));
+            return GetPeriodicCollectorUriFilter().Bind(filter => _sourceDataRepository.GetMany(filter));
         }
 
         public TryOptionAsync<Unit> UpdateCompletedTimeUtcNow(Guid id)
@@ -138,16 +140,18 @@ namespace Crawler.Scheduler.Repository
             return async () =>
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Periodic);
+                filter &= (Builders<BsonDocument>.Filter.Exists("CronPeriod"));
 
                 return await Task.FromResult(filter);
             };
         }
 
-        private static TryOptionAsync<FilterDefinition<BsonDocument>> GetCollectorSourceDataFilter()
+        private static TryOptionAsync<FilterDefinition<BsonDocument>> GetPeriodicCollectorUriFilter()
         {
             return async () =>
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("SourceTypeId", (int)SourceType.Collector);
+                filter &= (Builders<BsonDocument>.Filter.Exists("CronPeriod"));
 
                 return await Task.FromResult(filter);
             };
@@ -161,6 +165,11 @@ namespace Crawler.Scheduler.Repository
 
                 return await Task.FromResult(filter);
             };
+        }
+
+        private static FilterDefinition<BsonDocument> GetSourceFilter(Uri uri)
+        {
+            return Builders<BsonDocument>.Filter.Eq("Name", uri.Host.ToLowerInvariant());
         }
     }
 
