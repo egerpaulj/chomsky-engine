@@ -28,7 +28,7 @@ namespace Microservice.Amqp
     /// <para>Note: The type of message T; should be designed so that the consumer of the messages are aware. If the types don't match; the messages might be rejected by the Subscribers/Consumers.
     /// </para>
     /// </summary>
-    public interface IMessagePublisher : IDisposable
+    public interface IMessagePublisher
     {
         /// <summary>
         /// <para>
