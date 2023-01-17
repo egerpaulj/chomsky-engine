@@ -44,6 +44,8 @@ namespace Crawler.Scheduler.Core
         {
             var uri = context.MergedJobDataMap.GetString(JobDataUriKey);
             var id = context.MergedJobDataMap.GetGuid(JobDataIdKey);
+            
+            _logger.LogInformation($"Running Uri Collection job: {uri}. Id: {id}");
             await Schedule(uri, id ).Match(r => r, () => throw new Exception($"Failed to schedule Url Collection for Uri: {uri}"));
         }
 
