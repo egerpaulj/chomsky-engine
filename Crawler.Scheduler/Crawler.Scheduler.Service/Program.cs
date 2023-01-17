@@ -11,6 +11,7 @@ using Crawler.Management.Core.RequestHandling.Core.Amqp;
 using Crawler.RequestHandling.Core;
 using Crawler.Scheduler.Core;
 using Crawler.Scheduler.Repository;
+using Microservice.Core;
 using Microservice.Amqp;
 using Microservice.Amqp.Rabbitmq;
 using Microservice.Mongodb.Repo;
@@ -18,6 +19,8 @@ using Microservice.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microservice.Core.Middlewear;
+using Crawler.Microservice.Core;
 
 namespace Crawler.Scheduler.Service
 {
@@ -28,24 +31,9 @@ namespace Crawler.Scheduler.Service
             CreateHostBuilder(args).Build().Run();
         }
 
-        // <summary>
-        /// Gets the value stored in the Environment Variable: ASPNETCORE_ENVIRONMENT.
-        /// TODO move deplicate code to a generic location.
-        /// </summary>
-        private static string GetEnvironment()
-        {
-            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            Console.WriteLine($"Configured environment ASPNETCORE_ENVIRONMENT: {environment}");
-            return environment ?? "Development";
-        }
-
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration(configurationBuilder => 
-                {
-                    configurationBuilder.SetBasePath(Directory.GetCurrentDirectory());
-                    configurationBuilder.AddJsonFile($"appsettings.{GetEnvironment()}.json");
-                })
+                .UseAppConfig()
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>();
@@ -54,7 +42,7 @@ namespace Crawler.Scheduler.Service
                     services.AddTransient<IJobFactory, JobFactory>();
                     
                     services.AddTransient<ISchedulerRepository, SchedulerRepository>();
-                    services.AddTransient<IJsonConverterProvider, EmptyJsonConverterProvider>();
+                    services.AddTransient<IJsonConverterProvider, JsonConverterProvider>();
                     services.AddSingleton<IRequestPublisher, AmqpRequestPublisher>();
                     services.AddSingleton<IAmqpProvider, AmqpProvider>();
                     services.AddTransient<IAmqpBootstrapper, AmqpBootstrapper>();

@@ -35,6 +35,27 @@ namespace Microservice.Core.Middlewear
 {
     public static class Configurator
     {
+        // <summary>
+        /// Gets the value stored in the Environment Variable: ASPNETCORE_ENVIRONMENT.
+        /// TODO move deplicate code to a generic location.
+        /// </summary>
+        private static string GetEnvironment()
+        {
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            Console.WriteLine($"Configured environment ASPNETCORE_ENVIRONMENT: {environment}");
+            return environment ?? "Development";
+        }
+
+        public static IHostBuilder UseAppConfig(this IHostBuilder hostBuilder)
+        {
+            return hostBuilder.ConfigureAppConfiguration(configurationBuilder =>
+                {
+                    configurationBuilder.SetBasePath(Directory.GetCurrentDirectory());
+                    configurationBuilder.AddJsonFile($"appsettings.{GetEnvironment()}.json");
+                });
+        }
+
+
         /// <summary>
         /// All requests are logs with CorrelationId.
         /// </summary>

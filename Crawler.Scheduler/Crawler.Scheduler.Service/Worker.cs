@@ -28,7 +28,7 @@ namespace Crawler.Scheduler.Service
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Starting Prometheus Metrics");
-            var promServer = new MetricServer(7778);
+            var promServer = new MetricServer(7779);
             promServer.Start();
 
             _logger.LogInformation("Boostrapping Amqp environment");
