@@ -29,9 +29,9 @@ namespace Microservice.Exchange
 
     public class ExchangeMetrics : IExchangeMetrics
     {
-        private readonly Counter _inputCounter = Prometheus.Metrics.CreateCounter("datainput", "count of data input", "context");
-        private readonly Counter _outputCounter = Prometheus.Metrics.CreateCounter("datainput", "count of data input", "context");
-        private readonly Counter _errorCounter = Prometheus.Metrics.CreateCounter("datainput", "count of data input", "context");
+        private readonly Counter _inputCounter = Prometheus.Metrics.CreateCounter("data_input", "count of data input", "context");
+        private readonly Counter _outputCounter = Prometheus.Metrics.CreateCounter("data_output", "count of data input", "context");
+        private readonly Counter _errorCounter = Prometheus.Metrics.CreateCounter("data_error", "count of data input", "context");
         
         public void IncError(string label)
         {

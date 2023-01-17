@@ -35,7 +35,7 @@ namespace Crawler.WebDriver.Grpc.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<IGrpcMetrics, GrpcMetrics>();
-            services.AddTransient<IWebDriverService, WebDriverServiceFirefox>();
+            services.AddSingleton<IWebDriverService, WebDriverServiceFirefox>();
             services.AddTransient<IWebDriverMetrics, WebDriverMetrics>();
             services.AddTransient<IJsonConverterProvider, EmptyJsonConverterProvider>();
             services.AddGrpc();
