@@ -117,7 +117,7 @@ namespace Microservice.Exchange
                         e => throw GetException(consumer.GetType().Name, e));
                 });
 
-                
+                _logger.LogInformation($"#### Microservice Exchange: {_exchangeName}: Exchange started successfully");
 
                 return await Task.FromResult(Unit.Default);
             };

@@ -24,6 +24,8 @@ using Microservice.Mongodb.Repo;
 using Microservice.Exchange;
 using Microservice.Serialization;
 using Crawler.Microservice.Core;
+using Microservice.Amqp;
+using Crawler.Core.Requests;
 
 namespace Crawler.Management.Service
 {
@@ -72,6 +74,7 @@ namespace Crawler.Management.Service
                     // Crawl Strategies mapped using URI
                     services.AddTransient<ICrawlStrategyMapper, CrawlStrategiesMapper>();
                     services.AddTransient<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
+                    services.AddTransient<IMessageHandler<CrawlRequest, CrawlEsResponseModel>, RabbitMqCrawlRequestHandler>();
 
                     // Console.WriteLine(typeof(CrawlRequestTransformer).AssemblyQualifiedName);
                     // Console.ReadLine();

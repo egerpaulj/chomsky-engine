@@ -14,7 +14,9 @@
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
+using System.Threading.Tasks;
 using LanguageExt;
+using Microservice.Amqp;
 using Microservice.Exchange;
 
 namespace Microservice.Exchange.Test
@@ -37,6 +39,15 @@ namespace Microservice.Exchange.Test
                     }
                 });
             }); 
+        }
+    }
+
+    public class MessageHandler : IMessageHandler<TestOutputMessage, TestOutputMessage>
+    {
+
+        public Task<TestOutputMessage> HandleMessage(Option<TestOutputMessage> message)
+        {
+            return Task.FromResult(message.Match(r => r, () => throw new Exception("Failed")));
         }
     }
 }

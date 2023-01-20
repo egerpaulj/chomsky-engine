@@ -27,6 +27,7 @@ using System.IO;
 using Microservice.Exchange.Core;
 using Microservice.Exchange.Endpoints.Rabbitmq;
 using Microservice.Amqp.Rabbitmq;
+using Microservice.Amqp;
 
 namespace Microservice.Exchange.Test
 {
@@ -117,6 +118,7 @@ namespace Microservice.Exchange.Test
                     var configuration = TestHelper.TestHelper.GetConfiguration() as IConfiguration;
 
                     services.AddTransient<IConfiguration>(s => configuration);
+                    services.AddTransient<IMessageHandler<TestOutputMessage, TestOutputMessage>, MessageHandler>();
 
                 })
                 .Build();

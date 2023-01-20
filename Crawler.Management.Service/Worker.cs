@@ -39,7 +39,7 @@ namespace Crawler.Management.Service
 
             _logger.LogInformation("Starting Crawl Exchange at: {time}", DateTime.Now);
             var exchange = await _exchangeFactory
-                .CreateMessageExchange<CrawlRequest, CrawlEsResponseModel>(
+                .CreateMessageExchange<CrawlEsResponseModel, CrawlEsResponseModel>(
                     Option<IConfiguration>.Some(_configuration),
                     "CrawlerExchange")
                 .Match(r => r, () => throw new Exception("Empty result for Exchange"), ex => throw ex);
