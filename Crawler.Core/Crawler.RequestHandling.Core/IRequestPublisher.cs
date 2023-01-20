@@ -13,6 +13,8 @@
 
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using System.Collections.Generic;
+using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Requests;
 using LanguageExt;
 
@@ -21,5 +23,6 @@ namespace Crawler.RequestHandling.Core
     public interface IRequestPublisher
     {
          TryOptionAsync<Unit> PublishRequest(Option<CrawlRequest> request);
+         TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links);
     }
 }

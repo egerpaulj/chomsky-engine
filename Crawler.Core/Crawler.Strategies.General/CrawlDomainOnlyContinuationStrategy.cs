@@ -27,8 +27,8 @@ namespace Crawler.Strategies.General
 {
     public class CrawlDomainOnlyContinuationStrategy : CrawlAllContinuationStrategy
     {
-        public CrawlDomainOnlyContinuationStrategy(ICrawlerConfigurationService configuration) 
-        : base( configuration)
+        public CrawlDomainOnlyContinuationStrategy(IRequestPublisher requestPublisher) 
+        : base( requestPublisher)
         {
         }
 

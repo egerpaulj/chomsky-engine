@@ -33,16 +33,16 @@ namespace Crawler.Stategies.Core
 {
     public class CrawlAllContinuationStrategy : ICrawlContinuationStrategy
     {
-        private readonly ICrawlerConfigurationService _crawlerConfiguration;
+        private readonly IRequestPublisher _requestPublisher;
 
-        public CrawlAllContinuationStrategy(ICrawlerConfigurationService configuration)
+        public CrawlAllContinuationStrategy(IRequestPublisher requestPublisher)
         {
-            _crawlerConfiguration = configuration;
+            _requestPublisher = requestPublisher;
         }
 
         public TryOptionAsync<Unit> Apply(Option<CrawlResponse> response)
         {
-            var correlationId = response.Bind(r => r.CorrelationId).Match(g =>g, Guid.NewGuid());
+            var correlationId = response.Bind(r => r.CorrelationId).Match(g => g, Guid.NewGuid());
 
             return response
             .Bind(r => r.Result)
@@ -79,10 +79,12 @@ namespace Crawler.Stategies.Core
             };
         }
 
-
         private TryOptionAsync<Unit> StoreUriList(List<DocumentPartLink> documentPartLinks, Guid correlationId)
         {
-            return _crawlerConfiguration.StoreDetectedUrls(documentPartLinks, correlationId);
+            if(!documentPartLinks.Any()) 
+                return async () => await Task.FromResult(Unit.Default);
+
+            return _requestPublisher.PublishUri(documentPartLinks);
         }
     }
 }
