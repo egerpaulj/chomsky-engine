@@ -48,6 +48,7 @@ namespace Crawler.Strategies.General.UnitTest
         ICrawlContinuationStrategy _continuationStrategyTestee;
 
         Mock<IWebDriverService> _webDriverMock;
+        Mock<IRequestPublisher> _requestPublisherMock;
 
         CrawlRequest _crawlRequest;
 
@@ -59,6 +60,7 @@ namespace Crawler.Strategies.General.UnitTest
             _crawlConfiguration = new Mock<ICrawlerConfigurationService>();
             
             _webDriverMock = CrawlerStrategyGenericTest.CreateMockWebDriver(_testcase);
+            _requestPublisherMock = new Mock<IRequestPublisher>();
 
             _crawlRequest = new CrawlRequest()
             {
@@ -79,13 +81,14 @@ namespace Crawler.Strategies.General.UnitTest
         public void Crawl_DomainLinks_ContinuationRequestPublished()
         {
             // Arrange
-            _continuationStrategyTestee = new CrawlDomainOnlyContinuationStrategy(_crawlConfiguration.Object);
+            _continuationStrategyTestee = new CrawlDomainOnlyContinuationStrategy(_requestPublisherMock.Object);
             var testee = new CrawlerStrategyGeneric(_webDriverMock.Object, Mock.Of<IMetricRegister>());
             var request = new Request(testee, Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee), _crawlRequest);
             var noLinksStored = 0;
-            _crawlConfiguration
-            .Setup(m => m.StoreDetectedUrls(It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<Option<Guid>>()))
-            .Callback<Option<List<DocumentPartLink>>, Option<Guid>>((l, guid) => noLinksStored = l.Match(li => li.Count, () => 0))
+
+            _requestPublisherMock
+            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>()))
+            .Callback<Option<List<DocumentPartLink>>>((l) => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
 
             // ACT
@@ -93,20 +96,20 @@ namespace Crawler.Strategies.General.UnitTest
 
             //ASSERT
             var documentPartAutodetect = CrawlerStrategyGenericTest.GetDocumentPart<DocumentPartAutodetect>(result);
-            Assert.AreEqual(4, noLinksStored);
+            Assert.AreEqual(3, noLinksStored);
         }
 
         [TestMethod]
         public void Crawl_AllLinks_ContinuationRequestPublished()
         {
             // Arrange
-            _continuationStrategyTestee = new CrawlAllContinuationStrategy(_crawlConfiguration.Object);
+            _continuationStrategyTestee = new CrawlAllContinuationStrategy(_requestPublisherMock.Object);
             var testee = new CrawlerStrategyGeneric(_webDriverMock.Object, Mock.Of<IMetricRegister>());
             var request = new Request(testee, Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee), _crawlRequest);
             var noLinksStored = 0;
-            _crawlConfiguration
-            .Setup(m => m.StoreDetectedUrls(It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<Option<Guid>>()))
-            .Callback<Option<List<DocumentPartLink>>, Option<Guid>>((l, guid) => noLinksStored = l.Match(li => li.Count, () => 0))
+            _requestPublisherMock
+            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>()))
+            .Callback<Option<List<DocumentPartLink>>>((l) => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
 
             // ACT
@@ -114,6 +117,11 @@ namespace Crawler.Strategies.General.UnitTest
 
             //ASSERT
             var documentPartAutodetect = CrawlerStrategyGenericTest.GetDocumentPart<DocumentPartAutodetect>(result);
+            _requestPublisherMock
+            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>()))
+            .Callback<Option<List<DocumentPartLink>>>(l => noLinksStored = l.Match(li => li.Count, () => 0))
+            .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
+            
             Assert.AreEqual(6, noLinksStored);
         }
 

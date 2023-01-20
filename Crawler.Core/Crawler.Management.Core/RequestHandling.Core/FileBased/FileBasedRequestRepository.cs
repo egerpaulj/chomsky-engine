@@ -14,6 +14,7 @@
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -21,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Crawler.Core;
 using Crawler.Core.Parser;
+using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Parser.DocumentParts.Serialilzation;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
@@ -61,7 +63,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
             var res = Init().Match(r => r, () => throw new Exception("Failed to initialize folders in File repository")).Result;
 
             _inputFileSystemWatcher = new FileSystemWatcher(_inDirectory.FullName);
-            _inputFileSystemWatcher.NotifyFilter = NotifyFilters.CreationTime|NotifyFilters.FileName;
+            _inputFileSystemWatcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName;
             _inputFileSystemWatcher.EnableRaisingEvents = true;
             _inputFileSystemWatcher.Filter = "*.*";
         }
@@ -73,7 +75,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
 
         public IObservable<Either<CrawlRequest, CrawlRequestException>> GetObservable(Option<CancellationToken> token, Func<CrawlRequest, Task<LanguageExt.Unit>> crawlTask)
         {
-            return 
+            return
             Observable.Create<FileSystemEventArgs>(o =>
             {
                 FileSystemEventHandler eventHandler = (obj, args) => o.OnNext(args);
@@ -91,12 +93,13 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
 
                     try
                     {
-                        
+
                         var request = JsonConvert.DeserializeObject<CrawlRequest>(File.ReadAllText(args.FullPath, IJsonConverterProvider.TextEncoding), _jsonConverterProvider.GetJsonConverters());
                         File.Move(args.FullPath, Path.Combine(_workingDirectory.FullName, args.Name), overwrite: true);
                         either = request;
                         return either;
-                    }catch(Exception e)
+                    }
+                    catch (Exception e)
                     {
                         // ToDo Log 
                         File.Move(args.FullPath, Path.Combine(_errorDirectory.FullName, $"args.Name_error"), overwrite: true);
@@ -111,7 +114,8 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
                 return await eitherRes.MatchAsync(ex => eitherRes, async req =>
                 {
                     var crawlEither = new Either<CrawlRequest, CrawlRequestException>();
-                    try{
+                    try
+                    {
                         await crawlTask(req);
                         crawlEither = req;
                     }
@@ -172,6 +176,24 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
                    {
                        throw new CrawlException("Error during reponse publish", ErrorType.PublishError, ex);
                    }
+               });
+        }
+
+        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links)
+        {
+            return Init().Bind<Unit, Unit>(u => async () =>
+               {
+                   var ls = links.Match(r => r, () => throw new Exception("Unable to publish an empty links"));
+                   if (links.Count() > 0)
+                   {
+                       foreach (var l in ls)
+                       {
+                            var json = JsonConvert.SerializeObject(l);
+
+                       File.WriteAllText(Path.Combine(_outDirectory.FullName, Guid.NewGuid().ToString()), json, IJsonConverterProvider.TextEncoding);
+                       }
+                   }
+                   return Unit.Default;
                });
         }
 

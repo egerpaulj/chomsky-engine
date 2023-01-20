@@ -46,12 +46,13 @@ namespace Crawler.Strategies.General
         private readonly Dictionary<string, ICrawlContinuationStrategy> _uriToContStrategyMapper;
 
         public CrawlStrategiesMapper(
+            IRequestPublisher requestPublisher, 
             ICrawlerConfigurationService configuration, 
             IWebDriverService webDriver, 
             IMetricRegister metricRegister)
         {
-            _crawlAllContStrategy = new CrawlAllContinuationStrategy(configuration);
-            _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(configuration);
+            _crawlAllContStrategy = new CrawlAllContinuationStrategy(requestPublisher);
+            _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(requestPublisher);
             _crawlTrackLinksContStrategy = new TrackLinksContinuationStrategy(configuration);
 
             _genericStrategy = new CrawlerStrategyGeneric(webDriver, metricRegister);
