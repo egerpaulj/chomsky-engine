@@ -30,19 +30,25 @@ namespace Microservice.Exchange.Endpoints.Rabbitmq
     /// <summary>
     /// Consumes RabbitMq message from a Queue and provides the messages to the exchange.
     /// </summary>
-    public class RabbitMqConsumer<T> : IConsumer<T>, IConfigInitializor
+    public class RabbitMqConsumer<T, R> : IConsumer<R>, IConfigInitializor
     {
-        private IMessageSubscriber<T, T> _subscriber;
+        private IMessageSubscriber<T, R> _subscriber;
 
         private readonly IJsonConverterProvider _converterProvider;
         private readonly IRabbitMqConnectionFactory _rabbitMqConnectionFactory;
-        private readonly ILogger<RabbitMqConsumer<T>> _logger;
+        private readonly IMessageHandler<T, R> _messageHandler;
+        private readonly ILogger<RabbitMqConsumer<T, R>> _logger;
 
-        public RabbitMqConsumer(ILogger<RabbitMqConsumer<T>> logger, IJsonConverterProvider converterProvider, IRabbitMqConnectionFactory rabbitMqConnectionFactory)
+        public RabbitMqConsumer(
+            ILogger<RabbitMqConsumer<T, R>> logger, 
+            IJsonConverterProvider converterProvider, 
+            IRabbitMqConnectionFactory rabbitMqConnectionFactory,
+            IMessageHandler<T, R> messageHandler)
         {
             _logger = logger;
             _converterProvider = converterProvider;
             _rabbitMqConnectionFactory = rabbitMqConnectionFactory;
+            _messageHandler = messageHandler;
         }
 
         public TryOptionAsync<Unit> End()
@@ -55,7 +61,7 @@ namespace Microservice.Exchange.Endpoints.Rabbitmq
             };
         }
 
-        public IObservable<Either<Message<T>, ConsumerException>> GetObservable()
+        public IObservable<Either<Message<R>, ConsumerException>> GetObservable()
         {
             return _subscriber
                 .GetMessageObservable()
@@ -64,7 +70,7 @@ namespace Microservice.Exchange.Endpoints.Rabbitmq
                                    .MapLeft(inData =>
                                   {
                                       var imessage = (inData as IMessage) == null ? Option<IMessage>.None : Option<IMessage>.Some(inData as IMessage);
-                                      return new Message<T>(imessage)
+                                      return new Message<R>(imessage)
                                       {
                                           Payload = inData.Payload,
                                           Id = inData.Id,
@@ -84,7 +90,7 @@ namespace Microservice.Exchange.Endpoints.Rabbitmq
                     var rabbitMqConfig = AmqpProvider.LoadRabbitmqConfiguration(config);
 
                     _subscriber = AmqpProvider.CreateSubscriber(
-                        MessageHandlerFactory.Create<T, T>(r => r),
+                        _messageHandler,
                         amqpConfiguration.AmqpContexts.FirstOrDefault(),
                         rabbitMqConfig,
                         _rabbitMqConnectionFactory,
