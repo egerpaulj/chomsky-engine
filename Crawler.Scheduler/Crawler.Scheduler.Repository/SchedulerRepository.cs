@@ -16,13 +16,11 @@ namespace Crawler.Scheduler.Repository
         private const string DateStrFormat = "yyyy-MM-dd-HH:mm:ss.fff";
         IMongoDbRepository<CrawlUriDataModel> _crawlUriRepository;
         IMongoDbRepository<UriDataModel> _uriDataRepository;
-        IMongoDbRepository<SourceDataModel> _sourceDataRepository;
 
         public SchedulerRepository(IConfiguration configuration, IJsonConverterProvider jsonConverterProvider)
         {
             _crawlUriRepository = new MongoDbRepository<CrawlUriDataModel>(configuration, new CrawlUriDataConfiguration(), jsonConverterProvider);
             _uriDataRepository = new MongoDbRepository<UriDataModel>(configuration, new UriDataConfiguration(), jsonConverterProvider);
-            _sourceDataRepository = new MongoDbRepository<SourceDataModel>(configuration, new SourceDataConfiguration(), jsonConverterProvider);
         }
 
         public TryOptionAsync<List<UriDataModel>> GetPeriodicUriData()
@@ -53,20 +51,6 @@ namespace Crawler.Scheduler.Repository
                if (!Uri.TryCreate(m.Uri, UriKind.Absolute, out var uri))
                    throw new Exception($"Failed to add Bad Uri: {m.Uri}");
 
-               Guid sourceDataId = Guid.Empty;
-
-               await _sourceDataRepository.Get(GetSourceFilter(uri)).MatchAsync(s => sourceDataId = s.Id, async () =>
-               {
-                   sourceDataId = await _sourceDataRepository.AddOrUpdate(new SourceDataModel
-                   {
-                       Uri = m.Uri,
-                       Name = uri.Host.ToLowerInvariant(),
-                       SourceTypeId = SourceType.Custom,
-                   }).Match(r => r, () => throw new Exception("Failed to add to source data model"));
-               });
-
-               m.SourceId = sourceDataId;
-                
                var guid = await _uriDataRepository.AddOrUpdate(m).Match(g => g, () => throw new Exception("Failed to add Uri Data model"));
 
                await GetUriFilter(uri.AbsoluteUri).Bind(filter => _crawlUriRepository.Get(filter)).Match(r => { }, async () =>
@@ -81,19 +65,14 @@ namespace Crawler.Scheduler.Repository
            });
         }
 
-        public TryOptionAsync<Guid> Add(Option<SourceDataModel> model)
-        {
-            return model.ToTryOptionAsync().Bind(m => _sourceDataRepository.AddOrUpdate(m));
-        }
-
         public TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData()
         {
             return GetUnscheduledCrawlFilter().Bind(filter => _crawlUriRepository.GetMany(filter));
         }
 
-        public TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData()
+        public TryOptionAsync<List<UriDataModel>> GetCollectorUriData()
         {
-            return GetPeriodicCollectorUriFilter().Bind(filter => _sourceDataRepository.GetMany(filter));
+            return GetPeriodicCollectorUriFilter().Bind(filter => _uriDataRepository.GetMany(filter));
         }
 
         public TryOptionAsync<Unit> UpdateCompletedTimeUtcNow(Guid id)
@@ -150,7 +129,7 @@ namespace Crawler.Scheduler.Repository
         {
             return async () =>
             {
-                var filter = Builders<BsonDocument>.Filter.Eq("SourceTypeId", (int)SourceType.Collector);
+                var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Collector);
                 filter &= (Builders<BsonDocument>.Filter.Exists("CronPeriod"));
 
                 return await Task.FromResult(filter);

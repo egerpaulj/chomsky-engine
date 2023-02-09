@@ -60,6 +60,7 @@ namespace Microservice.Amqp.Configuration
                     QueueName = contextSection.GetValue<string>("Queue"),
                     RoutingKey = contextSection.GetValue<string>("RoutingKey"),
                     RetryCount = contextSection.GetValue<int>("RetryCount"),
+                    PrefetchCount = contextSection.GetValue<ushort>("PrefetchCount"),
                 };
 
                 contextConfig.Validate();
@@ -102,6 +103,11 @@ namespace Microservice.Amqp.Configuration
         /// The number of times the message was retried
         /// </summary>
         public int RetryCount { get; set; }
+
+        /// <summary>
+        ///  # of messages to prefetch.
+        /// </summary>
+        public ushort PrefetchCount { get; set; }
 
         public void Validate()
         {
