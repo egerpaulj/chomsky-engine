@@ -193,7 +193,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
                        File.WriteAllText(Path.Combine(_outDirectory.FullName, Guid.NewGuid().ToString()), json, IJsonConverterProvider.TextEncoding);
                        }
                    }
-                   return Unit.Default;
+                   return await Task.FromResult(Unit.Default);
                });
         }
 

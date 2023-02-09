@@ -25,6 +25,7 @@ using Crawler.RequestHandling.Core;
 using Crawler.Stategies.Core;
 using Crawler.WebDriver.Core;
 using LanguageExt;
+using Microsoft.Extensions.Logging;
 
 namespace Crawler.Strategies.General
 {
@@ -46,13 +47,14 @@ namespace Crawler.Strategies.General
         private readonly Dictionary<string, ICrawlContinuationStrategy> _uriToContStrategyMapper;
 
         public CrawlStrategiesMapper(
+            ILogger<ICrawlContinuationStrategy> logger,
             IRequestPublisher requestPublisher, 
             ICrawlerConfigurationService configuration, 
             IWebDriverService webDriver, 
             IMetricRegister metricRegister)
         {
-            _crawlAllContStrategy = new CrawlAllContinuationStrategy(requestPublisher);
-            _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(requestPublisher);
+            _crawlAllContStrategy = new CrawlAllContinuationStrategy(logger, requestPublisher);
+            _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(logger, requestPublisher);
             _crawlTrackLinksContStrategy = new TrackLinksContinuationStrategy(configuration);
 
             _genericStrategy = new CrawlerStrategyGeneric(webDriver, metricRegister);
