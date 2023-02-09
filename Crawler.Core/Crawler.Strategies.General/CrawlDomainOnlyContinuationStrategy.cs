@@ -22,20 +22,26 @@ using System.Linq;
 using System;
 using Crawler.Configuration.Core;
 using Crawler.RequestHandling.Core;
+using Microsoft.Extensions.Logging;
+using Crawler.Core.Strategy;
 
 namespace Crawler.Strategies.General
 {
     public class CrawlDomainOnlyContinuationStrategy : CrawlAllContinuationStrategy
     {
-        public CrawlDomainOnlyContinuationStrategy(IRequestPublisher requestPublisher) 
-        : base( requestPublisher)
+        public CrawlDomainOnlyContinuationStrategy(ILogger<ICrawlContinuationStrategy> logger, IRequestPublisher requestPublisher) 
+        : base( logger, requestPublisher)
         {
         }
 
         protected override IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)
         {
             var baseUri = documentPart.BaseUri.Match(u => u , () => throw new CrawlStrategyException("Document Part must has a Base Uri"));
-            return base.GetRelevantDocumentPartLinks(documentPart)
+
+            var links = base.GetRelevantDocumentPartLinks(documentPart).ToList();
+            _logger.LogInformation($"Found links in {baseUri}: {links.Count()}");
+            
+            return links
             .Where(l => l.Uri.Bind<bool>(u => u.ToLowerInvariant().Contains(baseUri.ToLowerInvariant())).Match(t =>t, false));
         }
     }

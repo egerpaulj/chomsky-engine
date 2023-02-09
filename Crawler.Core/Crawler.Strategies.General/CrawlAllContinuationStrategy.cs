@@ -28,15 +28,18 @@ using Crawler.Core.Strategy;
 using Crawler.Management.Core.RequestHandling.Core;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
+using Microsoft.Extensions.Logging;
 
 namespace Crawler.Stategies.Core
 {
     public class CrawlAllContinuationStrategy : ICrawlContinuationStrategy
     {
+        protected readonly ILogger _logger;
         private readonly IRequestPublisher _requestPublisher;
 
-        public CrawlAllContinuationStrategy(IRequestPublisher requestPublisher)
+        public CrawlAllContinuationStrategy(ILogger<ICrawlContinuationStrategy> logger, IRequestPublisher requestPublisher)
         {
+            _logger = logger;
             _requestPublisher = requestPublisher;
         }
 

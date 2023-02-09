@@ -81,7 +81,7 @@ namespace Crawler.Strategies.General.UnitTest
         public void Crawl_DomainLinks_ContinuationRequestPublished()
         {
             // Arrange
-            _continuationStrategyTestee = new CrawlDomainOnlyContinuationStrategy(_requestPublisherMock.Object);
+            _continuationStrategyTestee = new CrawlDomainOnlyContinuationStrategy(Mock.Of<ILogger<ICrawlContinuationStrategy>>(), _requestPublisherMock.Object);
             var testee = new CrawlerStrategyGeneric(_webDriverMock.Object, Mock.Of<IMetricRegister>());
             var request = new Request(testee, Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee), _crawlRequest);
             var noLinksStored = 0;
@@ -103,7 +103,7 @@ namespace Crawler.Strategies.General.UnitTest
         public void Crawl_AllLinks_ContinuationRequestPublished()
         {
             // Arrange
-            _continuationStrategyTestee = new CrawlAllContinuationStrategy(_requestPublisherMock.Object);
+            _continuationStrategyTestee = new CrawlAllContinuationStrategy(Mock.Of<ILogger<ICrawlContinuationStrategy>>(), _requestPublisherMock.Object);
             var testee = new CrawlerStrategyGeneric(_webDriverMock.Object, Mock.Of<IMetricRegister>());
             var request = new Request(testee, Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee), _crawlRequest);
             var noLinksStored = 0;
