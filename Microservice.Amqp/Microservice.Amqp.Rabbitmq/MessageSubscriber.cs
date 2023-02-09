@@ -92,6 +92,7 @@ namespace Microservice.Amqp.Rabbitmq
 
             _connection = _connectionFactory.CreateConnection();
             _channel = _connection.CreateModel();
+            _channel.BasicQos(0, _rabbitmqConfig.PrefetchCount, false);
             _consumer = new AsyncEventingBasicConsumer(_channel);
 
             _consumer.Received += OnAmqpMessageReceived;
@@ -103,7 +104,7 @@ namespace Microservice.Amqp.Rabbitmq
             try
             {
                 var result = await _messageHandler.HandleMessage(messageEvent.Message.Payload);
-
+                
                 // ACK - message will be removed from queue
                 _channel.BasicAck(messageEvent.DeliveryTag, false);
                 return new Message<R>

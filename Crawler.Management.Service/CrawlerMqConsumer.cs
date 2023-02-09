@@ -14,3 +14,10 @@ public class CrawlerMqConsumer : RabbitMqConsumer<CrawlRequest, CrawlEsResponseM
     {
     }
 }
+
+public class UriConsumer : RabbitMqConsumer<CrawlUri, CrawlUri>
+{
+    public UriConsumer(ILogger<RabbitMqConsumer<CrawlUri, CrawlUri>> logger, IJsonConverterProvider converterProvider, IRabbitMqConnectionFactory rabbitMqConnectionFactory, IMessageHandler<CrawlUri, CrawlUri> messageHandler) : base(logger, converterProvider, rabbitMqConnectionFactory, messageHandler)
+    {
+    }
+}

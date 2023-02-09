@@ -22,13 +22,15 @@ namespace Crawler.Management.Service
         private readonly ILogger<Worker> _logger;
         private readonly IExchangeFactory _exchangeFactory;
         private readonly IConfiguration _configuration;
+        private readonly IAmqpBootstrapper _amqpBootstrapper;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1,1);
 
-        public Worker(ILogger<Worker> logger, IExchangeFactory exchangeFactory, IConfiguration configuration)
+        public Worker(ILogger<Worker> logger, IExchangeFactory exchangeFactory, IConfiguration configuration, IAmqpBootstrapper amqpBootstrapper)
         {
             _logger = logger;
             _exchangeFactory = exchangeFactory;
             _configuration = configuration;
+            _amqpBootstrapper = amqpBootstrapper;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -45,10 +47,24 @@ namespace Crawler.Management.Service
                 .Match(r => r, () => throw new Exception("Empty result for Exchange"), ex => throw ex);
 
 
-                await exchange.Start()
+            await exchange.Start()
                 .Match(
                         r => r,
                         () => throw new Exception("Failed to Start Exchange"),
+                        ex => throw ex);
+
+            _logger.LogInformation("Starting Uri Exchange at: {time}", DateTime.Now);
+            var uriExchange = await _exchangeFactory
+                .CreateMessageExchange<CrawlUri, CrawlUri>(
+                    Option<IConfiguration>.Some(_configuration),
+                    "UriExchange")
+                .Match(r => r, () => throw new Exception("Empty result for URI Exchange"), ex => throw ex);
+
+
+            await uriExchange.Start()
+                .Match(
+                        r => r,
+                        () => throw new Exception("Failed to Start URI Exchange"),
                         ex => throw ex);
             
             await _semaphore.WaitAsync();

@@ -125,6 +125,7 @@ namespace Microservice.Amqp.Rabbitmq
                 Username = configuration.Username,
                 Password = configuration.Password,
                 QueueName = amqpContext.QueueName,
+                PrefetchCount = amqpContext.PrefetchCount
             };
         }
 

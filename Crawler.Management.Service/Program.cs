@@ -26,6 +26,8 @@ using Microservice.Serialization;
 using Crawler.Microservice.Core;
 using Microservice.Amqp;
 using Crawler.Core.Requests;
+using Crawler.RequestHandling.Core;
+using Crawler.Management.Core.RequestHandling.Core.Amqp;
 
 namespace Crawler.Management.Service
 {
@@ -53,10 +55,10 @@ namespace Crawler.Management.Service
                         DocumentName = "crawl_request"
                     };
                     services.AddSingleton<IDatabaseConfiguration>(databaseConfiguration);
-                    services.AddTransient<IMongoDbRepository<CrawlRequestModel>, MongoDbRepository<CrawlRequestModel>>();
-                    services.AddTransient<ISchedulerRepository, SchedulerRepository>();
-                    services.AddTransient<IConfigurationRepository, MongoDbConfigurationRepository>();
-                    services.AddTransient<ICrawlerConfigurationService, CrawlerConfigurationService>();
+                    services.AddSingleton<IMongoDbRepository<CrawlRequestModel>, MongoDbRepository<CrawlRequestModel>>();
+                    services.AddSingleton<ISchedulerRepository, SchedulerRepository>();
+                    services.AddSingleton<IConfigurationRepository, MongoDbConfigurationRepository>();
+                    services.AddSingleton<ICrawlerConfigurationService, CrawlerConfigurationService>();
                     
                     // Cache Data
                     services.AddTransient<ICache, CrawlerCache>();
@@ -73,8 +75,12 @@ namespace Crawler.Management.Service
 
                     // Crawl Strategies mapped using URI
                     services.AddTransient<ICrawlStrategyMapper, CrawlStrategiesMapper>();
+                    services.AddTransient<IRequestPublisher, AmqpRequestPublisher>();
+                    services.AddSingleton<IAmqpProvider, AmqpProvider>();
                     services.AddTransient<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
+                    services.AddTransient<IAmqpBootstrapper, AmqpBootstrapper>();
                     services.AddTransient<IMessageHandler<CrawlRequest, CrawlEsResponseModel>, RabbitMqCrawlRequestHandler>();
+                    services.AddTransient<IMessageHandler<CrawlUri, CrawlUri>, RabbitMqUriHandler>();
 
                     // Console.WriteLine(typeof(CrawlRequestTransformer).AssemblyQualifiedName);
                     // Console.ReadLine();

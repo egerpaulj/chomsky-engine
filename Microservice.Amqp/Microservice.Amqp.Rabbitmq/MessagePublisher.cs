@@ -25,12 +25,13 @@ using RabbitMQ.Client;
 
 namespace Microservice.Amqp.Rabbitmq
 {
-    public class MessagePublisher : IMessagePublisher
+    public class MessagePublisher : IMessagePublisher, IDisposable
     {
         private readonly RabbitMqPublisherConfig _config;
         private readonly string _routingKey;
         private readonly IConnectionFactory _connectionFactory;
         private readonly IJsonConverterProvider _jsonConverterProvider;
+        private IModel _channel;
         private bool disposedValue;
 
         public MessagePublisher(RabbitMqPublisherConfig rabbitmqConfig, IRabbitMqConnectionFactory connectionFactory, IJsonConverterProvider jsonConverterProvider)
@@ -40,6 +41,10 @@ namespace Microservice.Amqp.Rabbitmq
             _routingKey = _config.RoutingKey.Match(r => r, () => string.Empty);
 
             _connectionFactory = connectionFactory.CreateConnectionFactory(_config);
+            _connectionFactory.HandshakeContinuationTimeout = TimeSpan.FromMinutes(2);
+
+            var connection = _connectionFactory.CreateConnection();
+            _channel = connection.CreateModel();
         }
 
         public TryOptionAsync<Unit> Publish<T>(Option<Message<T>> message)
@@ -66,36 +71,54 @@ namespace Microservice.Amqp.Rabbitmq
 
         private Unit Publish<T>(string exchange, string routingKey, Message<T> message)
         {
-            using (var connection = _connectionFactory.CreateConnection())
-            using (var channel = connection.CreateModel())
+            var corrId = message.CorrelationId.Match(c => c, () => Guid.NewGuid());
+            var id = message.Id.Match(c => c, () => Guid.NewGuid());
+
+            // Create Custom Properties for the message.
+            var properties = _channel.CreateBasicProperties();
+            properties.Persistent = true;
+            properties.ContentType = message.MessageType;
+            properties.CorrelationId = corrId.ToString();
+            // need to use AMQP timestamps for RabbitMQ to recognize it
+            properties.Timestamp = new AmqpTimestamp((Int32)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
+            properties.Headers = new Dictionary<string, object>();
+            properties.Headers.Add("RetryCount", message.RetryCount.Match(r => r, () => 0));
+            properties.Headers.Add("Id", Encoding.UTF8.GetBytes(id.ToString()));
+            message.Context.Match(c => properties.Headers.Add("Context", Encoding.UTF8.GetBytes(c)), () => { });
+
+            _channel.BasicPublish(
+                exchange,
+                routingKey,
+                false,
+                properties,
+                Encoding.UTF8.GetBytes(
+                    _jsonConverterProvider.Serialize(
+                        message.Payload.Match(p => p, () => throw new Exception("Not allowed to publish a message without a payload")))));
+
+            return Unit.Default;
+
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
+                if (disposing)
+                {
+                    _channel.Dispose();
+                }
 
-                var corrId = message.CorrelationId.Match(c => c, () => Guid.NewGuid());
-                var id = message.Id.Match(c => c, () => Guid.NewGuid());
+                _channel = null;
 
-                // Create Custom Properties for the message.
-                var properties = channel.CreateBasicProperties();
-                properties.Persistent = true;
-                properties.ContentType = message.MessageType;
-                properties.CorrelationId = corrId.ToString();
-                // need to use AMQP timestamps for RabbitMQ to recognize it
-                properties.Timestamp = new AmqpTimestamp((Int32)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
-                properties.Headers = new Dictionary<string, object>();
-                properties.Headers.Add("RetryCount", message.RetryCount.Match(r => r, () => 0));
-                properties.Headers.Add("Id", Encoding.UTF8.GetBytes(id.ToString()));
-                message.Context.Match(c => properties.Headers.Add("Context", Encoding.UTF8.GetBytes(c)), () => { });
-
-                channel.BasicPublish(
-                    exchange,
-                    routingKey,
-                    false,
-                    properties,
-                    Encoding.UTF8.GetBytes(
-                        _jsonConverterProvider.Serialize(
-                            message.Payload.Match(p => p, () => throw new Exception("Not allowed to publish a message without a payload")))));
-
-                return Unit.Default;
+                disposedValue = true;
             }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
