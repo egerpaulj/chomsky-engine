@@ -2,26 +2,13 @@ Crawler> db.uri.find()
 [
   {
     _id: '1f010ea4-1c5e-4d73-94c9-15a29b05bf6b',
-    Uri: 'https://www.theguardian.com/uk',
+    Uri: 'https://www.theguardian.com',
     RoutingKey: null,
     SourceId: '0cfb4776-1bca-443a-b40e-98b48ee348a4',
     UriTypeId: 2,
     CronPeriod: '0/15 * * * * ?'
-  } DUUUUUUUUDE!
+  } 
 ]
-Crawler> db.source_data.find()
-[
-  {
-    _id: '0cfb4776-1bca-443a-b40e-98b48ee348a4',
-    UriId: '1f010ea4-1c5e-4d73-94c9-15a29b05bf6b',
-    Name: 'Guardian news paper',
-    Uri: 'https://www.theguardian.com/uk',
-    SourceTypeId: 2,
-    CronPeriod: '0/15 * * * * ?'
-  }
-]
-
-db.source_data.deleteMany({SourceTypeId: 1})
 
 db.crawl_uri.deleteMany({CompletedTimestamp: null})
 db.uri.deleteMany({UriTypeId: 1})
@@ -47,6 +34,38 @@ db.uri.deleteMany({UriTypeId: 1})
 
 
 ---------------
+working
+[
+  {
+    _id: 'bff0ed86-e62d-4047-87d9-5561981fcf03',
+    ContinuationStrategyDefinition: 3,
+    Uri: '*',
+    Host: 'www.theguardian.com',
+    DocumentPartDefinition: {
+      BaseUri: [ 'https://www.theguardian.com' ],
+      Raw: [],
+      StyleList: [],
+      SubParts: [],
+      Anomalies: [ [] ],
+      DocPartType: [ 7 ],
+      Selector: [
+        {
+          Xpath: [ './/*[not(self::html)]' ],
+          ContentSpecificMatch: []
+        }
+      ]
+    },
+    UiActions: null,
+    ShouldDownloadContent: false,
+    ShouldProvideRawSource: false,
+    IsUrlCollector: false,
+    BaseUri: 'https://www.theguardian.com'
+  }
+]
+
+
+
+----
 
 
 
@@ -57,7 +76,7 @@ db.uri.deleteMany({UriTypeId: 1})
   Host: 'www.theguardian.com',
   DocumentPartDefinition: {
     Text: [],
-    BaseUri: [],
+    BaseUri: 'www.theguardian.com',
     Raw: [],
     StyleList: [],
     SubParts: [ [] ],
