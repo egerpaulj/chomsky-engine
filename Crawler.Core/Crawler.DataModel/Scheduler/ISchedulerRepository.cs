@@ -23,7 +23,7 @@ namespace Crawler.DataModel.Scheduler
     {
          TryOptionAsync<UriDataModel> GetUriData(Option<string> uri);
          TryOptionAsync<UriDataModel> GetUriData(Option<Guid> id);
-         TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData();
+         TryOptionAsync<List<UriDataModel>> GetCollectorUriData();
          TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData();
          TryOptionAsync<List<UriDataModel>> GetPeriodicUriData();
          TryOptionAsync<bool> UriLinkExists(Option<string> uri);

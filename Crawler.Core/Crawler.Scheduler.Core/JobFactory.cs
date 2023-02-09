@@ -66,7 +66,7 @@ public class JobFactory : IJobFactory
     public async Task<IEnumerable<Tuple<IJobDetail, ITrigger>>> GetUriCollectorJobs()
     {
         var sourceData = await _crawlConfiguration
-                            .GetCollectorSourceData()
+                            .GetCollectorUri()
                             .Match(r => r, () => throw new Exception("Failed to get Url collector data"), ex => throw ex);
 
         return sourceData.Select(s =>

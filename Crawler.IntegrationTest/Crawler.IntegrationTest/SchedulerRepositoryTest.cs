@@ -42,7 +42,7 @@ namespace Crawler.IntegrationTest
         public async Task GetCollectorCrawlData_ThenNotEmpty()
         {
             var testee = CreateTestee();
-            var data = await testee.GetCollectorSourceData().Match(r => r, () => throw new Exception("Failed to get collector crawl data"));
+            var data = await testee.GetCollectorUriData().Match(r => r, () => throw new Exception("Failed to get collector crawl data"));
 
             Assert.IsTrue(data.Count > 0);
         }
@@ -59,19 +59,11 @@ namespace Crawler.IntegrationTest
         private async Task CreateTestData()
         {
             var testee = CreateTestee();
-            var sourceGuid = await testee.Add(new SourceDataModel
-            {
-                CronPeriod = "* * * * * *",
-                Name = "INtegration test",
-                Uri = "https://www.test.com",
-                SourceTypeId = SourceType.Collector
-            }).Match(r => r, () => throw new Exception("Failed to store test data"));
 
             var uriGuid = await testee.Add(new UriDataModel
             {
                 CronPeriod = "* * * * * *",
                 RoutingKey = "Request.Test*",
-                SourceId = sourceGuid,
                 Uri = "https://www.test.com/somewhereSpecific",
                 UriTypeId = UriType.Periodic
             }).Match(r => r, () => throw new Exception("Failed to store uri data model"));

@@ -74,9 +74,9 @@ namespace Crawler.Configuration.Core
            }));
         }
 
-        public TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData()
+        public TryOptionAsync<List<UriDataModel>> GetCollectorUri()
         {
-            return _schedulerRepository.GetCollectorSourceData();
+            return _schedulerRepository.GetCollectorUriData();
         }
 
         public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)
@@ -117,9 +117,10 @@ namespace Crawler.Configuration.Core
                    .MatchAsync(_ =>
                        Task.CompletedTask,
                        async () =>
+                       
                        await _schedulerRepository.Add(new UriDataModel
                        {
-                           UriTypeId = UriType.Onetime,
+                           UriTypeId = UriType.Found,
                            Uri = link.Uri.Match(u => u, () => throw new Exception("Uri can't be empty")),
                        })
                        .Match(r => r, () => throw new Exception("Failed to add link to DB")), ex => throw ex);
@@ -177,6 +178,5 @@ namespace Crawler.Configuration.Core
                 IsUrlCollector = true
             };
         }
-
     }
 }

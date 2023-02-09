@@ -79,9 +79,9 @@ namespace Crawler.Configuration.Client
             return _httpClientService.Send<SingleValue, CrawlRequestModel>( Guid.NewGuid(), new SingleValue{Value = uri.Match(u => u, () => throw new Exception("Uri is empty"))}, _getCollectorCrawlRequestUri, HttpMethod.Get);
         }
 
-        public TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData()
+        public TryOptionAsync<List<UriDataModel>> GetCollectorUri()
         {
-            return _httpClientService.Send<SingleValue, List<SourceDataModel>>( Guid.NewGuid(), new SingleValue(), _getCollectorSourceDataUri, HttpMethod.Get);
+            return _httpClientService.Send<SingleValue, List<UriDataModel>>( Guid.NewGuid(), new SingleValue(), _getCollectorSourceDataUri, HttpMethod.Get);
         }
 
 

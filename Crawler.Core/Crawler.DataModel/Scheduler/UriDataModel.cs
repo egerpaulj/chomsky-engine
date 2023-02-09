@@ -23,6 +23,9 @@ namespace Crawler.DataModel.Scheduler
     {
         Onetime = 1,
         Periodic = 2,
+        Found = 3,
+        Custom = 4,
+        Collector = 5
 
     }
     public class UriDataModel : IDataModel
@@ -34,8 +37,6 @@ namespace Crawler.DataModel.Scheduler
         public string Uri { get; set; }
 
         public string RoutingKey { get; set; }
-
-        public Guid SourceId { get; set; }
 
         public UriType UriTypeId { get; set; }
 

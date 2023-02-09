@@ -6,6 +6,7 @@ using Caching.Redis;
 using Crawler.Core.Cache;
 using Crawler.Core.Management;
 using Crawler.Core.Metrics;
+using Crawler.Core.Strategy;
 using Crawler.Management.Core.RequestHandling.Core.FileBased;
 using Crawler.Microservice.Core;
 using Crawler.RequestHandling.Core;
@@ -100,7 +101,7 @@ namespace Crawler.IntegrationTest
             var redisCache = new RedisCacheProvider(Mock.Of<ILogger<RedisCacheProvider>>(), new RedisConfiguration(_appConfig), new JsonConverterProvider());
             var crawlerCache = new CrawlerCache(redisCache);
 
-            var strategyMapper = new CrawlStrategiesMapper(testRepository, crawlConfiguration, webDriver, metricRegister);
+            var strategyMapper = new CrawlStrategiesMapper(_loggerFactory.CreateLogger<ICrawlContinuationStrategy>(), testRepository, crawlConfiguration, webDriver, metricRegister);
 
             _testee = new CrawlerManager(_loggerFactory.CreateLogger<CrawlerManager>(), crawlConfiguration, crawlerCache, _metricRegisterMock.Object, _requestRepository, strategyMapper);
         }
