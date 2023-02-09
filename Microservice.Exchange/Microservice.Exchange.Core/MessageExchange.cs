@@ -138,6 +138,11 @@ namespace Microservice.Exchange
 
         private async Task<Unit> ProcessMessage(Message<T> dataIn)
         {
+            if(dataIn.Payload.IsNone)
+            {
+                _logger.LogInformation($"#### Microservice Exchange: {_exchangeName}: Received Empty Message: Nothing to do");
+                return Unit.Default;
+            }
             _logger.LogInformation($"#### Microservice Exchange: {_exchangeName}: Received Message: {dataIn.Id}. CorrelationId: {dataIn.CorrelationId}");
             _exchangeMetrics.IncInput(typeof(T).Name);
 
