@@ -96,7 +96,7 @@ namespace Crawler.Core.Management
             throw new NotImplementedException();
         }
 
-        public TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData()
+        public TryOptionAsync<List<UriDataModel>> GetCollectorUri()
         {
             throw new NotImplementedException();
         }

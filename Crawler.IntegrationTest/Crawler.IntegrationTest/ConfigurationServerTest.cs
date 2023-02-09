@@ -94,7 +94,7 @@ namespace Crawler.IntegrationTest
         public async Task GetCollectorCrawlData_ThenNotEmpty()
         {
             var testee = CreateTestee();
-            var data = await testee.GetCollectorSourceData().Match(r => r, () => throw new Exception("Failed to get collector crawl data"));
+            var data = await testee.GetCollectorUri().Match(r => r, () => throw new Exception("Failed to get collector crawl data"));
 
             Assert.IsTrue(data.Count > 0);
         }

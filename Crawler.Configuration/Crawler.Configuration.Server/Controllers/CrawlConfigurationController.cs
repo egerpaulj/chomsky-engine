@@ -80,10 +80,10 @@ namespace Crawler.Configuration.Server.Controllers
         }
 
         [Route("getcollectorsourcedata")]
-        public async Task<List<SourceDataModel>> GetCollectorSourceData()
+        public async Task<List<UriDataModel>> GetCollectorSourceData()
         {
-            return await _configurationService.GetCollectorSourceData().Match(r => r, 
-            () => new List<SourceDataModel>(), 
+            return await _configurationService.GetCollectorUri().Match(r => r, 
+            () => new List<UriDataModel>(), 
             e => throw new Exception($"Error obtaining Collector Source data", e));
         }
 

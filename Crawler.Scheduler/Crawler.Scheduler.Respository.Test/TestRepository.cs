@@ -35,12 +35,12 @@ namespace Crawler.Scheduler.Respository.Test
         [TestMethod]
         public async Task ListAllCollectorSource()
         {
-            var results = await _testee.GetCollectorSourceData().Match(r => r, () => throw new Exception("Empty result"), ex => throw ex);
+            var results = await _testee.GetCollectorUriData().Match(r => r, () => throw new Exception("Empty result"), ex => throw ex);
 
             if(results.Any())
             {
                 foreach(var result in results)
-                    Console.WriteLine($"Id:{result.Id}, {result.Uri}: {result.CronPeriod}, Name: {result.Name},  RoutingKey: {result.SourceTypeId}");
+                    Console.WriteLine($"Id:{result.Id}, {result.Uri}: {result.CronPeriod}, UriType: {result.UriTypeId}");
             }
         }
 

@@ -51,7 +51,7 @@ namespace Crawler.Configuration.Core
 
         TryOptionAsync<Unit> StoreDetectedUrls(Option<List<DocumentPartLink>> links, Option<Guid> correlationId);
 
-        TryOptionAsync<List<SourceDataModel>> GetCollectorSourceData();
+        TryOptionAsync<List<UriDataModel>> GetCollectorUri();
         TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData();
         TryOptionAsync<List<UriDataModel>> GetPeriodicUri();
         TryOptionAsync<Unit> Add(Option<CrawlUriDataModel> crawlUri);
