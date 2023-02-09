@@ -39,6 +39,7 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
         var response = await strategy.Crawl(request).Match(r => r, () => throw new Exception("Empty result when crawling"), ex => throw ex);
 
         _logger.LogInformation($"Completed Crawl: {message.Id}");
-        return new CrawlEsResponseModel(response.Map());
+        return message.ContinuationStrategy.Match(s => s, () => CrawlContinuationStrategy.None) 
+                        == CrawlContinuationStrategy.TrackLinksOnly ? null: new CrawlEsResponseModel(response.Map());
     }
 }
