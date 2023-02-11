@@ -26,6 +26,7 @@ using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Parser.DocumentParts.Serialilzation;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
+using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
 using Microservice.Serialization;
@@ -179,7 +180,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
                });
         }
 
-        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links)
+        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links, UriType uriType)
         {
             return Init().Bind<Unit, Unit>(u => async () =>
                {

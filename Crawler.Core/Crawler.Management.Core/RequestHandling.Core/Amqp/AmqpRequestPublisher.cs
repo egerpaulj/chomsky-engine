@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
+using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
 using Microservice.Amqp;
@@ -33,8 +34,8 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
 
         public AmqpRequestPublisher(IAmqpProvider amqpProvider)
         {
-            _requestPublisher = amqpProvider.GetPublisher(AmqpRequestProvider.RequestProviderContext).Match(p => p, ()=> throw new System.Exception("Failed to get AMQP request publisher"), ex => {throw ex;}).Result;
-            _uriPublisher = amqpProvider.GetPublisher(AmqpRequestProvider.UriProviderContext).Match(p => p, ()=> throw new System.Exception("Failed to get AMQP request publisher"), ex => {throw ex;}).Result;
+            _requestPublisher = amqpProvider.GetPublisher(AmqpRequestProvider.RequestProviderContext).Match(p => p, () => throw new System.Exception("Failed to get AMQP request publisher"), ex => { throw ex; }).Result;
+            _uriPublisher = amqpProvider.GetPublisher(AmqpRequestProvider.UriProviderContext).Match(p => p, () => throw new System.Exception("Failed to get AMQP request publisher"), ex => { throw ex; }).Result;
         }
 
 
@@ -43,22 +44,22 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
             return _requestPublisher.Publish<CrawlRequest>(request);
         }
 
-        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links)
+        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> linksList, UriType uriType)
         {
-            return links.ToTryOptionAsync().Bind(Publish);
-        }
-
-        private TryOptionAsync<Unit> Publish(List<DocumentPartLink> links)
-        {
-            return async () => 
+            return linksList.ToTryOptionAsync().Bind<List<DocumentPartLink>, Unit>(links => async () =>
             {
                 foreach (var l in links)
                 {
-                    await _uriPublisher.Publish<CrawlUri>(new CrawlUri{Uri = l.Uri}).Match(r => r, () => throw new Exception($"Failed to publish uri: {l.Uri}"));
+                    await _uriPublisher.Publish<CrawlUri>(new CrawlUri
+                    {
+                        Uri = l.Uri,
+                        UriTypeId = uriType
+                    }).Match(r => r, () => throw new Exception($"Failed to publish uri: {l.Uri}"));
                 }
 
                 return Unit.Default;
-            };
+            });
         }
     }
+
 }

@@ -101,7 +101,7 @@ namespace Crawler.IntegrationTest
             var redisCache = new RedisCacheProvider(Mock.Of<ILogger<RedisCacheProvider>>(), new RedisConfiguration(_appConfig), new JsonConverterProvider());
             var crawlerCache = new CrawlerCache(redisCache);
 
-            var strategyMapper = new CrawlStrategiesMapper(_loggerFactory.CreateLogger<ICrawlContinuationStrategy>(), testRepository, crawlConfiguration, webDriver, metricRegister);
+            var strategyMapper = new CrawlStrategiesMapper(_loggerFactory.CreateLogger<ICrawlContinuationStrategy>(), testRepository, webDriver, metricRegister);
 
             _testee = new CrawlerManager(_loggerFactory.CreateLogger<CrawlerManager>(), crawlConfiguration, crawlerCache, _metricRegisterMock.Object, _requestRepository, strategyMapper);
         }

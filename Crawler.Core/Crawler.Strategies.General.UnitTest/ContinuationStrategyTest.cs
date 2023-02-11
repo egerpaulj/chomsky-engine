@@ -33,7 +33,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Linq;
-
+using Crawler.DataModel.Scheduler;
 
 namespace Crawler.Strategies.General.UnitTest
 {
@@ -87,7 +87,7 @@ namespace Crawler.Strategies.General.UnitTest
             var noLinksStored = 0;
 
             _requestPublisherMock
-            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>()))
+            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
             .Callback<Option<List<DocumentPartLink>>>((l) => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
 
@@ -108,7 +108,7 @@ namespace Crawler.Strategies.General.UnitTest
             var request = new Request(testee, Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee), _crawlRequest);
             var noLinksStored = 0;
             _requestPublisherMock
-            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>()))
+            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
             .Callback<Option<List<DocumentPartLink>>>((l) => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
 
@@ -118,7 +118,7 @@ namespace Crawler.Strategies.General.UnitTest
             //ASSERT
             var documentPartAutodetect = CrawlerStrategyGenericTest.GetDocumentPart<DocumentPartAutodetect>(result);
             _requestPublisherMock
-            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>()))
+            .Setup(m => m.PublishUri(It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
             .Callback<Option<List<DocumentPartLink>>>(l => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
             

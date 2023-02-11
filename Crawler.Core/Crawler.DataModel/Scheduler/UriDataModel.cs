@@ -41,5 +41,7 @@ namespace Crawler.DataModel.Scheduler
         public UriType UriTypeId { get; set; }
 
         public string CronPeriod { get; set; }
+
+        public bool IsCompleted { get; set; }
     }
 }

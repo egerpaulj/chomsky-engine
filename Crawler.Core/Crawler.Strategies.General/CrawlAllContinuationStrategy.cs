@@ -52,7 +52,7 @@ namespace Crawler.Stategies.Core
             .Bind(r => r.RequestDocumentPart)
             .ToTryOptionAsync()
             .Bind<DocumentPart, List<DocumentPartLink>>(dp => GetDocumentPartLinks(dp))
-            .Bind<List<DocumentPartLink>, Unit>(links => StoreUriList(links, correlationId));
+            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(links, DataModel.Scheduler.UriType.Onetime));
         }
 
         protected virtual IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)
@@ -80,14 +80,6 @@ namespace Crawler.Stategies.Core
 
                 return await Task.FromResult(links.ToList());
             };
-        }
-
-        private TryOptionAsync<Unit> StoreUriList(List<DocumentPartLink> documentPartLinks, Guid correlationId)
-        {
-            if(!documentPartLinks.Any()) 
-                return async () => await Task.FromResult(Unit.Default);
-
-            return _requestPublisher.PublishUri(documentPartLinks);
         }
     }
 }
