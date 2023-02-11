@@ -21,16 +21,19 @@ using Crawler.Configuration.Core;
 using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Results;
 using Crawler.Core.Strategy;
+using Crawler.DataModel.Scheduler;
+using Crawler.RequestHandling.Core;
 using LanguageExt;
 
 namespace Crawler.Strategies.General
 {
     public class TrackLinksContinuationStrategy : ICrawlContinuationStrategy
     {
-        private readonly ICrawlerConfigurationService _crawlerConfiguration;
-        public TrackLinksContinuationStrategy(ICrawlerConfigurationService crawlerConfiguration)
+        private readonly IRequestPublisher _requestPublisher;
+
+        public TrackLinksContinuationStrategy(IRequestPublisher requestPublisher)
         {
-            _crawlerConfiguration = crawlerConfiguration;
+            _requestPublisher = requestPublisher;
         }
         
         public TryOptionAsync<Unit> Apply(Option<CrawlResponse> response)
@@ -43,7 +46,7 @@ namespace Crawler.Strategies.General
             .Bind(r => r.RequestDocumentPart)
             .ToTryOptionAsync()
             .Bind<DocumentPart, List<DocumentPartLink>>(dp => GetDocumentPartLinks(dp))
-            .Bind<List<DocumentPartLink>, Unit>(links => _crawlerConfiguration.StoreDetectedUrls(links, correlationId));
+            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(links, UriType.Found));
         }
 
         protected virtual IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)

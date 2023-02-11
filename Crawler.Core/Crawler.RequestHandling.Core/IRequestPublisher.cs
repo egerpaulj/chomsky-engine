@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Requests;
+using Crawler.DataModel.Scheduler;
 using LanguageExt;
 
 namespace Crawler.RequestHandling.Core
@@ -23,6 +24,6 @@ namespace Crawler.RequestHandling.Core
     public interface IRequestPublisher
     {
          TryOptionAsync<Unit> PublishRequest(Option<CrawlRequest> request);
-         TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links);
+         TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links, UriType uriType);
     }
 }

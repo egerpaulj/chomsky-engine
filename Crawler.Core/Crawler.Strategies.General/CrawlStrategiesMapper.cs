@@ -49,13 +49,12 @@ namespace Crawler.Strategies.General
         public CrawlStrategiesMapper(
             ILogger<ICrawlContinuationStrategy> logger,
             IRequestPublisher requestPublisher, 
-            ICrawlerConfigurationService configuration, 
             IWebDriverService webDriver, 
             IMetricRegister metricRegister)
         {
             _crawlAllContStrategy = new CrawlAllContinuationStrategy(logger, requestPublisher);
             _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(logger, requestPublisher);
-            _crawlTrackLinksContStrategy = new TrackLinksContinuationStrategy(configuration);
+            _crawlTrackLinksContStrategy = new TrackLinksContinuationStrategy(requestPublisher);
 
             _genericStrategy = new CrawlerStrategyGeneric(webDriver, metricRegister);
 
