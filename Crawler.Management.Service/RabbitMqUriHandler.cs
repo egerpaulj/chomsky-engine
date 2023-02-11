@@ -25,35 +25,30 @@ public class RabbitMqUriHandler : IMessageHandler<CrawlUri, CrawlUri>
 
     public async Task<CrawlUri> HandleMessage(Option<CrawlUri> m)
     {
-        var uri = m.Bind(m => m.Uri).Match(mes => mes, () => throw new System.Exception("Empty message"));
-        _logger.LogInformation($"Procesing Uri: {uri}");
+        var crawlUri = m.Match(mes => mes, () => throw new System.Exception("Empty message"));
+        var uri = crawlUri.Uri.Match(u => u, () => throw new Exception("Uri is empty"));
+
+        _logger.LogInformation($"Procesing Uri: {uri}: {crawlUri.UriTypeId}");
 
         await _schedulerRepository.UriLinkExists(uri.ToLowerInvariant())
-        .Match(_ => {},
-        async () => {
-            _logger.LogInformation($"Storing new Uri: {uri}");
-            
-            var id = await _schedulerRepository
-                .Add(new UriDataModel
-                {
-                    UriTypeId = UriType.Onetime,
-                    RoutingKey = "requests",
-                    Uri = uri.ToLowerInvariant()
-                })
-                .Match(r => r, () => throw new Exception($"Failed to store: {uri}"), ex => throw ex);
-
-            _logger.LogInformation($"Adding Uri for scheduling: {uri}");
-
-            await _schedulerRepository
-            .Add(new CrawlUriDataModel
+        .Match(_ => { },
+            async () =>
             {
-                UriId = id
-            })
-            .Match(r => r, () => throw new Exception($"Failed to add for scheduling: {uri}"), ex => throw ex);
+                _logger.LogInformation($"Storing new Uri: {uri}");
 
-        },
-        ex => throw ex);
+                var id = await _schedulerRepository
+                    .Add(new UriDataModel
+                    {
+                        UriTypeId = crawlUri.UriTypeId,
+                        RoutingKey = "requests",
+                        Uri = uri.ToLowerInvariant()
+                    })
+                    .Match(r => r, () => throw new Exception($"Failed to store: {uri}"), ex => throw ex);
 
-        return m.Match(m => m, () => throw new Exception("Not possible"));
+            },
+            ex => throw ex);
+
+        return crawlUri;
     }
 }
+
