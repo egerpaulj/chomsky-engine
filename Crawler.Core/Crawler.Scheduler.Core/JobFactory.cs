@@ -53,6 +53,8 @@ public interface IJobFactory
     Task<IEnumerable<Tuple<IJobDetail, ITrigger>>> GetPeriodicUriJobs();
     Tuple<IJobDetail, ITrigger> GetUnscheduledCrawlsJob();
     Task<IEnumerable<Tuple<IJobDetail, ITrigger>>> GetUriCollectorJobs();
+    Tuple<IJobDetail, ITrigger> GetFoundUriProcessingJob();
+    Tuple<IJobDetail, ITrigger> GetOnetimeUriProcessingJob();
 }
 
 public class JobFactory : IJobFactory
@@ -109,6 +111,36 @@ public class JobFactory : IJobFactory
     public Tuple<IJobDetail, ITrigger> GetUnscheduledCrawlsJob()
     {
         var unscheduledJob = JobBuilder.Create<UnscheduledUriCrawlJob>().WithDescription("Schedule unpublished crawls").Build();
+        var unscheduledTrigger = TriggerBuilder.Create()
+                .WithSimpleSchedule(s => 
+                {
+                    s.WithIntervalInSeconds(15);
+                    s.RepeatForever();
+                })
+                .ForJob(unscheduledJob)
+                .Build();
+
+        return new Tuple<IJobDetail, ITrigger>(unscheduledJob, unscheduledTrigger);
+    }
+
+    public Tuple<IJobDetail, ITrigger> GetFoundUriProcessingJob()
+    {
+        var unscheduledJob = JobBuilder.Create<FoundUriJob>().WithDescription("Process URIs found by Collectors").Build();
+        var unscheduledTrigger = TriggerBuilder.Create()
+                .WithSimpleSchedule(s => 
+                {
+                    s.WithIntervalInSeconds(15);
+                    s.RepeatForever();
+                })
+                .ForJob(unscheduledJob)
+                .Build();
+
+        return new Tuple<IJobDetail, ITrigger>(unscheduledJob, unscheduledTrigger);
+    }
+
+    public Tuple<IJobDetail, ITrigger> GetOnetimeUriProcessingJob()
+    {
+        var unscheduledJob = JobBuilder.Create<OnetimeUriJob>().WithDescription("Process Unscheduled Onetime URIs").Build();
         var unscheduledTrigger = TriggerBuilder.Create()
                 .WithSimpleSchedule(s => 
                 {

@@ -39,12 +39,12 @@ namespace Crawler.Configuration.Core
 
         public TryOptionAsync<Unit> Add(Option<CrawlUriDataModel> crawlUri)
         {
-            return _schedulerRepository.Add(crawlUri).Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
+            return _schedulerRepository.AddOrUpdate(crawlUri).Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
         }
 
         public TryOptionAsync<Unit> Add(Option<UriDataModel> sourceData)
         {
-            return _schedulerRepository.Add(sourceData).Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
+            return _schedulerRepository.AddOrUpdate(sourceData).Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
         }
 
         public TryOptionAsync<CrawlRequest> CreateRequest(Option<string> uri, Option<Guid> guid, Option<Guid> crawlId)
@@ -118,7 +118,7 @@ namespace Crawler.Configuration.Core
                        Task.CompletedTask,
                        async () =>
                        
-                       await _schedulerRepository.Add(new UriDataModel
+                       await _schedulerRepository.AddOrUpdate(new UriDataModel
                        {
                            UriTypeId = UriType.Found,
                            Uri = link.Uri.Match(u => u, () => throw new Exception("Uri can't be empty")),

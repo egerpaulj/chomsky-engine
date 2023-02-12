@@ -26,15 +26,15 @@ using Microsoft.Extensions.Logging;
 using Quartz;
 namespace Crawler.Scheduler.Core
 {
-    public class UnscheduledUriCrawlJob : IJob
+    public class OnetimeUriJob : IJob
     {
-        private ILogger<UnscheduledUriCrawlJob> _logger;
+        private ILogger<OnetimeUriJob> _logger;
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
 
         private readonly IRequestPublisher _requestPublisher;
         private readonly ISchedulerRepository _schedulerRepository;
 
-        public UnscheduledUriCrawlJob(ILogger<UnscheduledUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher, ISchedulerRepository schedulerRepository)
+        public OnetimeUriJob(ILogger<OnetimeUriJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher, ISchedulerRepository schedulerRepository)
         {
             _logger = logger;
             _crawlerConfiguration = crawlerConfiguration;
@@ -50,21 +50,25 @@ namespace Crawler.Scheduler.Core
 
         private TryOptionAsync<Unit> ScheduleUriCrawls()
         {
-            return _schedulerRepository.GetUnscheduledCrawlUriData().Bind(list => Schedule(list));
+            return _schedulerRepository.GetIncompleteOnetimeUris().Bind(list => Schedule(list));
         }
 
-        private TryOptionAsync<Unit> Schedule(List<CrawlUriDataModel> crawlUriDataModel)
+        private TryOptionAsync<Unit> Schedule(List<UriDataModel> uriDataModels)
         {
             return async () =>
             {
                 await Task.WhenAll(
-                    crawlUriDataModel.Select(crawlUri =>
-                        _schedulerRepository
-                            .GetUriData(crawlUri.UriId)
-                            .Bind(uriData => _crawlerConfiguration.CreateRequest(uriData.Uri, correlationId: Guid.NewGuid(), crawlUri.Id))
+                    uriDataModels
+                    .Select(model =>
+                        _crawlerConfiguration.CreateRequest(model.Uri, correlationId: Guid.NewGuid(), model.Id)
                             .Bind(request => _requestPublisher.PublishRequest(request))
-                            .Bind(_ => _crawlerConfiguration.UpdateScheduledTimeUtcNow(crawlUri.Id))
-                            .Match(u => { }, () => LogUriError(crawlUri.UriId.ToString()), ex => LogUriError(crawlUri.Id.ToString(), ex))
+                            .Bind<Unit, Unit>(_ => async () =>
+                            {
+                                model.IsCompleted = true;
+                                await _schedulerRepository.AddOrUpdate(model).Match(_ => {}, () => LogUriError(model.Uri), ex => LogUriError(model.Uri, ex));
+                                return Unit.Default;
+                            })
+                            .Match(u => { }, () => LogUriError(model.Uri.ToString()), ex => LogUriError(model.Uri, ex))
                     )
                     .ToArray());
 
@@ -75,7 +79,7 @@ namespace Crawler.Scheduler.Core
 
         private void LogUriError(string uri, Exception ex = null)
         {
-            var message = $"Failed to schedule UriId: {uri}";
+            var message = $"Failed to schedule Uri: {uri}";
             if (ex == null)
                 _logger.LogError(message);
             else

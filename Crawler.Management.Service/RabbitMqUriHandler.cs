@@ -37,7 +37,7 @@ public class RabbitMqUriHandler : IMessageHandler<CrawlUri, CrawlUri>
                 _logger.LogInformation($"Storing new Uri: {uri}");
 
                 var id = await _schedulerRepository
-                    .Add(new UriDataModel
+                    .AddOrUpdate(new UriDataModel
                     {
                         UriTypeId = crawlUri.UriTypeId,
                         RoutingKey = "requests",

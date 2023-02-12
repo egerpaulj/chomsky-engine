@@ -14,68 +14,74 @@
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
 using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
-using Crawler.RequestHandling.Core;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
 using Quartz;
+
 namespace Crawler.Scheduler.Core
 {
-    public class UnscheduledUriCrawlJob : IJob
+    public class FoundUriJob : IJob
     {
-        private ILogger<UnscheduledUriCrawlJob> _logger;
-        private readonly ICrawlerConfigurationService _crawlerConfiguration;
-
-        private readonly IRequestPublisher _requestPublisher;
+        private ILogger<FoundUriJob> _logger;
         private readonly ISchedulerRepository _schedulerRepository;
+        private readonly IConfigurationRepository _configurationRepository;
 
-        public UnscheduledUriCrawlJob(ILogger<UnscheduledUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher, ISchedulerRepository schedulerRepository)
+        public FoundUriJob(ILogger<FoundUriJob> logger, ISchedulerRepository schedulerRepository, IConfigurationRepository configurationRepository)
         {
             _logger = logger;
-            _crawlerConfiguration = crawlerConfiguration;
-            _requestPublisher = requestPublisher;
             _schedulerRepository = schedulerRepository;
+            _configurationRepository = configurationRepository;
         }
 
         public async Task Execute(IJobExecutionContext context)
         {
-            _logger.LogInformation($"Running Unscheduled job in crawl_uri");
-            await ScheduleUriCrawls().Match(r => r, () => throw new Exception($"Failed to schedule pending Uris"));
+            _logger.LogInformation($"Running URI Found processing job");
+
+            //await Schedule(uri, id ).Match(r => r, () => throw new Exception($"Failed to schedule Periodic Uri: {uri}"));
         }
 
-        private TryOptionAsync<Unit> ScheduleUriCrawls()
+        private TryOptionAsync<Unit> Schedule(string uri, Guid uriId)
         {
-            return _schedulerRepository.GetUnscheduledCrawlUriData().Bind(list => Schedule(list));
-        }
-
-        private TryOptionAsync<Unit> Schedule(List<CrawlUriDataModel> crawlUriDataModel)
-        {
+            
             return async () =>
             {
-                await Task.WhenAll(
-                    crawlUriDataModel.Select(crawlUri =>
-                        _schedulerRepository
-                            .GetUriData(crawlUri.UriId)
-                            .Bind(uriData => _crawlerConfiguration.CreateRequest(uriData.Uri, correlationId: Guid.NewGuid(), crawlUri.Id))
-                            .Bind(request => _requestPublisher.PublishRequest(request))
-                            .Bind(_ => _crawlerConfiguration.UpdateScheduledTimeUtcNow(crawlUri.Id))
-                            .Match(u => { }, () => LogUriError(crawlUri.UriId.ToString()), ex => LogUriError(crawlUri.Id.ToString(), ex))
-                    )
-                    .ToArray());
+                await _schedulerRepository.GetUriFoundList().Match( async list =>
+                {
+                    if(list.Any())
+                    {
+                        foreach(var uri in list)
+                        {
+                            if(await _configurationRepository.IsCollectable(uri.Uri).Match(r => r, () => false, ex => throw ex))
+                            {
+                                uri.UriTypeId = UriType.Collector;
+                            }
+                            else
+                            {
+                                await _schedulerRepository.AddOrUpdate(
+                                    new CrawlUriDataModel{
+                                        UriId = uri.Id
+                                    })
+                                .Match(_ => {}, () => LogError(), ex => LogError(ex));
+                                
+                                uri.IsCompleted = true;
+                            }
 
+                            await _schedulerRepository.AddOrUpdate(uri).Match(_ => {}, () => LogError(), ex => LogError(ex));
+                        }
+                    }
+                }, () => LogError(), ex => LogError(ex));
                 return Unit.Default;
             };
-
         }
 
-        private void LogUriError(string uri, Exception ex = null)
+        private void LogError(Exception ex = null)
         {
-            var message = $"Failed to schedule UriId: {uri}";
+            var message = $"Job Failed - Found URI list";
             if (ex == null)
                 _logger.LogError(message);
             else
