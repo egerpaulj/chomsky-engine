@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Crawler.Core.Parser.DocumentParts.Serialilzation;
 using Crawler.DataModel;
 using Microservice.Mongodb.Repo;
+using System.Text.RegularExpressions;
 
 namespace Crawler.Configuration.Repository
 {
@@ -74,6 +75,21 @@ namespace Crawler.Configuration.Repository
             .Bind(u => GetUriFilter(u))
             .Bind(f => _mongoDocumentRepository.Delete(f));
             
+        }
+
+        public TryOptionAsync<bool> IsCollectable(Option<string> uri)
+        {
+            return uri
+            .ToTryOptionAsync()
+            .SelectMany(u => GetUriFilter(u), async  (u, filter) => 
+            {
+                return await _mongoDocumentRepository
+                            .Get(filter)
+                            .Match(model => 
+                                new Regex(model.CollectablePattern).IsMatch(u), 
+                                () => false, 
+                                ex => throw ex);
+            });
         }
 
         private static TryOptionAsync<FilterDefinition<BsonDocument>> GetUriFilter(string uri, bool isCollector = false)

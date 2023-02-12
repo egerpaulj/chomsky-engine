@@ -36,7 +36,7 @@ namespace Crawler.Scheduler.Repository
             .Bind(filter => _uriDataRepository.Get(filter));
         }
 
-        public TryOptionAsync<Guid> Add(Option<CrawlUriDataModel> model)
+        public TryOptionAsync<Guid> AddOrUpdate(Option<CrawlUriDataModel> model)
         {
             return model
             .ToTryOptionAsync()
@@ -44,7 +44,7 @@ namespace Crawler.Scheduler.Repository
             .Bind(m => _crawlUriRepository.AddOrUpdate(m));
         }
 
-        public TryOptionAsync<Guid> Add(Option<UriDataModel> model)
+        public TryOptionAsync<Guid> AddOrUpdate(Option<UriDataModel> model)
         {
             return model.ToTryOptionAsync().Bind<UriDataModel, Guid>(m => async () =>
            {
@@ -65,9 +65,9 @@ namespace Crawler.Scheduler.Repository
            });
         }
 
-        public TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData()
+        public TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData(int limit = 200)
         {
-            return GetUnscheduledCrawlFilter().Bind(filter => _crawlUriRepository.GetMany(filter));
+            return GetUnscheduledCrawlFilter().Bind(filter => _crawlUriRepository.GetMany(filter, limit));
         }
 
         public TryOptionAsync<List<UriDataModel>> GetCollectorUriData()
@@ -104,6 +104,16 @@ namespace Crawler.Scheduler.Repository
             return _uriDataRepository.Get(id);
         }
 
+        public TryOptionAsync<List<UriDataModel>> GetUriFoundList(int limit = 100)
+        {
+            return GetUriFoundFilter().Bind(filter => _uriDataRepository.GetMany(filter, limit));
+        }
+
+        public TryOptionAsync<List<UriDataModel>> GetIncompleteOnetimeUris(int limit = 100)
+        {
+            return GetOnetimeFilter().Bind(filter => _uriDataRepository.GetMany(filter, limit));
+        }
+
         private static TryOptionAsync<FilterDefinition<BsonDocument>> GetUriFilter(string uri)
         {
             return async () =>
@@ -131,6 +141,28 @@ namespace Crawler.Scheduler.Repository
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Collector);
                 filter &= (Builders<BsonDocument>.Filter.Exists("CronPeriod"));
+
+                return await Task.FromResult(filter);
+            };
+        }
+
+        private static TryOptionAsync<FilterDefinition<BsonDocument>> GetUriFoundFilter()
+        {
+            return async () =>
+            {
+                var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Found);
+                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", "False"));
+
+                return await Task.FromResult(filter);
+            };
+        }
+
+        private static TryOptionAsync<FilterDefinition<BsonDocument>> GetOnetimeFilter()
+        {
+            return async () =>
+            {
+                var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Onetime);
+                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", "False"));
 
                 return await Task.FromResult(filter);
             };

@@ -59,6 +59,8 @@ namespace Crawler.Scheduler.Core
                 await Schedule(_jobFactory.GetUnscheduledCrawlsJob());
                 await Schedule(await _jobFactory.GetPeriodicUriJobs());
                 await Schedule(await _jobFactory.GetUriCollectorJobs());
+                await Schedule(_jobFactory.GetOnetimeUriProcessingJob());
+                await Schedule(_jobFactory.GetFoundUriProcessingJob());
 
                 await _scheduler.Start();
 

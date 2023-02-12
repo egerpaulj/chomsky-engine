@@ -28,7 +28,7 @@ namespace Crawler.DataModel
         [JsonProperty("_id")]
         public Guid Id { get; set; }
 
-        public CrawlContinuationStrategy ContinuationStrategyDefinition{get;set;}
+        public CrawlContinuationStrategy ContinuationStrategyDefinition { get; set; }
         public const string AllUriMatch = "*";
         public string Uri { get; set; }
         public string Host { get; set; }
@@ -36,8 +36,9 @@ namespace Crawler.DataModel
         public DocumentPart DocumentPartDefinition { get; set; }
         public List<UiAction> UiActions { get; set; }
         public bool ShouldDownloadContent { get; set; }
-        public bool ShouldProvideRawSource {get;set;}
-        public bool IsUrlCollector {get;set;}
+        public bool ShouldProvideRawSource { get; set; }
+        public bool IsUrlCollector { get; set; }
+        public string CollectablePattern { get; set; }
 
     }
 }

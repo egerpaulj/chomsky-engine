@@ -29,5 +29,6 @@ namespace Crawler.DataModel
          TryOptionAsync<CrawlRequestModel> GetCollectorCrawlRequest(Option<string> uri);
          TryOptionAsync<List<UiAction>> GetUserActions(Option<string> uri);
          TryOptionAsync<DocumentPart> GetDocumentPart(Option<string> uri);
+         TryOptionAsync<bool> IsCollectable(Option<string> uri);
     }
 }

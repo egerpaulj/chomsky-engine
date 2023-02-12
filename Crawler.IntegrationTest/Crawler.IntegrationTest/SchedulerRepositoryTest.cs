@@ -60,7 +60,7 @@ namespace Crawler.IntegrationTest
         {
             var testee = CreateTestee();
 
-            var uriGuid = await testee.Add(new UriDataModel
+            var uriGuid = await testee.AddOrUpdate(new UriDataModel
             {
                 CronPeriod = "* * * * * *",
                 RoutingKey = "Request.Test*",
@@ -68,7 +68,7 @@ namespace Crawler.IntegrationTest
                 UriTypeId = UriType.Periodic
             }).Match(r => r, () => throw new Exception("Failed to store uri data model"));
 
-            await testee.Add(new CrawlUriDataModel
+            await testee.AddOrUpdate(new CrawlUriDataModel
             {
                 UriId = uriGuid,
             }).Match(r => r, () => throw new Exception("Failed to store crawl Uri data"));

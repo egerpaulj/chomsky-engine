@@ -24,13 +24,15 @@ namespace Crawler.DataModel.Scheduler
          TryOptionAsync<UriDataModel> GetUriData(Option<string> uri);
          TryOptionAsync<UriDataModel> GetUriData(Option<Guid> id);
          TryOptionAsync<List<UriDataModel>> GetCollectorUriData();
-         TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData();
+         TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData(int limit = 200);
          TryOptionAsync<List<UriDataModel>> GetPeriodicUriData();
          TryOptionAsync<bool> UriLinkExists(Option<string> uri);
-         TryOptionAsync<Guid> Add(Option<CrawlUriDataModel> crawlUri);
-         TryOptionAsync<Guid> Add(Option<UriDataModel> sourceData);
+         TryOptionAsync<Guid> AddOrUpdate(Option<CrawlUriDataModel> crawlUri);
+         TryOptionAsync<Guid> AddOrUpdate(Option<UriDataModel> sourceData);
          TryOptionAsync<Unit> UpdateScheduledTimeUtcNow(Guid id);
          TryOptionAsync<Unit> UpdateCompletedTimeUtcNow(Guid id);
+         TryOptionAsync<List<UriDataModel>> GetUriFoundList(int limit = 100);
+         TryOptionAsync<List<UriDataModel>> GetIncompleteOnetimeUris(int limit = 100);
 
     }
 }

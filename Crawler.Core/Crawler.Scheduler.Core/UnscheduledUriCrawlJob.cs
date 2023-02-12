@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
+using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
@@ -31,12 +32,14 @@ namespace Crawler.Scheduler.Core
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
 
         private readonly IRequestPublisher _requestPublisher;
+        private readonly ISchedulerRepository _schedulerRepository;
 
-        public UnscheduledUriCrawlJob(ILogger<UnscheduledUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher)
+        public UnscheduledUriCrawlJob(ILogger<UnscheduledUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher, ISchedulerRepository schedulerRepository)
         {
             _logger = logger;
             _crawlerConfiguration = crawlerConfiguration;
             _requestPublisher = requestPublisher;
+            _schedulerRepository = schedulerRepository;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -47,7 +50,7 @@ namespace Crawler.Scheduler.Core
 
         private TryOptionAsync<Unit> ScheduleUriCrawls()
         {
-            return _crawlerConfiguration.GetUnscheduledCrawlUriData().Bind(list => Schedule(list));
+            return _schedulerRepository.GetUnscheduledCrawlUriData().Bind(list => Schedule(list));
         }
 
         private TryOptionAsync<Unit> Schedule(List<CrawlUriDataModel> crawlUriDataModel)
@@ -56,7 +59,7 @@ namespace Crawler.Scheduler.Core
             {
                 await Task.WhenAll(
                     crawlUriDataModel.Select(crawlUri =>
-                        _crawlerConfiguration
+                        _schedulerRepository
                             .GetUriData(crawlUri.UriId)
                             .Bind(uriData => _crawlerConfiguration.CreateRequest(uriData.Uri, correlationId: Guid.NewGuid(), crawlUri.Id))
                             .Bind(request => _requestPublisher.PublishRequest(request))
