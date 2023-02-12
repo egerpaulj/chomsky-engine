@@ -78,7 +78,7 @@ namespace Microservice.Mongodb.Repo
             return filter.ToTryOptionAsync().Bind(f => GetModel(f));
         }
 
-        public TryOptionAsync<List<T>> GetMany(Option<FilterDefinition<BsonDocument>> filter)
+        public TryOptionAsync<List<T>> GetMany(Option<FilterDefinition<BsonDocument>> filter, int limit = 100, int skip = 0)
         {
             return filter.ToTryOptionAsync().Bind(f => GetModels(f));
         }
@@ -129,7 +129,7 @@ namespace Microservice.Mongodb.Repo
             return async () =>
             {
                 var collection = Database.GetCollection<BsonDocument>(_documentName);
-                var contents = await collection.FindAsync(d => true);
+                //var contents = await collection.FindAsync(d => true);
 
                 var matchedModel = await collection.Find(filter).FirstOrDefaultAsync();
                 if (matchedModel == null)
@@ -140,14 +140,14 @@ namespace Microservice.Mongodb.Repo
             };
         }
 
-        private TryOptionAsync<List<T>> GetModels(FilterDefinition<BsonDocument> filter)
+        private TryOptionAsync<List<T>> GetModels(FilterDefinition<BsonDocument> filter, int limit = 100, int skip = 0)
         {
             return async () =>
             {
                 var collection = Database.GetCollection<BsonDocument>(_documentName);
-                var contents = await collection.FindAsync(d => true);
+                //var contents = await collection.FindAsync(d => true);
 
-                var result = await collection.FindAsync(filter);
+                var result = await collection.FindAsync(filter, new FindOptions<BsonDocument, BsonDocument>{Limit = limit, Skip = skip});
                 var results = await result.ToListAsync();
 
                 return results.Select(m => _jsonConverterProvider.Deserialize<T>(m.ToJson())).ToList();

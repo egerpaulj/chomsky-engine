@@ -43,7 +43,7 @@ namespace Microservice.Mongodb.Repo
         /// <summary>
         /// Get all Documents T that matches the filter.
         /// </summary>
-        TryOptionAsync<List<T>> GetMany(Option<FilterDefinition<BsonDocument>> filter);
+        TryOptionAsync<List<T>> GetMany(Option<FilterDefinition<BsonDocument>> filter, int limit = 100, int skip = 0);
 
         /// <summary>
         /// Delete Documents that matches the given Id.
