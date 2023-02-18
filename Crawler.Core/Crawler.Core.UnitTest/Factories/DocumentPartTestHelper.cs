@@ -142,6 +142,50 @@ namespace Crawler.Core.UnitTest
             return request;
         }
 
+        public static CrawlRequest CreateCustomDocumentPartArticle(string uri)
+        {
+            var request = new CrawlRequest();
+            request.CrawlId = Guid.NewGuid();
+            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.RequestDocument = new Document()
+            {
+                DownloadContent = true,
+                RequestDocumentPart = new DocumentPartArticle("test")
+                {
+                    BaseUri = uri,
+                    Title = new DocumentPartText(uri)
+                    {
+                        Selector = new DocumentPartSelector()
+                        {
+                            Xpath = "//*[@data-gu-name='headline']"
+                        }
+                    },
+                    Content = new DocumentPartText(uri)
+                    {
+                        Selector = new DocumentPartSelector()
+                        {
+                            Xpath = "//*[@id='maincontent']"
+                        },
+                        
+                    },
+                    SubParts = new List<DocumentPart>()
+                    {
+                        // Select all images within content
+                        new DocumentPartText (uri)
+                        {
+                            Selector = new DocumentPartSelector
+                            {
+                                Xpath = "//*[@data-gu-name='standfirst']"
+                            }
+                        },
+                    }
+
+                },
+
+            };
+            return request;
+        }
+
         public static CrawlRequest CreateRequestDocumentAutoDetect(string uri)
         {
             var documentPartAutoDetect = new DocumentPartAutodetect(uri);
