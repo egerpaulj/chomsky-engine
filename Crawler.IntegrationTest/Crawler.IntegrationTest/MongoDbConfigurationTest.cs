@@ -42,7 +42,7 @@ namespace Crawler.IntegrationTest
 
             Assert.AreEqual("somexpath", xpath);
 
-            var subparts = res.DocumentPartDefinition.SubParts.Match( p=> p, () => throw new Exception("SUb parts empty"));
+            var subparts = res.DocumentPartDefinition.SubParts.Match(p => p, () => throw new Exception("SUb parts empty"));
 
             Assert.AreEqual(1, subparts.Count);
             Assert.AreEqual(typeof(DocumentPartLink), subparts[0].GetType());
@@ -62,17 +62,17 @@ namespace Crawler.IntegrationTest
             await testee.DeleteAll(TestHelper.TestUri).Match(u => u, () => throw new Exception("Delete all failed"));
 
             await testee.GetCrawlRequest($"{TestHelper.TestUri}/?q=somethingElse")
-            .Match(r => Assert.Fail(), () => {}, e => Assert.Fail(e.Message));
+            .Match(r => Assert.Fail(), () => { }, e => Assert.Fail(e.Message));
 
         }
 
         //[TestMethod]
-        public static async Task StoreConfigurationIntegrationTest()
+        public async Task StoreConfigurationIntegrationTest()
         {
             var testee = CreateTestee();
 
-            await testee.DeleteAll(TestHelper.TestUri).Match(r => {}, () => {});
-            var res = await testee.AddOrUpdate(CreateRequest(TestHelper.TestUri))
+            await testee.DeleteAll(TestHelper.TestUri).Match(r => { }, () => { });
+            var res = await testee.AddOrUpdate(CreateRequest("https://www.theguardian.com"))
             .Match(r => r, () => throw new System.Exception("Failed"), e => throw e)
             ;
 
@@ -91,31 +91,43 @@ namespace Crawler.IntegrationTest
             {
                 Host = new Uri(uri).Host,
                 Uri = "*",
-                DocumentPartDefinition = new DocumentPartText(uri)
+                ContinuationStrategyDefinition = Core.Requests.CrawlContinuationStrategy.None,
+                DocumentPartDefinition = new DocumentPartArticle(uri)
                 {
-                    Selector = new DocumentPartSelector
+                    Title = new DocumentPartText(uri)
                     {
-                        Xpath = "somexpath"
+                        Selector = new DocumentPartSelector()
+                        {
+                            Xpath = "//*[@data-gu-name='headline']"
+                        }
                     },
-                    SubParts = new List<DocumentPart>
+                    Content = new DocumentPartText(uri)
                     {
-                        new DocumentPartLink(uri)
+                        Selector = new DocumentPartSelector()
+                        {
+                            Xpath = "//*[@id='maincontent']"
+                        },
+                        
+                    },
+                    SubParts = new List<DocumentPart>()
+                    {
+                        // Select all images within content
+                        new DocumentPartText (uri)
                         {
                             Selector = new DocumentPartSelector
                             {
-                                Xpath = "linkxpath"
+                                Xpath = "//*[@data-gu-name='standfirst']"
                             }
-                        }
+                        },
                     }
-                },
-                ShouldDownloadContent = false,
-                UiActions = new List<UiAction> { new UiAction(){Type=UiAction.ActionType.Click, ActionData="some data", XPath="some xpath"}},
+
+                }
             };
         }
 
         internal class MongoDbConfig : IDatabaseConfiguration
         {
-            public string DatabaseName => "Crawl";
+            public string DatabaseName => "Crawler";
 
             public string DocumentName => "crawl_request";
         }
