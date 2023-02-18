@@ -81,8 +81,9 @@ namespace Crawler.Scheduler.Core
 
         private async Task<DateTimeOffset> Schedule(Tuple<IJobDetail, ITrigger> jobDefinition)
         {
-            _logger.LogInformation($"Scheduling: {jobDefinition.Item1.Description}. Next Fire Time: {jobDefinition.Item2.GetNextFireTimeUtc().ToString()}");
-            return await _scheduler.ScheduleJob(jobDefinition.Item1, jobDefinition.Item2);
+            var offset = await _scheduler.ScheduleJob(jobDefinition.Item1, jobDefinition.Item2);
+            _logger.LogInformation($"Scheduled: {jobDefinition.Item1.Description}. Next Fire Time: {jobDefinition.Item2.GetNextFireTimeUtc().ToString()}");
+            return offset;
         }
 
         private async Task Schedule(IEnumerable<Tuple<IJobDetail, ITrigger>> jobDefinitions)

@@ -44,11 +44,11 @@ namespace Crawler.Scheduler.Core
 
         public async Task Execute(IJobExecutionContext context)
         {
-            _logger.LogInformation($"Running Unscheduled job in crawl_uri");
-            await ScheduleUriCrawls().Match(r => r, () => throw new Exception($"Failed to schedule pending Uris"));
+            _logger.LogInformation($"Running onetime URI processing job");
+            await Schedule().Match(r => r, () => throw new Exception($"Failed to schedule pending Uris"));
         }
 
-        private TryOptionAsync<Unit> ScheduleUriCrawls()
+        private TryOptionAsync<Unit> Schedule()
         {
             return _schedulerRepository.GetIncompleteOnetimeUris().Bind(list => Schedule(list));
         }

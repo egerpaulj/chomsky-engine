@@ -21,7 +21,7 @@ namespace Crawler.IntegrationTest
         [TestInitialize]
         public async Task Setup()
         {
-            await MongoDbConfigurationTest.StoreConfigurationIntegrationTest();
+            await new MongoDbConfigurationTest().StoreConfigurationIntegrationTest();
         }
         
         [TestMethod]
