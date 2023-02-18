@@ -34,6 +34,7 @@ namespace Crawler.Scheduler.Service
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseAppConfig()
+                .SetupLogging()
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>();
@@ -51,6 +52,8 @@ namespace Crawler.Scheduler.Service
                     services.AddTransient<UnscheduledUriCrawlJob>();
                     services.AddTransient<PeriodUriCrawlJob>();
                     services.AddTransient<UriCollectionJob>();
+                    services.AddTransient<OnetimeUriJob>();
+                    services.AddTransient<FoundUriJob>();
 
                     var databaseConfiguration = new DatabaseConfiguration
                     {

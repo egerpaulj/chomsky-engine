@@ -74,12 +74,13 @@ public class JobFactory : IJobFactory
         return sourceData.Select(s =>
             new Tuple<IJobDetail, ITrigger>(
                 JobBuilder.Create<UriCollectionJob>()
+                    .WithDescription($"Collector job: {s.Uri}")
                     .UsingJobData(UriCollectionJob.JobDataIdKey, s.Id)
                     .UsingJobData(UriCollectionJob.JobDataUriKey, s.Uri)
                     .Build(),
                 TriggerBuilder.Create()
-                    .WithIdentity($"Collector job: {s.Uri}", "UriCollector")
-                    .WithCronSchedule(s.CronPeriod, x => x.WithMisfireHandlingInstructionDoNothing())
+                    .WithDescription($"Collector job: {s.Uri}")
+                    .WithCronSchedule(s.CronPeriod, x => x.WithMisfireHandlingInstructionFireAndProceed())
                     .Build()));
     }
 
@@ -94,14 +95,15 @@ public class JobFactory : IJobFactory
         return sourceData.Select(s =>
         {
             var job = JobBuilder.Create<PeriodUriCrawlJob>()
-                     .UsingJobData(UriCollectionJob.JobDataIdKey, s.Id)
-                     .UsingJobData(UriCollectionJob.JobDataUriKey, s.Uri)
+                    .WithDescription($"Periodic Uri Schedule job: {s.Uri}")
+                    .UsingJobData(UriCollectionJob.JobDataIdKey, s.Id)
+                    .UsingJobData(UriCollectionJob.JobDataUriKey, s.Uri)
                     .Build();
 
             return new Tuple<IJobDetail, ITrigger>(
                 job,
                 TriggerBuilder.Create()
-                    //.WithDescription($"Periodic Uri Schedule job: {s.Uri}")
+                    .WithDescription($"Periodic Uri Schedule job: {s.Uri}")
                     .ForJob(job)
                     .WithCronSchedule(s.CronPeriod, x => x.WithMisfireHandlingInstructionFireAndProceed())
                     .Build());
@@ -110,8 +112,11 @@ public class JobFactory : IJobFactory
 
     public Tuple<IJobDetail, ITrigger> GetUnscheduledCrawlsJob()
     {
-        var unscheduledJob = JobBuilder.Create<UnscheduledUriCrawlJob>().WithDescription("Schedule unpublished crawls").Build();
+        var unscheduledJob = JobBuilder.Create<UnscheduledUriCrawlJob>()
+                .WithDescription("Unscheduled Crawl Processing")
+                .Build();
         var unscheduledTrigger = TriggerBuilder.Create()
+                .WithDescription("Unscheduled Crawl Processing")
                 .WithSimpleSchedule(s => 
                 {
                     s.WithIntervalInSeconds(15);
@@ -125,8 +130,11 @@ public class JobFactory : IJobFactory
 
     public Tuple<IJobDetail, ITrigger> GetFoundUriProcessingJob()
     {
-        var unscheduledJob = JobBuilder.Create<FoundUriJob>().WithDescription("Process URIs found by Collectors").Build();
+        var unscheduledJob = JobBuilder.Create<FoundUriJob>()
+                .WithDescription("Found URI Processing")
+                .Build();
         var unscheduledTrigger = TriggerBuilder.Create()
+                .WithDescription("Found URI Processing")
                 .WithSimpleSchedule(s => 
                 {
                     s.WithIntervalInSeconds(15);
@@ -140,8 +148,11 @@ public class JobFactory : IJobFactory
 
     public Tuple<IJobDetail, ITrigger> GetOnetimeUriProcessingJob()
     {
-        var unscheduledJob = JobBuilder.Create<OnetimeUriJob>().WithDescription("Process Unscheduled Onetime URIs").Build();
+        var unscheduledJob = JobBuilder.Create<OnetimeUriJob>()
+                .WithDescription("Onetime URI Prcessing")
+                .Build();
         var unscheduledTrigger = TriggerBuilder.Create()
+                .WithDescription("Onetime URI Prcessing")
                 .WithSimpleSchedule(s => 
                 {
                     s.WithIntervalInSeconds(15);

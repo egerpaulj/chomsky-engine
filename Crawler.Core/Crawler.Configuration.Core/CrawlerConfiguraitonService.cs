@@ -164,6 +164,7 @@ namespace Crawler.Configuration.Core
         {
             return new CrawlRequestModel
             {
+                Id = Guid.NewGuid(),
                 Uri = u,
                 Host = new Uri(u).Host,
                 ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,

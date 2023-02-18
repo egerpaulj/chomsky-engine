@@ -25,7 +25,7 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
     public async Task<CrawlEsResponseModel> HandleMessage(Option<CrawlRequest> m)
     {
         var message = m.Match(mes => mes, () => throw new System.Exception("Empty message"));
-        _logger.LogInformation($"Preparing to Crawl: {message.Id}");
+        _logger.LogInformation($"Preparing to Crawl: {message.Id}, Cont.: {message.ContinuationStrategy}");
         var strategy = await _crawlStrategyMapper.GetCrawlStrategy(message).Match(s => s, () => throw new Exception("Strategy missing"), ex => throw ex);
         var contStrategy = await _crawlStrategyMapper.GetContinuationStrategy(message).MatchUnsafe(s => s, () => null, ex => throw ex);
         var contStrategyOpt = contStrategy
@@ -37,6 +37,7 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
 
         _logger.LogInformation($"Starting Crawl: {message.Id}");
         var response = await strategy.Crawl(request).Match(r => r, () => throw new Exception("Empty result when crawling"), ex => throw ex);
+        
 
         _logger.LogInformation($"Completed Crawl: {message.Id}");
         return message.ContinuationStrategy.Match(s => s, () => CrawlContinuationStrategy.None) 

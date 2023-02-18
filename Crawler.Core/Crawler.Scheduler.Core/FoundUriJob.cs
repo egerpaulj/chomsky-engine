@@ -41,13 +41,11 @@ namespace Crawler.Scheduler.Core
         public async Task Execute(IJobExecutionContext context)
         {
             _logger.LogInformation($"Running URI Found processing job");
-
-            //await Schedule(uri, id ).Match(r => r, () => throw new Exception($"Failed to schedule Periodic Uri: {uri}"));
+            await Schedule().Match(_ => {}, () => throw new Exception($"Failed to schedule FoundURIs"));
         }
 
-        private TryOptionAsync<Unit> Schedule(string uri, Guid uriId)
+        private TryOptionAsync<Unit> Schedule()
         {
-            
             return async () =>
             {
                 await _schedulerRepository.GetUriFoundList().Match( async list =>
