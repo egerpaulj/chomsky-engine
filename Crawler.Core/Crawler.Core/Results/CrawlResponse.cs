@@ -22,12 +22,14 @@ namespace Crawler.Core.Results
 {
     public class CrawlResponse
     {
-        public Option<Guid> CorrelationId{get;set;}
-        public Option<Guid> CrawlerId{get;set;}
+        public Option<DateTime> Timestamp { get; set; }
+        public Option<string> Uri { get; set; }
+        public Option<Guid> CorrelationId { get; set; }
+        public Option<Guid> CrawlerId { get; set; }
 
-        public Option<Document> Result{get;set;}
+        public Option<Document> Result { get; set; }
 
-        public Option<string> Raw{get;set;}
+        public Option<string> Raw { get; set; }
 
 
     }

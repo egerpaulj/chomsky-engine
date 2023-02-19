@@ -76,6 +76,7 @@ namespace Crawler.Core.Parser.DocumentParts
     [JsonConverter(typeof(BaseClassConverter))]
     public abstract class DocumentPart
     {
+        public Option<string> Name { get; set; }
         public Option<string> BaseUri { get; set; }
         public Option<string> Raw { get; set; }
         public Option<List<string>> StyleList { get; set; }
@@ -89,7 +90,7 @@ namespace Crawler.Core.Parser.DocumentParts
         {
             Anomalies = new List<Anomaly>();
             Selector = new DocumentPartSelector();
-            
+
             // if(baseUri.IsNone)
             //     throw new ArgumentException("Base uri missing");
 
@@ -101,8 +102,8 @@ namespace Crawler.Core.Parser.DocumentParts
             return ParseDocument(document)
             .Bind(_ => ParseSubParts(document));
         }
-        
-        protected TryOptionAsync<IEnumerable<HtmlNode>> GetNodes(Option<HtmlDocument> document) => 
+
+        protected TryOptionAsync<IEnumerable<HtmlNode>> GetNodes(Option<HtmlDocument> document) =>
                 Selector
                 .ToTryOptionAsync()
                 .Bind(s => s.GetNodes(document));
@@ -150,14 +151,14 @@ namespace Crawler.Core.Parser.DocumentParts
                 docPart = CreateDefaultArticle();
             }
 
-            else if (images != null && images.Any() )
-                docPart = new DocumentPartFile (BaseUri);
+            else if (images != null && images.Any())
+                docPart = new DocumentPartFile(BaseUri);
 
-            else if (anchors != null && anchors.Any() )
-                docPart = new DocumentPartLink (BaseUri);
+            else if (anchors != null && anchors.Any())
+                docPart = new DocumentPartLink(BaseUri);
 
             if (element.Name.ToLower().Equals("table"))
-                docPart = new DocumentPartTable (BaseUri);
+                docPart = new DocumentPartTable(BaseUri);
 
             if (docPart == null)
                 docPart = new DocumentPartText(BaseUri);
@@ -177,7 +178,7 @@ namespace Crawler.Core.Parser.DocumentParts
                         Xpath = "//title"
                     }
                 },
-                Content = new DocumentPartText (BaseUri)
+                Content = new DocumentPartText(BaseUri)
                 {
                     Selector = new DocumentPartSelector()
                     {
@@ -224,7 +225,7 @@ namespace Crawler.Core.Parser.DocumentParts
                     var validUri = Uri.TryCreate(t, UriKind.RelativeOrAbsolute, out var targetUri);
                     var baseUri = new Uri(b);
 
-                    if(!validUri || !targetUri.IsAbsoluteUri)
+                    if (!validUri || !targetUri.IsAbsoluteUri)
                     {
                         targetUri = new Uri(baseUri, t);
                     }
@@ -244,7 +245,7 @@ namespace Crawler.Core.Parser.DocumentParts
             var htmlDocument = new HtmlDocument();
             htmlDocument.DocumentNode.AppendChild(new HtmlNode(HtmlNodeType.Element, htmlDocument, 0));
             htmlDocument.DocumentNode.FirstChild.Name = "html";
-            foreach(var node in nodes.Where(n => n.NodeType != HtmlNodeType.Comment ))
+            foreach (var node in nodes.Where(n => n.NodeType != HtmlNodeType.Comment))
             {
                 htmlDocument.DocumentNode.FirstChild.AppendChild(node);
             }

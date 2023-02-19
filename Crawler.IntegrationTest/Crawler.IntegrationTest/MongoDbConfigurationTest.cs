@@ -114,6 +114,7 @@ namespace Crawler.IntegrationTest
                         // Select all images within content
                         new DocumentPartText (uri)
                         {
+                            Name = "Heading",
                             Selector = new DocumentPartSelector
                             {
                                 Xpath = "//*[@data-gu-name='standfirst']"
