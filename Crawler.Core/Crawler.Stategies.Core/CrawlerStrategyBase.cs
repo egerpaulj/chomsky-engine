@@ -145,6 +145,8 @@ namespace Crawler.Core.Strategy
             {
                 var response = new CrawlResponse
                 {
+                    Timestamp = DateTime.UtcNow,
+                    Uri = request.LoadPageRequest.Bind(r => r.Uri),
                     CrawlerId = request.CrawlId,
                     CorrelationId = request.CorrelationCrawlId,
                     // ToDo Change to string

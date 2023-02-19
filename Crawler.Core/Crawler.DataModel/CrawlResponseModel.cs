@@ -41,30 +41,20 @@ namespace Crawler.DataModel
     public class CrawlEsResponseModel : IDataModel
     {
         public new Guid Id { get; set; }
-        public Option<Guid> CorrelationId { get; set; }
-        public Option<Guid> CrawlerId { get; set; }
+        public Option<string> CorrelationId { get; set; }
+        public Option<string> CrawlerId { get; set; }
 
-        public Option<Document> Result { get; set; }
+        public Option<string> Title { get; set; }
+        public Option<string> Heading { get; set; }
+        public Option<string> Content { get; set; }
 
         public Option<string> Error { get; set; }
-        public Option<string> ErrorUri { get; set; }
+        public Option<string> Uri { get; set; }
+        public Option<string> Timestamp { get; set; }
 
-        public Option<string> Raw { get; set; }
 
         public CrawlEsResponseModel()
         {
         }
-
-        public CrawlEsResponseModel(CrawlResponseModel responseModel)
-        {
-            Id = responseModel.Id;
-            CorrelationId = responseModel.CorrelationId;
-            CrawlerId = responseModel.CrawlerId;
-            Result = responseModel.Result;
-            Error = responseModel.Error;
-            ErrorUri = responseModel.ErrorUri;
-        }
-
-
     }
 }

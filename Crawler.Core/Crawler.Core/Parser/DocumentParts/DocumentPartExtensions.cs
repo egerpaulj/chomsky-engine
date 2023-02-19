@@ -34,6 +34,18 @@ namespace Crawler.Core.Parser.DocumentParts
             return allParts;
         }
 
+        public static IEnumerable<DocumentPart> GetAllParts(this DocumentPart documentPart, string name)
+        {
+            int iterationCount = 0;
+            var partsEnumerable = Enumerable.Empty<DocumentPart>();
+            if(documentPart.Name.Match(n => n, () => "") == name)
+                partsEnumerable = partsEnumerable.Append(documentPart);
+
+            var allParts = RecusrsiveGetSubParts(documentPart, name, ref partsEnumerable, ref iterationCount);
+
+            return allParts;
+        }
+
         public static IEnumerable<Anomaly> GetAnomalies(this DocumentPart documentPart)
         {
             int iterationCount = 0;
@@ -62,6 +74,27 @@ namespace Crawler.Core.Parser.DocumentParts
                 foreach (var s in subParts)
                 {
                     RecusrsiveGetSubParts<T>(s, ref partsEnumerable, ref recursionLevels);
+                }
+            }
+
+            return partsEnumerable;
+        }
+
+        private static IEnumerable<DocumentPart> RecusrsiveGetSubParts(DocumentPart documentPart, string name, ref IEnumerable<DocumentPart> partsEnumerable, ref int recursionLevels)
+        {
+            ControlRecursionLevel(ref recursionLevels);
+
+            var subParts = documentPart.SubParts.Match(p => p, () => Enumerable.Empty<DocumentPart>());
+
+            if (subParts.Any())
+            {
+                var matchedSubParts = subParts.Where(part => part.Name.Match(n => n, () => "") == name);
+                
+                partsEnumerable = partsEnumerable.Append(matchedSubParts);
+
+                foreach (var s in subParts)
+                {
+                    RecusrsiveGetSubParts(s, name, ref partsEnumerable, ref recursionLevels);
                 }
             }
 

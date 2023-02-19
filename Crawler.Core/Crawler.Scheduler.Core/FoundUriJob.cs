@@ -57,6 +57,7 @@ namespace Crawler.Scheduler.Core
                             if(await _configurationRepository.IsCollectable(uri.Uri).Match(r => r, () => false, ex => throw ex))
                             {
                                 uri.UriTypeId = UriType.Collector;
+                                await _schedulerRepository.AddOrUpdate(uri).Match(r => r, () => throw new Exception("failed to update model"), ex => throw ex);
                             }
                             else
                             {

@@ -51,17 +51,7 @@ namespace Crawler.Scheduler.Repository
                if (!Uri.TryCreate(m.Uri, UriKind.Absolute, out var uri))
                    throw new Exception($"Failed to add Bad Uri: {m.Uri}");
 
-               var guid = await _uriDataRepository.AddOrUpdate(m).Match(g => g, () => throw new Exception("Failed to add Uri Data model"));
-
-               await GetUriFilter(uri.AbsoluteUri).Bind(filter => _crawlUriRepository.Get(filter)).Match(r => { }, async () =>
-                {
-                    await _crawlUriRepository.AddOrUpdate(new CrawlUriDataModel
-                    {
-                        UriId = guid
-                    }).Match(g => g, () => throw new Exception("Failed to add Crawl Uri Data Model"));
-                });
-
-               return guid;
+               return await _uriDataRepository.AddOrUpdate(m).Match(g => g, () => throw new Exception("Failed to add Uri Data model"));
            });
         }
 
@@ -140,7 +130,7 @@ namespace Crawler.Scheduler.Repository
             return async () =>
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Collector);
-                filter &= (Builders<BsonDocument>.Filter.Exists("CronPeriod"));
+                filter &= (Builders<BsonDocument>.Filter.Ne("CronPeriod", BsonNull.Value));
 
                 return await Task.FromResult(filter);
             };
@@ -151,7 +141,7 @@ namespace Crawler.Scheduler.Repository
             return async () =>
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Found);
-                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", "False"));
+                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", false));
 
                 return await Task.FromResult(filter);
             };
@@ -162,7 +152,7 @@ namespace Crawler.Scheduler.Repository
             return async () =>
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Onetime);
-                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", "False"));
+                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", false));
 
                 return await Task.FromResult(filter);
             };
