@@ -51,11 +51,11 @@ pipeline {
 
     stage('Containerize') {
       steps {
-        sh 'docker build --tag registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker build --tag registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker build --tag registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker build --tag registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker build --tag registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker build --tag registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID Crawler.WebDriver/Crawler.WebDriver.Grpc.Server/.'
+        sh 'docker build --tag registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID Crawler.RequestManager.Grpc.Server/.'
+        sh 'docker build --tag registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID Crawler.Management.Service/.'
+        sh 'docker build --tag registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID Crawler.IntegrationTest/Crawler.IntegrationTest.Server/.'
+        sh 'docker build --tag registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID Crawler.Scheduler/Crawler.Scheduler.Service/.'
       }
     }
 
