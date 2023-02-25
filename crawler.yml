@@ -1,5 +1,32 @@
 apiVersion: v1
-# 3 servers
+kind: Service
+metadata:
+  name: 
+  namespace: crawler
+  labels:
+    app: schedler
+spec:
+  ports:
+    —port: 443
+    name: scheduler
+  selector:
+    app: scheduler
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: 
+  namespace: crawler
+  labels:
+    app: crawler_management
+spec:
+  ports:
+    —port: 443
+    name: crawler_management
+  selector:
+    app: crawler_management
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: 
@@ -12,21 +39,6 @@ spec:
     name: request_server
   selector:
     app: request_server
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: 
-  namespace: crawler
-  labels:
-    app: config_server
-spec:
-  ports:
-    —port: 443
-    name: config_server
-  selector:
-    app: config_server
 ---
 
 apiVersion: v1
@@ -49,6 +61,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: request_server
+  namespace: crawler
 spec:
   selector:
     matchLabels:
@@ -75,6 +88,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webdriver_server
+  namespace: crawler
 spec:
   selector:
     matchLabels:
@@ -95,38 +109,12 @@ spec:
           —containerPort: 443
           name: webdriver_server
 ---
-
-# CONFIGURATION SERVER
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: config_server
-spec:
-  selector:
-    matchLabels:
-      app: config_server # has to match .spec.template.metadata.labels
-  serviceName: "config_server"
-  replicas: 1 
-  minReadySeconds: 10 
-  template:
-    metadata:
-      labels:
-        app: config_server # has to match .spec.selector.matchLabels
-    spec:
-      terminationGracePeriodSeconds: 10
-      containers:
-        —name: config_server
-        image: registry:5000/crawler/config_server
-        ports:
-          —containerPort: 443
-          name: config_server
-
----
 # Scheduler
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: scheduler
+  namespace: crawler
 spec:
   selector:
     matchLabels:
@@ -146,5 +134,26 @@ spec:
         ports:
           —containerPort: 443
           name: scheduler
-
-# TODO Management Worker -> Obsolete -> use Exchange instead
+---
+# Crawler Management
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawler_management
+  namespace: crawler
+spec:
+  selector:
+    matchLabels:
+      app: crawler_management # has to match .spec.template.metadata.labels
+  serviceName: "crawler_management"
+  replicas: 1 
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: crawler_management # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        —name: crawler_management
+        image: registry:5000/crawler/crawler_management
