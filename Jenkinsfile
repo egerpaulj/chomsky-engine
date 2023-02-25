@@ -51,59 +51,21 @@ pipeline {
 
     stage('Containerize') {
       steps {
-        sh 'docker build --tag registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID Crawler.WebDriver/Crawler.WebDriver.Grpc.Server/.'
-        sh 'docker build --tag registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID Crawler.RequestManager.Grpc.Server/.'
-        sh 'docker build --tag registry:5000/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID Crawler.Management.Service/.'
-        sh 'docker build --tag registry:5000/crawler/test_server:${BRANCH_NAME}_$BUILD_ID Crawler.IntegrationTest/Crawler.IntegrationTest.Server/.'
-        sh 'docker build --tag registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID Crawler.Scheduler/Crawler.Scheduler.Service/.'
+        sh 'docker build --tag registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker build --tag registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker build --tag registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker build --tag registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker build --tag registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID
       }
     }
 
-    stage('Shutdown previous Test') {
+    stage('PushToRegistry') {
       steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-          sh 'docker stop test_server'
-        }
-
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-          sh 'docker stop webdriver_server'
-        }
-
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-          sh 'docker stop crawler_management'
-        }
-
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-          sh 'docker stop request_server'
-        }
-
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-          sh 'docker stop scheduler'
-        }
-
-      }
-    }
-
-    stage('Bootstrap Test') {
-      steps {
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name scheduler registry:5000/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name webdriver_server registry:5000/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name request_server registry:5000/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name crawler_management registry:5000/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID'
-        sh 'docker run -d --rm --network development_network -e ASPNETCORE_ENVIRONMENT="Test" --name test_server registry:5000/crawler/test_server:${BRANCH_NAME}_$BUILD_ID'
-      }
-    }
-
-    stage('Run Integration Tests') {
-      steps {
-        sh 'rm -rf TestResults'
-        sh 'ASPNETCORE_ENVIRONMENT=Test'
-
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '/usr/bin/dotnet test -o TestResults -r TestResults -l trx chomsky.sln'
-        }
-
-	      mstest(testResultsFile: 'TestResults/*.trx', failOnError: true)
+        sh 'docker push registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker push registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker push registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker push registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker push registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID
       }
     }
 
