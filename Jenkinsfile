@@ -51,21 +51,21 @@ pipeline {
 
     stage('Containerize') {
       steps {
-        sh 'docker build --tag registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker build --tag registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker build --tag registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker build --tag registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker build --tag registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker build --tag registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker build --tag registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker build --tag registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker build --tag registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker build --tag registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
       }
     }
 
     stage('PushToRegistry') {
       steps {
-        sh 'docker push registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker push registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker push registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker push registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID
-        sh 'docker push registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID
+        sh 'docker push registry.localdomain:31309/crawler/webdriver_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry.localdomain:31309/crawler/request_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry.localdomain:31309/crawler/crawler_management:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry.localdomain:31309/crawler/test_server:${BRANCH_NAME}_$BUILD_ID'
+        sh 'docker push registry.localdomain:31309/crawler/scheduler:${BRANCH_NAME}_$BUILD_ID'
       }
     }
 
