@@ -21,16 +21,19 @@ namespace Crawler.WebDriver.Core
     {
         void IncDownload(string key);
         void IncPageLoad(string key);
+        void IncPageLoadFail();
     }
 
     public class WebDriverMetrics : IWebDriverMetrics
     {
         
         private readonly Counter _counter;
+        private readonly Counter _failedCounter;
 
         public WebDriverMetrics()
         {
             _counter = Metrics.CreateCounter("crawler_web_driver", "Counts web driver requests", "Context");
+            _failedCounter = Metrics.CreateCounter("crawler_web_driver_fail", "Counts web driver requests failed", "Context");
             
         }
         public void IncDownload(string key)
@@ -41,6 +44,11 @@ namespace Crawler.WebDriver.Core
         public void IncPageLoad(string key)
         {
             _counter.WithLabels("webpage_request").Inc();
+        }
+
+        public void IncPageLoadFail()
+        {
+            _failedCounter.WithLabels("webpage_request").Inc();
         }
     }
 }

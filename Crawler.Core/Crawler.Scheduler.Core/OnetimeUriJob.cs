@@ -23,6 +23,7 @@ using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 using Quartz;
 namespace Crawler.Scheduler.Core
 {
@@ -33,6 +34,8 @@ namespace Crawler.Scheduler.Core
 
         private readonly IRequestPublisher _requestPublisher;
         private readonly ISchedulerRepository _schedulerRepository;
+
+        private readonly Counter _counter = Prometheus.Metrics.CreateCounter("job_uri_onetime", "One-time uri", "context");
 
         public OnetimeUriJob(ILogger<OnetimeUriJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher, ISchedulerRepository schedulerRepository)
         {
@@ -60,15 +63,18 @@ namespace Crawler.Scheduler.Core
                 await Task.WhenAll(
                     uriDataModels
                     .Select(model =>
-                        _crawlerConfiguration.CreateRequest(model.Uri, correlationId: Guid.NewGuid(), model.Id)
-                            .Bind(request => _requestPublisher.PublishRequest(request))
-                            .Bind<Unit, Unit>(_ => async () =>
-                            {
-                                model.IsCompleted = true;
-                                await _schedulerRepository.AddOrUpdate(model).Match(_ => {}, () => LogUriError(model.Uri), ex => LogUriError(model.Uri, ex));
-                                return Unit.Default;
-                            })
-                            .Match(u => { }, () => LogUriError(model.Uri.ToString()), ex => LogUriError(model.Uri, ex))
+                        {
+                            
+                            return _crawlerConfiguration.CreateRequest(model.Uri, correlationId: Guid.NewGuid(), model.Id)
+                                .Bind(request => _requestPublisher.PublishRequest(request))
+                                .Bind<Unit, Unit>(_ => async () =>
+                                {
+                                    model.IsCompleted = true;
+                                    await _schedulerRepository.AddOrUpdate(model).Match(_ => {}, () => LogUriError(model.Uri), ex => LogUriError(model.Uri, ex));
+                                    return Unit.Default;
+                                })
+                                .Match(u => { _counter.WithLabels($"onetime_schedule").Inc();}, () => LogUriError(model.Uri.ToString()), ex => LogUriError(model.Uri, ex));
+                        }
                     )
                     .ToArray());
 
@@ -79,6 +85,7 @@ namespace Crawler.Scheduler.Core
 
         private void LogUriError(string uri, Exception ex = null)
         {
+            _counter.WithLabels("onetime_error").Inc();
             var message = $"Failed to schedule Uri: {uri}";
             if (ex == null)
                 _logger.LogError(message);

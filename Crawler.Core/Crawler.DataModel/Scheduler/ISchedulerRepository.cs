@@ -33,6 +33,7 @@ namespace Crawler.DataModel.Scheduler
          TryOptionAsync<Unit> UpdateCompletedTimeUtcNow(Guid id);
          TryOptionAsync<List<UriDataModel>> GetUriFoundList(int limit = 100);
          TryOptionAsync<List<UriDataModel>> GetIncompleteOnetimeUris(int limit = 100);
+         TryOptionAsync<List<UriDataModel>> GetNewCollectorUris(int limit = 10);
 
     }
 }

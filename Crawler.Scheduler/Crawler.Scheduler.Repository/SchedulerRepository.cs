@@ -104,6 +104,11 @@ namespace Crawler.Scheduler.Repository
             return GetOnetimeFilter().Bind(filter => _uriDataRepository.GetMany(filter, limit));
         }
 
+        public TryOptionAsync<List<UriDataModel>> GetNewCollectorUris(int limit = 10)
+        {
+            return _uriDataRepository.GetMany(GetCollectorWithoutCronFilter(), limit);
+        }
+
         private static TryOptionAsync<FilterDefinition<BsonDocument>> GetUriFilter(string uri)
         {
             return async () =>
@@ -171,6 +176,15 @@ namespace Crawler.Scheduler.Repository
         private static FilterDefinition<BsonDocument> GetSourceFilter(Uri uri)
         {
             return Builders<BsonDocument>.Filter.Eq("Name", uri.Host.ToLowerInvariant());
+        }
+
+        private static FilterDefinition<BsonDocument> GetCollectorWithoutCronFilter()
+        {
+            var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Collector);
+            filter &= Builders<BsonDocument>.Filter.Eq("CronPeriod", BsonNull.Value);
+            filter &= Builders<BsonDocument>.Filter.Eq("IsCompleted", false);
+
+            return filter;
         }
     }
 

@@ -35,6 +35,7 @@ namespace Crawler.DataModel.Scheduler
         public Guid Id { get; set; }
 
         public string Uri { get; set; }
+        public string BaseUri { get; set; }
 
         public string RoutingKey { get; set; }
 
@@ -43,5 +44,8 @@ namespace Crawler.DataModel.Scheduler
         public string CronPeriod { get; set; }
 
         public bool IsCompleted { get; set; }
+        public bool IsSkipped { get; set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 }

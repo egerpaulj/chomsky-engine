@@ -27,7 +27,8 @@ namespace Crawler.Core.UserActions
             Dropdown,
             Radio,
             List,
-            Wait
+            Wait,
+            Scroll
         }
 
         public Option<string> ActionData { get; set; }

@@ -19,6 +19,7 @@ using Crawler.Configuration.Core;
 using Crawler.DataModel.Scheduler;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 using Quartz;
 
 namespace Crawler.Scheduler.Core
@@ -28,6 +29,8 @@ namespace Crawler.Scheduler.Core
     {
         private ILogger<PeriodUriCrawlJob> _logger;
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
+
+        private static Counter _counter = Prometheus.Metrics.CreateCounter($"job_periodic", "Runs periodically", "context");
 
         public PeriodUriCrawlJob(ILogger<PeriodUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration)
         {
@@ -39,6 +42,7 @@ namespace Crawler.Scheduler.Core
         {
             var uri = context.MergedJobDataMap.GetString(UriCollectionJob.JobDataUriKey);
             var id = context.MergedJobDataMap.GetGuid(UriCollectionJob.JobDataIdKey);
+
             _logger.LogInformation($"Running Periodic job: {uri}. Id: {id}");
 
             await Schedule(uri, id ).Match(r => r, () => throw new Exception($"Failed to schedule Periodic Uri: {uri}"));
@@ -53,13 +57,15 @@ namespace Crawler.Scheduler.Core
                         {
                             UriId = uriId,
                         })
-                .Match(r => {}, () => LogCollectionError(uri), ex => LogCollectionError(uri, ex));
+                .Match(r => {_counter?.WithLabels($"success").Inc();}, () => LogCollectionError(uri), ex => LogCollectionError(uri, ex));
+                
                 return Unit.Default;
             };
         }
 
         private void LogCollectionError(string uri, Exception ex = null)
         {
+            _counter?.WithLabels($"error").Inc();
             var message = $"Failed to schedule Uri: {uri}";
             if (ex == null)
                 _logger.LogError(message);

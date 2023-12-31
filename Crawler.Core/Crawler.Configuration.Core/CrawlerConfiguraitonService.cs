@@ -162,22 +162,12 @@ namespace Crawler.Configuration.Core
 
         private static CrawlRequestModel CreateDefaultCollectorRequest(string u)
         {
-            return new CrawlRequestModel
-            {
-                Id = Guid.NewGuid(),
-                Uri = u,
-                Host = new Uri(u).Host,
-                ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,
-                DocumentPartDefinition = new DocumentPartLink (u)
-                {
-                    Selector = new DocumentPartSelector
-                    {
-                        Xpath = "//a"
-                    }
-                },
-                ShouldDownloadContent = false,
-                IsUrlCollector = true
-            };
+            return new CrawlRequestModel()
+                                {
+                                    Id = Guid.NewGuid(),
+                                    ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,
+                                    DocumentPartDefinition = new DocumentPartAutodetect(u)
+                                };
         }
     }
 }

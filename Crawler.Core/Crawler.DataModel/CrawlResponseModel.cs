@@ -36,6 +36,8 @@ namespace Crawler.DataModel
         public Option<string> ErrorUri { get; set; }
 
         public Option<string> Raw { get; set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 
     public class CrawlEsResponseModel : IDataModel
@@ -51,6 +53,8 @@ namespace Crawler.DataModel
         public Option<string> Error { get; set; }
         public Option<string> Uri { get; set; }
         public Option<string> Timestamp { get; set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
 
 
         public CrawlEsResponseModel()

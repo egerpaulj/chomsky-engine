@@ -92,6 +92,22 @@ namespace Crawler.Configuration.Repository
             });
         }
 
+        public TryOptionAsync<bool> ShouldSkip(Option<string> baseUri, Option<string> uri)
+        {
+            return baseUri
+            .ToTryOptionAsync()
+            .SelectMany(buri => GetUriFilter(buri, isCollector: true), async  (buri, filter) => 
+            {
+                var u = uri.Match(r => r, string.Empty);
+                return await _mongoDocumentRepository
+                            .Get(filter)
+                            .Match(model => 
+                                model.UrlSkipList?.Any(item => u.ToLower().Contains(item.ToLower())) ?? true, 
+                                () => true, 
+                                ex => throw ex);
+            });
+        }
+
         private static TryOptionAsync<FilterDefinition<BsonDocument>> GetUriFilter(string uri, bool isCollector = false)
         {
             return async () =>
@@ -99,10 +115,8 @@ namespace Crawler.Configuration.Repository
                 var host = new Uri(uri).Host;
                 var filter = Builders<BsonDocument>.Filter.Eq("Host", host.ToLowerInvariant());
                 filter &= (Builders<BsonDocument>.Filter.Eq("Uri", uri.ToLowerInvariant()) | Builders<BsonDocument>.Filter.Eq("Uri", CrawlRequestModel.AllUriMatch));
-
-                if(isCollector)
-                    filter &= Builders<BsonDocument>.Filter.Eq("IsUrlCollector", "True");
-
+                filter &= Builders<BsonDocument>.Filter.Eq<Boolean>("IsUrlCollector", isCollector);
+                
                 return await Task.FromResult(filter);
             };
         }

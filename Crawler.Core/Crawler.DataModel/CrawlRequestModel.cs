@@ -39,6 +39,9 @@ namespace Crawler.DataModel
         public bool ShouldProvideRawSource { get; set; }
         public bool IsUrlCollector { get; set; }
         public string CollectablePattern { get; set; }
+        public List<string> UrlSkipList {get;set;}
+        public string Created { get; set; }
+        public string Updated { get; set; }
 
     }
 }

@@ -34,13 +34,11 @@ namespace Crawler.Strategies.General
         {
         }
 
-        protected override IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)
+        protected override IEnumerable<DocumentPartLink> Filter(DocumentPart documentPart, IEnumerable<DocumentPartLink> links)
         {
             var baseUri = documentPart.BaseUri.Match(u => u , () => throw new CrawlStrategyException("Document Part must has a Base Uri"));
-
-            var links = base.GetRelevantDocumentPartLinks(documentPart).ToList();
             _logger.LogInformation($"Found links in {baseUri}: {links.Count()}");
-            
+
             return links
             .Where(l => l.Uri.Bind<bool>(u => u.ToLowerInvariant().Contains(baseUri.ToLowerInvariant())).Match(t =>t, false));
         }

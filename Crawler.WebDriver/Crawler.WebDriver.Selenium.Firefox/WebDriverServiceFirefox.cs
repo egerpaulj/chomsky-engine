@@ -51,6 +51,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
         private readonly Timer _cleanupTimer;
         private const int _cleanupPeriodInSeconds = 300;
         private const int _maxDriverLifetimeInMinutes = 30;
+        private const int WAIT_FOR_PAGE_LOAD_IN_SECONDS = 60;
         private readonly bool _isHeadless;
         private bool disposedValue;
 
@@ -95,11 +96,11 @@ namespace Crawler.WebDriver.Selenium.Firefox
                     CreateDriver(uri)
                         .SelectMany(driver =>
                             LoadPage(driver, uri, correlationId), (d, d2) => d2), (u, d) => d)
-                .SelectMany(driver => ExecuteUserActions(driver, userActions, correlationId), (d, _) => d)
+                .SelectMany(driver => ExecuteUserActions(_logger, driver, userActions, correlationId), (d, _) => d)
                 .Bind<FirefoxContainer, string>(driver => async () => 
                 {
                     var source = driver.Driver.PageSource;
-                    driver.Driver.Quit();
+                    driver.Discard();
                     return await Task.FromResult(source);
                 });
         }
@@ -137,7 +138,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
             };
         }
 
-        private static UserAction Map(UiAction uiAction)
+        internal static UserAction Map(UiAction uiAction)
         {
             switch (uiAction.Type)
             {
@@ -182,6 +183,13 @@ namespace Crawler.WebDriver.Selenium.Firefox
                     {
                         XPath = uiAction.XPath
                     };
+                case UiAction.ActionType.Scroll:
+                    int.TryParse(uiAction.ActionData.MatchUnsafe(r => r, ()=> null), out int scrolls);
+                    return new UserActionScroll()
+                    {
+                        XPath = uiAction.XPath,
+                        NumberOfScrolls = scrolls
+                    };
 
                 default:
                     throw new PageLoadException(null, "Unknown Ui Action");
@@ -201,7 +209,12 @@ namespace Crawler.WebDriver.Selenium.Firefox
             var options = new FirefoxOptions();
             if (_isHeadless)
                 options.AddArgument("-headless");
-            var container = new FirefoxContainer(new FirefoxDriver(options), indicator.Host);
+            
+            options.AddArgument("--no-sandbox");
+            options.Profile = new FirefoxProfile();
+            
+            var container = new FirefoxContainer(new FirefoxDriver("/bin", options, TimeSpan.FromMinutes(2)), indicator.Host);
+            
             return container;
         }
 
@@ -210,6 +223,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
             return async () =>
             {
                 _logger.LogInformation($"Loading Page: {uri}. CorrelationId: {correlationId}");
+                
                 var c = LoadPage(container, uri);
                 _logger.LogInformation($"Loaded Page successfully: {uri}. CorrelationId: {correlationId}");
                 _webDriverMetrics.IncPageLoad(new Uri(uri).Host);
@@ -218,16 +232,16 @@ namespace Crawler.WebDriver.Selenium.Firefox
             };
         }
 
-        private TryOptionAsync<Unit> ExecuteUserActions(FirefoxContainer container, IEnumerable<UserAction> userActions, Guid correlationId)
+        internal static TryOptionAsync<Unit> ExecuteUserActions<T>(ILogger<T> logger, FirefoxContainer container, IEnumerable<UserAction> userActions, Guid correlationId)
         {
             return async () =>
             {
 
                 foreach (var userAction in userActions)
                 {
-                    _logger.LogInformation($"Executing Page User Action: {userAction}. CorrelationId: {correlationId}");
+                    logger.LogInformation($"Executing Page User Action: {userAction}. CorrelationId: {correlationId}");
                     await userAction.Execute(container.Driver).Match(r => r, () => throw new CrawlException("Failed to run user actions", ErrorType.PageLoadError), ex => throw new CrawlException("Failed to run user actions", ErrorType.PageLoadError, ex));
-                    _logger.LogInformation($"Successfully executed Page User Action: {userAction}. CorrelationId: {correlationId}");
+                    logger.LogInformation($"Successfully executed Page User Action: {userAction}. CorrelationId: {correlationId}");
                 }
 
                 return await Task.FromResult(Unit.Default);
@@ -238,25 +252,47 @@ namespace Crawler.WebDriver.Selenium.Firefox
         {
             try
             {
-                container.Driver.Navigate().GoToUrl(uri);
-
-                var wait = new WebDriverWait(container.Driver, TimeSpan.FromSeconds(10));
-                wait.PollingInterval = TimeSpan.FromMilliseconds(300);
-                await Task.Delay(3);
-                wait.Until(d => container.Driver.ExecuteScript("return document.readyState").Equals("complete"));
-
-                return container;
+                return await LoadAndWait(container, uri);
             }
             catch (Exception e)
             {
-                container.Discard();
+
                 _logger.LogWarning($"Webdriver Error. Replacing driver and trying again. {e.Message}");
-                var tempContainer = CreateFirefoxContainer(new Uri(uri));
-                tempContainer.Driver.Navigate().GoToUrl(uri);
-                return tempContainer;
+                container.Discard();
+                return await Retry(uri, e);
 
             }
 
+        }
+
+        private async Task<FirefoxContainer> Retry(string uri, Exception e)
+        {
+            var tempContainer = CreateFirefoxContainer(new Uri(uri));
+
+            try
+            {
+                return await LoadAndWait(tempContainer, uri);
+            }
+            catch (Exception ex2)
+            {
+                _webDriverMetrics.IncPageLoadFail();
+                _logger.LogError(ex2, $"Webdriver Error. Retry failed. {e.Message}");
+                tempContainer.Discard();
+                throw;
+
+            }
+        }
+
+        private static async Task<FirefoxContainer> LoadAndWait(FirefoxContainer container, string uri)
+        {
+            container.Driver.Navigate().GoToUrl(uri);
+
+            var wait = new WebDriverWait(container.Driver, TimeSpan.FromSeconds(WAIT_FOR_PAGE_LOAD_IN_SECONDS));
+            wait.PollingInterval = TimeSpan.FromMilliseconds(300);
+            await Task.Delay(3);
+            wait.Until(d => container.Driver.ExecuteScript("return document.readyState").Equals("complete"));
+
+            return container;
         }
 
         private void CleanUpWebDrivers(object state)

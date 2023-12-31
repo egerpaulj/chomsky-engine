@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crawler.Core\Crawler.Core\Crawler.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Management.Core\Crawler.Management.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Scheduler\Crawler.Scheduler.Repository\Crawler.Scheduler.Repository.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Microservice.Core\Crawler.Microservice.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.DataModel\Crawler.DataModel.csproj" />
+    <ProjectReference Include="..\Crawler.Core\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+    <ProjectReference Include="..\Crawler.Configuration\Crawler.Configuration.Repository\Crawler.Configuration.Repository.csproj" />
+    <ProjectReference Include="..\Microservice.DataModel.Core\Microservice.DataModel.Core.csproj" />
+    <ProjectReference Include="..\Microservice.TestHelper\Microservice.TestHelper.csproj" />
+    <ProjectReference Include="..\Microservice.Amqp\Microservice.Amqp\Microservice.Amqp.csproj" />
+    <ProjectReference Include="..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
+    <ProjectReference Include="..\Microservice.Mongodb\Microservice.Mongodb.Repo\Microservice.Mongodb.Repo.csproj" />
+    <PackageReference Include="LanguageExt.Core" Version="3.4.15" />
+    <PackageReference Include="Moq" Version="4.16.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="uricollector">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.Test.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

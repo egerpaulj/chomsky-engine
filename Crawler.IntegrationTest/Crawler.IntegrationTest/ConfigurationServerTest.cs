@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microservice.TestHelper;
 using Crawler.Microservice.Core;
+using Microsoft.Extensions.Hosting;
 
 namespace Crawler.IntegrationTest
 {
@@ -18,10 +19,12 @@ namespace Crawler.IntegrationTest
     [TestCategory("IntegrationTest")]
     public class ConfigurationServerTest
     {
-        [TestInitialize]
-        public async Task Setup()
+
+        [TestMethod]
+        public void MatchHostTets()
         {
-            await new MongoDbConfigurationTest().StoreConfigurationIntegrationTest();
+            var uri = new Uri("https://www.theguardian.com/society/2023/apr/17/junior-doctors-strike-led-to-195000-hospital-cancellations-last-week-nhs-england");
+            Assert.AreEqual("www.theguardian.com", uri.Host);
         }
         
         [TestMethod]

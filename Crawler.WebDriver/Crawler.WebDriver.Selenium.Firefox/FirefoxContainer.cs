@@ -38,7 +38,13 @@ namespace Crawler.WebDriver.Selenium.Firefox
             HostUri = hostUri;
         }
 
-        public void Discard() { MarkedForRemoval = true;}
+        public void Discard() 
+        { 
+            Driver.Close();
+            Driver.CloseDevToolsSession();
+            Driver.Quit();
+            MarkedForRemoval = true;
+        }
 
         protected virtual void Dispose(bool disposing)
         {
