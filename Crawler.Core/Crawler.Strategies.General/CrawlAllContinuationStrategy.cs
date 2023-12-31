@@ -46,20 +46,21 @@ namespace Crawler.Stategies.Core
         public TryOptionAsync<Unit> Apply(Option<CrawlResponse> response)
         {
             var correlationId = response.Bind(r => r.CorrelationId).Match(g => g, Guid.NewGuid());
+            var baseUri = response.Bind(r => r.Result).Bind(r => r.RequestDocumentPart).Bind(r => r.BaseUri);
 
             return response
             .Bind(r => r.Result)
             .Bind(r => r.RequestDocumentPart)
             .ToTryOptionAsync()
             .Bind<DocumentPart, List<DocumentPartLink>>(dp => GetDocumentPartLinks(dp))
-            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(links, DataModel.Scheduler.UriType.Onetime));
+            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(baseUri, links, DataModel.Scheduler.UriType.Onetime));
         }
 
-        protected virtual IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)
+        internal static IEnumerable<DocumentPartLink> GetLinks(DocumentPart documentPart)
         {
             var links = documentPart.GetAllParts<DocumentPartLink>().ToList();
 
-            if (documentPart is DocumentPartAutodetect)
+            if (documentPart.DocPartType == DocumentPartType.AutoDetect)
             {
                 var fileLinks = documentPart.GetAllParts<DocumentPartFile>().SelectMany(a =>
                 {
@@ -72,11 +73,16 @@ namespace Crawler.Stategies.Core
             return links;
         }
 
+        protected virtual IEnumerable<DocumentPartLink> Filter(DocumentPart documentPart, IEnumerable<DocumentPartLink> links)
+        {
+            return links;
+        }
+
         private TryOptionAsync<List<DocumentPartLink>> GetDocumentPartLinks(DocumentPart documentPart)
         {
             return async () =>
             {
-                IEnumerable<DocumentPartLink> links = GetRelevantDocumentPartLinks(documentPart);
+                IEnumerable<DocumentPartLink> links = GetLinks(documentPart);
 
                 return await Task.FromResult(links.ToList());
             };

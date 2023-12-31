@@ -21,6 +21,7 @@ using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 using Quartz;
 
 namespace Crawler.Scheduler.Core
@@ -30,6 +31,8 @@ namespace Crawler.Scheduler.Core
         private ILogger<FoundUriJob> _logger;
         private readonly ISchedulerRepository _schedulerRepository;
         private readonly IConfigurationRepository _configurationRepository;
+
+        private readonly Counter _counter = Prometheus.Metrics.CreateCounter("job_uri_found", "Uris found job", "context");
 
         public FoundUriJob(ILogger<FoundUriJob> logger, ISchedulerRepository schedulerRepository, IConfigurationRepository configurationRepository)
         {
@@ -54,13 +57,25 @@ namespace Crawler.Scheduler.Core
                     {
                         foreach(var uri in list)
                         {
-                            if(await _configurationRepository.IsCollectable(uri.Uri).Match(r => r, () => false, ex => throw ex))
+                            if(await _configurationRepository.ShouldSkip(uri.BaseUri, uri.Uri).Match(r => r, () => false))
                             {
+                                uri.IsSkipped = true;
+                                uri.IsCompleted = true;
+                                await UpdateUri(uri);
+                                
+                                _counter.WithLabels("skipped").Inc();
+                                continue;
+                            }
+
+                            if(await _configurationRepository.IsCollectable(uri.Uri).Match(r => r, () => false, ex => false))
+                            {
+                                _counter.WithLabels($"collectors").Inc();
                                 uri.UriTypeId = UriType.Collector;
-                                await _schedulerRepository.AddOrUpdate(uri).Match(r => r, () => throw new Exception("failed to update model"), ex => throw ex);
+                                await UpdateUri(uri);
                             }
                             else
                             {
+                                _counter.WithLabels($"schedule_crawl").Inc();
                                 await _schedulerRepository.AddOrUpdate(
                                     new CrawlUriDataModel{
                                         UriId = uri.Id
@@ -78,8 +93,14 @@ namespace Crawler.Scheduler.Core
             };
         }
 
+        private async Task UpdateUri(UriDataModel uri)
+        {
+            await _schedulerRepository.AddOrUpdate(uri).Match(r => r, () => throw new Exception("failed to update model"), ex => throw ex);
+        }
+
         private void LogError(Exception ex = null)
         {
+            _counter.WithLabels($"failed").Inc();
             var message = $"Job Failed - Found URI list";
             if (ex == null)
                 _logger.LogError(message);

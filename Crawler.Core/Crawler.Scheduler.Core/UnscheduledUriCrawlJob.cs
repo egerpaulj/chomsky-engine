@@ -23,6 +23,7 @@ using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 using Quartz;
 namespace Crawler.Scheduler.Core
 {
@@ -33,6 +34,8 @@ namespace Crawler.Scheduler.Core
 
         private readonly IRequestPublisher _requestPublisher;
         private readonly ISchedulerRepository _schedulerRepository;
+
+        private static Counter _counter = Prometheus.Metrics.CreateCounter($"job_unscheduled", "unscheduled crawls", "context");
 
         public UnscheduledUriCrawlJob(ILogger<UnscheduledUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher, ISchedulerRepository schedulerRepository)
         {
@@ -62,9 +65,13 @@ namespace Crawler.Scheduler.Core
                         _schedulerRepository
                             .GetUriData(crawlUri.UriId)
                             .Bind(uriData => _crawlerConfiguration.CreateRequest(uriData.Uri, correlationId: Guid.NewGuid(), crawlUri.Id))
-                            .Bind(request => _requestPublisher.PublishRequest(request))
+                            .Bind(request => 
+                                {
+                                    _logger.LogInformation($"Scheduling crawl. RequestId: {request.Id}, Uri: {crawlUri.UriId}");
+                                    return _requestPublisher.PublishRequest(request);
+                                })
                             .Bind(_ => _crawlerConfiguration.UpdateScheduledTimeUtcNow(crawlUri.Id))
-                            .Match(u => { }, () => LogUriError(crawlUri.UriId.ToString()), ex => LogUriError(crawlUri.Id.ToString(), ex))
+                            .Match(u => {_counter.WithLabels($"published").Inc(); }, () => LogUriError(crawlUri.UriId.ToString()), ex => LogUriError(crawlUri.Id.ToString(), ex))
                     )
                     .ToArray());
 
@@ -75,6 +82,7 @@ namespace Crawler.Scheduler.Core
 
         private void LogUriError(string uri, Exception ex = null)
         {
+            _counter.WithLabels($"failed").Inc();
             var message = $"Failed to schedule UriId: {uri}";
             if (ex == null)
                 _logger.LogError(message);

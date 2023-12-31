@@ -23,6 +23,7 @@ using Crawler.Core.Results;
 using Crawler.Core.Strategy;
 using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
+using Crawler.Stategies.Core;
 using LanguageExt;
 
 namespace Crawler.Strategies.General
@@ -41,24 +42,21 @@ namespace Crawler.Strategies.General
             var shouldDownloadContent = response.Bind(r => r.Result).Bind(r => r.DownloadContent).Match(d => d, false);
             var correlationId = response.Bind(r => r.CorrelationId).Match(g =>g, Guid.NewGuid());
 
+            var baseUri = response.Bind(r => r.Result).Bind(r => r.RequestDocumentPart).Bind(r => r.BaseUri);
+
             return response
             .Bind(r => r.Result)
             .Bind(r => r.RequestDocumentPart)
             .ToTryOptionAsync()
             .Bind<DocumentPart, List<DocumentPartLink>>(dp => GetDocumentPartLinks(dp))
-            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(links, UriType.Found));
-        }
-
-        protected virtual IEnumerable<DocumentPartLink> GetRelevantDocumentPartLinks(DocumentPart documentPart)
-        {
-            return documentPart.GetAllParts<DocumentPartLink>();
+            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(baseUri, links, UriType.Found));
         }
 
         private TryOptionAsync<List<DocumentPartLink>> GetDocumentPartLinks(DocumentPart documentPart)
         {
             return async () =>
             {
-                IEnumerable<DocumentPartLink> links = GetRelevantDocumentPartLinks(documentPart);
+                IEnumerable<DocumentPartLink> links = CrawlAllContinuationStrategy.GetLinks(documentPart);
 
                 return await Task.FromResult(links.ToList());
             };

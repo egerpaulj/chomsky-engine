@@ -44,7 +44,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
             return _requestPublisher.Publish<CrawlRequest>(request);
         }
 
-        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> linksList, UriType uriType)
+        public TryOptionAsync<Unit> PublishUri(Option<string> baseUri, Option<List<DocumentPartLink>> linksList, UriType uriType)
         {
             return linksList.ToTryOptionAsync().Bind<List<DocumentPartLink>, Unit>(links => async () =>
             {
@@ -52,6 +52,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
                 {
                     await _uriPublisher.Publish<CrawlUri>(new CrawlUri
                     {
+                        BaseUri = baseUri,
                         Uri = l.Uri,
                         UriTypeId = uriType
                     }).Match(r => r, () => throw new Exception($"Failed to publish uri: {l.Uri}"));

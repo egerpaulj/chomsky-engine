@@ -180,7 +180,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
                });
         }
 
-        public TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links, UriType uriType)
+        public TryOptionAsync<Unit> PublishUri(Option<string> baseUri, Option<List<DocumentPartLink>> links, UriType uriType)
         {
             return Init().Bind<Unit, Unit>(u => async () =>
                {

@@ -22,6 +22,7 @@ using LanguageExt;
 using Crawler.DataModel;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using Prometheus;
 
 namespace Crawler.Scheduler.Core
 {
@@ -32,6 +33,7 @@ namespace Crawler.Scheduler.Core
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
         private readonly IRequestPublisher _requestPublisher;
         private readonly ILogger<UriCollectionJob> _logger;
+        private static Counter _counter = Prometheus.Metrics.CreateCounter($"job_uri_collection", "collect uris", "context");
 
         public UriCollectionJob(ILogger<UriCollectionJob> logger, ICrawlerConfigurationService crawlerConfiguration, IRequestPublisher requestPublisher)
         {
@@ -56,7 +58,7 @@ namespace Crawler.Scheduler.Core
                 await _crawlerConfiguration
                             .GetCollectorCrawlRequest(uri)
                             .Bind(request => _requestPublisher.PublishRequest(request.Map(uri, correlationId: Guid.NewGuid(), crawlId: id)))
-                            .Match(u => { }, () => LogCollectionError(uri), ex => LogCollectionError(uri, ex));
+                            .Match(u => { _counter.WithLabels($"published").Inc(); }, () => LogCollectionError(uri), ex => LogCollectionError(uri, ex));
 
                 return Unit.Default;
             };
@@ -64,6 +66,7 @@ namespace Crawler.Scheduler.Core
 
         private void LogCollectionError(string uri, Exception ex = null)
         {
+            _counter.WithLabels($"failed").Inc();
             var message = $"Failed to schedule URI Collection: {uri}";
             if (ex == null)
                 _logger.LogError(message);

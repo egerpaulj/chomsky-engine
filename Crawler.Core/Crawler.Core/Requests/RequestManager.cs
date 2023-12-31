@@ -25,10 +25,13 @@ namespace Crawler.Core.Requests
 {
     public class RequestManager : IRequestManager
     {
+        private bool _jitterTime = false;
+        private const int JitterWaitInMinutes = 10;
+
         private Dictionary<string, int> _recursionControl = new Dictionary<string, int>();
         private const int DownloadRecursionThreshold = 2000;
-        private const int MinThrottleValue = 3;
-        private const int MaxThrottleValue = 10;
+        private const int MinThrottleValue = 8;
+        private const int MaxThrottleValue = 20;
         private readonly ICache _cache;
         private readonly Random _random;
 
@@ -47,8 +50,16 @@ namespace Crawler.Core.Requests
             _host = host;
         }
 
-        public async Task ThrottleRequest()
+        private async Task ThrottleRequest()
         {
+            if (_jitterTime)
+            {
+                // ToDo Skip jitter for now - fail fast
+                // _logger.LogInformation($"Jittering request for {JitterWaitInMinutes}minutes: {_host}");
+                // await Task.Delay(TimeSpan.FromMinutes(JitterWaitInMinutes));
+                _jitterTime = false;
+            }
+
             var lastRequest = await _cache.GetLastRequestTime(_host).Match(d => d, DateTime.UtcNow);
             var now = DateTime.UtcNow;
 
@@ -102,6 +113,11 @@ namespace Crawler.Core.Requests
                     try
                     {
                         return  await action().Match(res => res, () => throw new CrawlException("Request action failed (empty result)", ErrorType.PageLoadError), e => throw new CrawlException("Request action failed", ErrorType.PageLoadError, e));
+                    }
+                    catch(Exception)
+                    {
+                        _jitterTime = true;
+                        throw;
                     }
                     finally
                     {

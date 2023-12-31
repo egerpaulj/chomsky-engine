@@ -11,6 +11,7 @@ using Crawler.Stategies.Core;
 using LanguageExt;
 using Microservice.Amqp;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 
 namespace Crawler.Management.Service;
 
@@ -19,6 +20,7 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
     private readonly ICrawlStrategyMapper _crawlStrategyMapper;
 
     private readonly ILogger<RabbitMqCrawlRequestHandler> _logger;
+    private static Counter _counter = Prometheus.Metrics.CreateCounter("crawls", "Processing crawls", "context");
     public RabbitMqCrawlRequestHandler(ILogger<RabbitMqCrawlRequestHandler> logger, ICrawlStrategyMapper crawlStrategyMapper)
 
     {
@@ -29,7 +31,7 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
     public async Task<CrawlEsResponseModel> HandleMessage(Option<CrawlRequest> m)
     {
         var message = m.Match(mes => mes, () => throw new System.Exception("Empty message"));
-        _logger.LogInformation($"Preparing to Crawl: {message.Id}, Cont.: {message.ContinuationStrategy}");
+        _logger.LogInformation($"Preparing to Crawl: crawlRequestId: {message.Id}, Cont.: {message.ContinuationStrategy}");
         var strategy = await _crawlStrategyMapper.GetCrawlStrategy(message).Match(s => s, () => throw new Exception("Strategy missing"), ex => throw ex);
         var contStrategy = await _crawlStrategyMapper.GetContinuationStrategy(message).MatchUnsafe(s => s, () => null, ex => throw ex);
         var contStrategyOpt = contStrategy
@@ -40,7 +42,12 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
         var request = new Request(Option<ICrawlStrategy>.Some(strategy), contStrategyOpt, message);
 
         _logger.LogInformation($"Starting Crawl: {message.Id}");
-        var response = await strategy.Crawl(request).Match(r => r, () => throw new Exception("Empty result when crawling"), ex => throw ex);
+        _counter.WithLabels($"started").Inc();
+        var response = await strategy.Crawl(request).Match(
+            r => r, 
+            () => { _counter.WithLabels($"failed").Inc(); throw new Exception("Empty result when crawling");}, 
+            ex => { _counter.WithLabels($"failed").Inc(); throw ex;});
+        _counter.WithLabels($"completed").Inc();
         
 
         _logger.LogInformation($"Completed Crawl: {message.Id}");

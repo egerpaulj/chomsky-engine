@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using Crawler.Configuration.Core;
 using Crawler.Configuration.Repository;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Core.Requests;
 using Crawler.Core.UserActions;
 using Crawler.DataModel;
 using Crawler.Microservice.Core;
+using Crawler.WebDriver.Selenium.UserActions;
 using Microservice.Mongodb.Repo;
 using Microservice.TestHelper;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +24,7 @@ namespace Crawler.IntegrationTest
     [TestCategory("IntegrationTest")]
     public class MongoDbConfigurationTest
     {
+        
         [TestMethod]
         [TestCategory("IntegrationTest")]
         public async Task GetConfigurationIntegrationTest()
@@ -58,7 +61,6 @@ namespace Crawler.IntegrationTest
             var testee = CreateTestee();
             await testee.DeleteAll(TestHelper.TestUri).Match(u => u, () => throw new Exception("Delete all failed"));
 
-            await StoreConfigurationIntegrationTest();
             await testee.DeleteAll(TestHelper.TestUri).Match(u => u, () => throw new Exception("Delete all failed"));
 
             await testee.GetCrawlRequest($"{TestHelper.TestUri}/?q=somethingElse")
@@ -66,18 +68,6 @@ namespace Crawler.IntegrationTest
 
         }
 
-        //[TestMethod]
-        public async Task StoreConfigurationIntegrationTest()
-        {
-            var testee = CreateTestee();
-
-            await testee.DeleteAll(TestHelper.TestUri).Match(r => { }, () => { });
-            var res = await testee.AddOrUpdate(CreateRequest("https://www.theguardian.com"))
-            .Match(r => r, () => throw new System.Exception("Failed"), e => throw e)
-            ;
-
-            Assert.IsNotNull(testee);
-        }
 
         private static MongoDbConfigurationRepository CreateTestee()
         {
@@ -89,9 +79,12 @@ namespace Crawler.IntegrationTest
         {
             return new CrawlRequestModel
             {
+                CollectablePattern = "^https://www\\.theguardian\\.com\\D+$",
+                UrlSkipList = new List<string>{"localhost", "about:", "about:neterror", "#comments", "page=with:block"},
+                IsUrlCollector = true,
                 Host = new Uri(uri).Host,
                 Uri = "*",
-                ContinuationStrategyDefinition = Core.Requests.CrawlContinuationStrategy.None,
+                ContinuationStrategyDefinition = Core.Requests.CrawlContinuationStrategy.DomainOnly,
                 DocumentPartDefinition = new DocumentPartArticle(uri)
                 {
                     Title = new DocumentPartText(uri)

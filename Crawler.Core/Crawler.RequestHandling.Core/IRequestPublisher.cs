@@ -24,6 +24,6 @@ namespace Crawler.RequestHandling.Core
     public interface IRequestPublisher
     {
          TryOptionAsync<Unit> PublishRequest(Option<CrawlRequest> request);
-         TryOptionAsync<Unit> PublishUri(Option<List<DocumentPartLink>> links, UriType uriType);
+         TryOptionAsync<Unit> PublishUri(Option<string> baseUri, Option<List<DocumentPartLink>> links, UriType uriType);
     }
 }

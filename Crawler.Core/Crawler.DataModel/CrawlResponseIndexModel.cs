@@ -37,6 +37,8 @@ namespace Crawler.DataModel
         public Option<string> ErrorUri { get; set; }
 
         public Option<string> Raw { get; set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 
     public class HyperLink

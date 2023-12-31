@@ -30,11 +30,12 @@ namespace Crawler.WebDriver.Selenium.UserActions
             return async () =>
             {
                 var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutInSeconds));
+                wait.PollingInterval = TimeSpan.FromMilliseconds(300);
                 wait.Until(d => driver.ExecuteScript("return document.readyState").Equals("complete"));
 
-                XPath.Match(xpath =>
+                var element = XPath.Match(xpath =>
                         wait.Until(d =>
-                            driver.FindElement(By.XPath(xpath))), () => { });
+                            driver.FindElement(By.XPath(xpath))), () => throw new Exception("Uiaction wait: Xpath missing"));
 
                 return await Task.FromResult(Unit.Default);
             };

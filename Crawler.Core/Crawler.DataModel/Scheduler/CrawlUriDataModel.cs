@@ -28,6 +28,8 @@ namespace Crawler.DataModel.Scheduler
 
         public string ScheduledTimestamp {get;set;}
         public string CompletedTimestamp {get;set;}
+        public string Created { get; set; }
+        public string Updated { get; set; }
 
         
     }

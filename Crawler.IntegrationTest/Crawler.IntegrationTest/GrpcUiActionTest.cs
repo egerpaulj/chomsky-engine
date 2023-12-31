@@ -40,16 +40,15 @@ namespace Crawler.IntegrationTest
                 new JsonConverterProvider());
         }
 
-        [TestMethod]
+        //[TestMethod]
         public async Task UiActionsTest()
         {
             // use for local testing diredctly with gecko
-            //var testee = new WebDriverServiceFirefox(new WebDriverMetrics(), _loggerFactory.CreateLogger<WebDriverServiceFirefox>(), true);
-
+            //var testee = new WebDriverFirefoxRobust(new WebDriverMetrics(), _loggerFactory.CreateLogger<WebDriverServiceFirefox>(), true);
 
             var result = await _testee.LoadPage(new LoadPageRequest
             {
-                Uri=_uri,
+                Uri= _uri,
                 UserActions = new List<Core.UserActions.UiAction>
                 {
                     new Core.UserActions.UiAction
@@ -75,6 +74,12 @@ namespace Crawler.IntegrationTest
                         Type = Core.UserActions.UiAction.ActionType.Dropdown,
                         XPath = "//input[@name='dropdown']",
                         ActionData = "Dropdown 2"                       
+                    },
+                    new Core.UserActions.UiAction
+                    {
+                        Type = Core.UserActions.UiAction.ActionType.Scroll,
+                        //XPath = "//footer",
+                        ActionData = "5"
                     },
                     new Core.UserActions.UiAction
                     {

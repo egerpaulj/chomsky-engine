@@ -30,5 +30,6 @@ namespace Crawler.DataModel
          TryOptionAsync<List<UiAction>> GetUserActions(Option<string> uri);
          TryOptionAsync<DocumentPart> GetDocumentPart(Option<string> uri);
          TryOptionAsync<bool> IsCollectable(Option<string> uri);
+         TryOptionAsync<bool> ShouldSkip(Option<string> baseUri, Option<string> uri);
     }
 }

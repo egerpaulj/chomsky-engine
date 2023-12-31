@@ -83,6 +83,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler.Scheduler.Core", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microservice.Exchange.Core", "Microservice.Exchange\Microservice.Exchange.Core\Microservice.Exchange.Core.csproj", "{27D83234-800B-4C47-9C27-57CD52CC400F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler.Adhoc", "Crawler.Adhoc\Crawler.Adhoc.csproj", "{F168F5E5-C779-4CBD-B793-D298F9660F2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -208,6 +210,10 @@ Global
 		{27D83234-800B-4C47-9C27-57CD52CC400F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27D83234-800B-4C47-9C27-57CD52CC400F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27D83234-800B-4C47-9C27-57CD52CC400F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F168F5E5-C779-4CBD-B793-D298F9660F2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F168F5E5-C779-4CBD-B793-D298F9660F2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F168F5E5-C779-4CBD-B793-D298F9660F2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F168F5E5-C779-4CBD-B793-D298F9660F2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{ACD53C5A-3611-4031-8A09-A3DC2BEB4191} = {D5BE38AC-7CC6-44A1-8B7A-97D112791490}
