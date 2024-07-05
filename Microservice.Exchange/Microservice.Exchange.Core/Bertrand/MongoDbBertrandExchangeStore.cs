@@ -46,6 +46,6 @@ public class MongoDbBertrandExchangeStore(IMongoDbRepository<BertrandExchangeDat
 
     public TryOptionAsync<Unit> SaveExchange(BertrandExchangeModel model)
     {
-        GetExchange(model.ExchangeName)
+        throw new NotImplementedException("ToDo");
     }
 }

@@ -23,6 +23,7 @@ using System;
 using System.Timers;
 using System.Threading;
 using System.Reflection.Metadata.Ecma335;
+using Microservice.Exchange.Bertrand;
 
 namespace Microservice.Exchange.Core.Bertrand;
 
