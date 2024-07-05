@@ -24,6 +24,7 @@ namespace Microservice.Elasticsearch.Test
         public Guid Id { get; set; }
 
         public string Data { get; set; }
-        
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 }

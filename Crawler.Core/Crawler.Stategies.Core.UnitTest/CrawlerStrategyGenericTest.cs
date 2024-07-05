@@ -137,6 +137,22 @@ namespace Crawler.Stategies.Core.UnitTest
         }
 
         [TestMethod]
+        public void Crawl_WhenAnchor_WhenDomainOnly_ThenLinksPublished()
+        {
+            //ARRANGE
+            var testcase = TestCaseFactoryLink.CreateTestCaseAnchorAndContent();
+            CrawlerStrategyGeneric testee = CreateTestee(testcase);
+            var request = new Request(testee, null, testcase.CrawlRequest);
+
+            // ACT
+            var result = StartCrawl(testee, request);
+
+            //ASSERT
+            var documentPartLink = GetDocumentPart<DocumentPartLink>(result);
+            DocumentPartLinkTest.AssertResult(testcase, documentPartLink);
+        }
+
+        [TestMethod]
         public void Crawl_WhenAnchorWithContent_ThenContentDownloaded()
         {
             //ARRANGE

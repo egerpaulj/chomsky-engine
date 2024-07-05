@@ -179,9 +179,11 @@ namespace Crawler.WebDriver.Selenium.Firefox
                         XPath = uiAction.XPath
                     };
                 case UiAction.ActionType.Wait:
+                    int.TryParse(uiAction.ActionData.Match(r => r, () => string.Empty),out int waitData);
                     return new UserActionWait()
                     {
-                        XPath = uiAction.XPath
+                        XPath = uiAction.XPath,
+                        WaitInSeconds = waitData
                     };
                 case UiAction.ActionType.Scroll:
                     int.TryParse(uiAction.ActionData.MatchUnsafe(r => r, ()=> null), out int scrolls);
@@ -200,7 +202,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
         {
             return async () =>
             {
-                return CreateFirefoxContainer(new Uri(uri));
+                return await Task.FromResult(CreateFirefoxContainer(new Uri(uri)));
             };
         }
 

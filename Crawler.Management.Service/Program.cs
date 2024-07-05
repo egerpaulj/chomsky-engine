@@ -28,6 +28,8 @@ using Microservice.Amqp;
 using Crawler.Core.Requests;
 using Crawler.RequestHandling.Core;
 using Crawler.Management.Core.RequestHandling.Core.Amqp;
+using Microservice.Exchange.Endpoints.Rabbitmq;
+using Crawler.Core.Results;
 
 namespace Crawler.Management.Service
 {
@@ -52,7 +54,7 @@ namespace Crawler.Management.Service
                     var databaseConfiguration = new DatabaseConfiguration
                     {
                         DatabaseName = "Crawler",
-                        DocumentName = "crawl_request"
+                        CollectionName = "crawl_request"
                     };
                     services.AddSingleton<IDatabaseConfiguration>(databaseConfiguration);
                     services.AddSingleton<IMongoDbRepository<CrawlRequestModel>, MongoDbRepository<CrawlRequestModel>>();
@@ -79,7 +81,7 @@ namespace Crawler.Management.Service
                     services.AddSingleton<IAmqpProvider, AmqpProvider>();
                     services.AddTransient<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
                     services.AddTransient<IAmqpBootstrapper, AmqpBootstrapper>();
-                    services.AddTransient<IMessageHandler<CrawlRequest, CrawlEsResponseModel>, RabbitMqCrawlRequestHandler>();
+                    services.AddTransient<IMessageHandler<CrawlRequest, CrawlResponse>, RabbitMqCrawlRequestHandler>();
                     services.AddTransient<IMessageHandler<CrawlUri, CrawlUri>, RabbitMqUriHandler>();
 
                     // Console.WriteLine(typeof(CrawlRequestTransformer).AssemblyQualifiedName);

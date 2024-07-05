@@ -59,6 +59,7 @@ namespace Microservice.Elasticsearch.Repo
         {
             var doc = document.Match(d => d, () => throw new Exception("Unable to index empty document"));
             var idx = indexKey.Match(i => i, () => throw new Exception("Index key should not be empty"));
+            doc.Updated = $"{DateTime.UtcNow:yyyy.MM.dd:HH:mm:ss}";
 
             return Serialize<T>(doc)
                     .Bind(json => IndexDocument(doc, json, idx));

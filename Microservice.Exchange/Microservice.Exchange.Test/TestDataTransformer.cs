@@ -45,9 +45,9 @@ namespace Microservice.Exchange.Test
     public class MessageHandler : IMessageHandler<TestOutputMessage, TestOutputMessage>
     {
 
-        public Task<TestOutputMessage> HandleMessage(Option<TestOutputMessage> message)
+        public Task<TestOutputMessage> HandleMessage(Option<Amqp.Message<TestOutputMessage>> message)
         {
-            return Task.FromResult(message.Match(r => r, () => throw new Exception("Failed")));
+            return Task.FromResult(message.Bind(m => m.Payload).Match(r => r, () => throw new Exception("Failed")));
         }
     }
 }

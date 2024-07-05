@@ -43,12 +43,10 @@ namespace Microservice.Serialization
 
         public static T Deserialize<T>(this IJsonConverterProvider converter, string valueStr) => (T)converter.DeserializeObject<T>(valueStr);
 
-        private static object DeserializeObject<T>(this IJsonConverterProvider converter, string valueStr)
+        public static object Deserialize(this IJsonConverterProvider converter, string valueStr, Type type)
         {
             if(string.IsNullOrEmpty(valueStr))
-                return default(T);
-
-            var type = typeof(T);
+                return null;
 
             if (type.IsValueType || type == typeof(string))
             {
@@ -88,7 +86,12 @@ namespace Microservice.Serialization
             if (type == typeof(Double))
                 return double.Parse(valueStr);
 
-            return JsonConvert.DeserializeObject(valueStr, typeof(T), converter.GetJsonConverters());
+            return JsonConvert.DeserializeObject(valueStr, type, converter.GetJsonConverters());
+        }
+
+        private static object DeserializeObject<T>(this IJsonConverterProvider converter, string valueStr)
+        {
+            return Deserialize(converter, valueStr, typeof(T));
         }
 
         private static string SerializeObject(this IJsonConverterProvider converter, object data)

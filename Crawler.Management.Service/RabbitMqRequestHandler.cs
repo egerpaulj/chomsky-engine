@@ -15,10 +15,9 @@ using Prometheus;
 
 namespace Crawler.Management.Service;
 
-public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEsResponseModel>
+public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlResponse>
 {
     private readonly ICrawlStrategyMapper _crawlStrategyMapper;
-
     private readonly ILogger<RabbitMqCrawlRequestHandler> _logger;
     private static Counter _counter = Prometheus.Metrics.CreateCounter("crawls", "Processing crawls", "context");
     public RabbitMqCrawlRequestHandler(ILogger<RabbitMqCrawlRequestHandler> logger, ICrawlStrategyMapper crawlStrategyMapper)
@@ -28,9 +27,9 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
         _logger = logger;
     }
 
-    public async Task<CrawlEsResponseModel> HandleMessage(Option<CrawlRequest> m)
+    public async Task<CrawlResponse> HandleMessage(Option<Message<CrawlRequest>> m)
     {
-        var message = m.Match(mes => mes, () => throw new System.Exception("Empty message"));
+        var message = m.Bind(mes => mes.Payload).Match(mes => mes, () => throw new System.Exception("Empty message"));
         _logger.LogInformation($"Preparing to Crawl: crawlRequestId: {message.Id}, Cont.: {message.ContinuationStrategy}");
         var strategy = await _crawlStrategyMapper.GetCrawlStrategy(message).Match(s => s, () => throw new Exception("Strategy missing"), ex => throw ex);
         var contStrategy = await _crawlStrategyMapper.GetContinuationStrategy(message).MatchUnsafe(s => s, () => null, ex => throw ex);
@@ -48,11 +47,9 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
             () => { _counter.WithLabels($"failed").Inc(); throw new Exception("Empty result when crawling");}, 
             ex => { _counter.WithLabels($"failed").Inc(); throw ex;});
         _counter.WithLabels($"completed").Inc();
-        
 
         _logger.LogInformation($"Completed Crawl: {message.Id}");
-        return message.ContinuationStrategy.Match(s => s, () => CrawlContinuationStrategy.None) 
-                        == CrawlContinuationStrategy.TrackLinksOnly ? null: Map(response);
+        return response;
     }
 
     private static CrawlEsResponseModel Map(CrawlResponse response)
@@ -86,6 +83,9 @@ public class RabbitMqCrawlRequestHandler : IMessageHandler<CrawlRequest, CrawlEs
         var contentDocPart = article.Content.Match(c => c, () => throw new Exception("Empty content"));
         var content = GetText(contentDocPart);
         var heading = GetText(article.GetAllParts("Heading").FirstOrDefault());
+
+        if(string.IsNullOrEmpty(content))
+            throw new Exception("Content empty - avoid indexing");
 
         return new CrawlEsResponseModel
         {

@@ -21,13 +21,13 @@ This Endpoint is based on the Microservice.Amqp.Rabbitmq library. Please refer t
               "CrawlRequest": {
                 "Exchange": "exchangetest",
                 "Queue": "request_queue",
-                "RoutingKey": "requests*",
+                "RoutingKey": "request*",
                 "RetryCount": "0"
               }
             },
             "Provider": {
               "Rabbitmq" : {
-                "Host": "10.137.0.50",
+                "Host": "10.137.0.32",
                 "VirtHost": "test",
                 "Port": "5671",
                 "Username": "guest",
@@ -52,13 +52,13 @@ This Endpoint is based on the Microservice.Amqp.Rabbitmq library. Please refer t
                   "CrawlRequest": {
                     "Exchange": "exchangetest",
                     "Queue": "request_queue",
-                    "RoutingKey": "requests*",
+                    "RoutingKey": "request*",
                     "RetryCount": "0"
                   }
                 },
                 "Provider": {
                   "Rabbitmq" : {
-                    "Host": "10.137.0.50",
+                    "Host": "10.137.0.32",
                     "VirtHost": "test",
                     "Port": "5671",
                     "Username": "guest",

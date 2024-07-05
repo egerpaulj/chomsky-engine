@@ -14,17 +14,30 @@
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+using Microsoft.Extensions.Configuration;
+
 namespace Microservice.Mongodb.Repo
 {
     public interface IDatabaseConfiguration
     {
         string DatabaseName { get; }
-        string DocumentName { get; }
+        string CollectionName { get; }
     }
 
     public class DatabaseConfiguration : IDatabaseConfiguration
     {
+        public DatabaseConfiguration(IConfiguration configuration)
+        {
+            DatabaseName = configuration.GetSection("DatabaseName").Value;
+            CollectionName = configuration.GetSection("CollectionName").Value;
+        }
+
+        public DatabaseConfiguration()
+        {
+            
+        }
+        
         public string DatabaseName { get; set;}
-        public string DocumentName { get; set;}
+        public string CollectionName { get; set;}
     }
 }

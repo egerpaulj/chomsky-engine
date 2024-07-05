@@ -77,7 +77,8 @@ namespace Microservice.Amqp.Rabbitmq
             // Create Custom Properties for the message.
             var properties = _channel.CreateBasicProperties();
             properties.Persistent = true;
-            properties.ContentType = message.MessageType;
+            properties.ContentType = "application/json";
+            properties.Type = message.MessageType;
             properties.CorrelationId = corrId.ToString();
             // need to use AMQP timestamps for RabbitMQ to recognize it
             properties.Timestamp = new AmqpTimestamp((Int32)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);

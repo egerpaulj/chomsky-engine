@@ -1,3 +1,19 @@
+//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
+//      Copyright (C) 2024  Paul Eger                                                                                                                                                                     
+
+//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
+//      it under the terms of the GNU General Public License as published by                                                                                                                                          
+//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
+//      (at your option) any later version.                                                                                                                                                                           
+
+//      This program is distributed in the hope that it will be useful,                                                                                                                                               
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
+//      GNU General Public License for more details.                                                                                                                                                                  
+
+//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 using System;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -16,13 +32,13 @@ namespace Microservice.Exchange.Endpoints.Elasticsearch
     public class ElasticsearchConsumer<T> : IConsumer<T>, IConfigInitializor where T : class, IDataModel
     {
         private IObserver<Either<Message<T>, ConsumerException>> _observer;
-        private IObservable<Either<Message<T>, ConsumerException>> _observable;
+        private readonly IObservable<Either<Message<T>, ConsumerException>> _observable;
         private readonly ILogger<ElasticsearchConsumer<T>> _logger;
         private readonly ILoggerFactory _loggerFactory;
         private readonly IJsonConverterProvider _jsonConverterProvider;
         private string _query;
         private string _index;
-        private IElasticsearchRepository _repository;
+        private ElasticsearchRepository _repository;
         private PollingConsumer<T> _pollingConsumer;
 
         public ElasticsearchConsumer(ILoggerFactory loggerFactory, ILogger<ElasticsearchConsumer<T>> logger, IJsonConverterProvider jsonConverterProvider)
@@ -57,7 +73,7 @@ namespace Microservice.Exchange.Endpoints.Elasticsearch
                 _index = config.GetValue<string>("Index");
                 _repository = new ElasticsearchRepository(_loggerFactory.CreateLogger<ElasticsearchRepository>(), config, _jsonConverterProvider);
 
-                _pollingConsumer = new PollingConsumer<T>(_logger, config, () => _repository.Search<T>(_index, _query));
+                _pollingConsumer = new PollingConsumer<T>(_logger, () => _repository.Search<T>(_index, _query), config.GetValue<int>(PollingConfiguration.IntervalInMsKey));
 
                 return await Task.FromResult(Unit.Default);
             });
@@ -66,39 +82,6 @@ namespace Microservice.Exchange.Endpoints.Elasticsearch
         public TryOptionAsync<Unit> Start()
         {
             return _pollingConsumer.Start(_observer);
-        }
-
-        private async Task RunQuery()
-        {
-            await _repository.Search<T>(_index, _query).Match(
-            resultList =>
-            {
-                if (resultList.Count == 0)
-                    return;
-
-                _logger.LogInformation($"Received data from Elasticsearch. Count: {resultList.Count}");
-
-                foreach (var result in resultList)
-                {
-                    _observer.OnNext(new Message<T>
-                    {
-                        Payload = result,
-                        Id = result.Id,
-                        CorrelationId = Guid.NewGuid(),
-
-                    });
-                }
-            },
-            // EMPTY
-            () =>
-            {
-                _observer.OnNext(new ConsumerException(new Exception("Elasticsearch Query: Empty result")));
-            },
-            // ERROR
-            ex =>
-            {
-                _observer.OnNext(new ConsumerException(ex));
-            });
         }
     }
 }

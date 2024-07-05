@@ -102,8 +102,9 @@ namespace Crawler.Core.UnitTest.Factories
                 {
                     Title = "The article header\n",
                     Content = "Some test as title Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
-                    Links = new List<string>{@"https://something/firstLink", @"https://something/pathToImage", @"https://something/contentLink", @"https://somewhereelse/something", @"http://somethingelse/linkToSomewhere"},
-                    Table = TestCaseFactoryTable.CreateExpectedTable()
+                    Links = new List<string>{@"https://something/firstLink", @"https://something/contentLink", @"https://somewhereelse/something", @"http://somethingelse/linkToSomewhere"},
+                    Table = TestCaseFactoryTable.CreateExpectedTable(),
+                    Images = new List<string>{@"https://something/pathToImage"}
                 }
             };
         }

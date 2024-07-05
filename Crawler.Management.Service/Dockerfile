@@ -1,5 +1,5 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
-COPY bin/Release/net6.0/publish/ App/
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+COPY bin/Release/net8.0/publish/ App/
 WORKDIR /App
 COPY requestmanagercert.pem /usr/local/share/ca-certificates/requestmanager.crt
 RUN update-ca-certificates

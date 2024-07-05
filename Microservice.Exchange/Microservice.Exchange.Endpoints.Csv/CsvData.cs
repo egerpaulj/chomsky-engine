@@ -27,6 +27,8 @@ public class CsvData : IDataModel
 {
     [JsonIgnore]
     public Guid Id { get; set; }
+    public string Created { get; set; }
+    public string Updated { get; set; }
     public Dictionary<string, string> Values { get; set; }
 
     public CsvData(Dictionary<string, string> values)
@@ -51,16 +53,16 @@ public class CsvData : IDataModel
 
         var idKey = Values.Keys.FirstOrDefault(k => k.ToLower() == "id");
 
-        if(idKey == null)
+        if (idKey == null)
             Values.Add("Id", Guid.NewGuid().ToString());
         else
-            if(!Guid.TryParse(Values[idKey], out var Id))
-            {
-                Id = Guid.NewGuid();
-            }
-            else
-                this.Id = Id;
-        
+            if (!Guid.TryParse(Values[idKey], out var Id))
+        {
+            Id = Guid.NewGuid();
+        }
+        else
+            this.Id = Id;
+
     }
 }
 
@@ -73,15 +75,15 @@ public class CsvDataJsonConverter : JsonConverter
 
     public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
     {
-        
-        var values = serializer.Deserialize<Dictionary<string,string>>(reader);
-        return new CsvData(values?? new Dictionary<string, string>());
+
+        var values = serializer.Deserialize<Dictionary<string, string>>(reader);
+        return new CsvData(values ?? new Dictionary<string, string>());
     }
 
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
     {
         var csvData = value as CsvData;
-        if(csvData != null)
+        if (csvData != null)
         {
             serializer.Serialize(writer, csvData.Values);
         }
@@ -92,6 +94,6 @@ public class CsvJsonConverterProvider : IJsonConverterProvider
 {
     public JsonConverter[] GetJsonConverters()
     {
-        return new []{new CsvDataJsonConverter()};
+        return new[] { new CsvDataJsonConverter() };
     }
 }

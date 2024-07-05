@@ -25,6 +25,7 @@ namespace Crawler.WebDriver.Selenium.UserActions
     public class UserActionWait : UserAction
     {
         private const int timeoutInSeconds = 10;
+        public Option<int> WaitInSeconds { get; set; }
         public override TryOptionAsync<Unit> Execute(FirefoxDriver driver)
         {
             return async () =>
@@ -33,9 +34,17 @@ namespace Crawler.WebDriver.Selenium.UserActions
                 wait.PollingInterval = TimeSpan.FromMilliseconds(300);
                 wait.Until(d => driver.ExecuteScript("return document.readyState").Equals("complete"));
 
+                await  WaitInSeconds.MatchAsync(async waitSeconds => 
+                {
+                    driver.ExecuteScript("window.scrollBy(0, 500)");
+                    await Task.Delay(waitSeconds);
+                    driver.ExecuteScript("window.scrollBy(0, -500)");
+                    return Task.CompletedTask;
+                }, () => Task.CompletedTask);
+
                 var element = XPath.Match(xpath =>
                         wait.Until(d =>
-                            driver.FindElement(By.XPath(xpath))), () => throw new Exception("Uiaction wait: Xpath missing"));
+                            driver.FindElement(By.XPath(xpath))), () => {});
 
                 return await Task.FromResult(Unit.Default);
             };

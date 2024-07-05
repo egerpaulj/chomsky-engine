@@ -43,7 +43,7 @@ namespace Amqp.IntegrationTest
             _amqpProvider = new AmqpProvider(configuration, new EmptyJsonConverterProvider(), new RabbitMqConnectionFactory());
             _amqpBootstrapper = new AmqpBootstrapper(configuration);
 
-            _publisher = _amqpProvider.GetPublisher("CrawlRequest").Match(p => p, () => throw new System.Exception("Publisher missing"));
+            _publisher = _amqpProvider.GetPublisher("CrawlRequest").Match(p => p, () => throw new System.Exception("Publisher missing"), ex => throw ex);
 
             await _amqpBootstrapper.Bootstrap().Match(a => a, () => Unit.Default);
         }
@@ -61,7 +61,7 @@ namespace Amqp.IntegrationTest
             // ARRANGE - Create a subcriber
             var subscriber = await _amqpProvider.GetSubsriber<TestRequestMessage, string>(
                                                             "CrawlRequest",
-                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.TestId))
+                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.Payload.Match(p => p, () => throw new Exception("Empty")).TestId))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
             // ACT - Publish 100 messages
@@ -91,9 +91,10 @@ namespace Amqp.IntegrationTest
                                                             "CrawlRequest",
                                                             MessageHandlerFactory.Create<TestRequestMessage, string>(t =>
                                                             {
-                                                                if (t.TestId.Contains("4"))
+                                                                var testId = t.Payload.Match(p => p, () => throw new Exception("Empty payload")).TestId;
+                                                                if (testId.Contains("4"))
                                                                     throw new Exception("Expected Test Exception");
-                                                                return t.TestId;
+                                                                return testId;
                                                             }))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
@@ -124,9 +125,10 @@ namespace Amqp.IntegrationTest
                                                             "CrawlRequest",
                                                             MessageHandlerFactory.Create<TestRequestMessage, string>(t =>
                                                             {
-                                                                if (t.TestId.Contains("4"))
+                                                                var testId = t.Payload.Match(p => p, () => throw new Exception("Empty payload")).TestId;
+                                                                if (testId.Contains("4"))
                                                                     throw new Exception("Expected Test Exception");
-                                                                return t.TestId;
+                                                                return testId;
                                                             }))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
             var numberOfSentMessages = 100;
@@ -155,12 +157,12 @@ namespace Amqp.IntegrationTest
             // ARRANGE - Create "same" subcriber twice
             var subscriber1 = await _amqpProvider.GetSubsriber<TestRequestMessage, string>(
                                                             "CrawlRequest",
-                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.TestId))
+                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.Payload.Match(p => p, () => throw new Exception("Empty")).TestId))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
             var subscriber2 = await _amqpProvider.GetSubsriber<TestRequestMessage, string>(
                                                             "CrawlRequest",
-                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.TestId))
+                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.Payload.Match(p => p, () => throw new Exception("Empty")).TestId))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
 
@@ -196,7 +198,7 @@ namespace Amqp.IntegrationTest
             // ARRANGE - Create a subcriber
             var subscriber = await _amqpProvider.GetSubsriber<TestRequestMessage, string>(
                                                             "CrawlRequest",
-                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.TestId))
+                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.Payload.Match(p => p, () => throw new Exception("Empty")).TestId))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
             
@@ -226,7 +228,7 @@ namespace Amqp.IntegrationTest
             // ARRANGE - Create a subcriber
             var subscriber = await _amqpProvider.GetSubsriber<TestRequestMessage, string>(
                                                             "CrawlRequest",
-                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.TestId))
+                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.Payload.Match(p => p, () => throw new Exception("Empty")).TestId))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
             // ACT - Publish messages
@@ -290,7 +292,7 @@ namespace Amqp.IntegrationTest
             // ACT - Get Deadletter Messages
             var subscriberDeadletter = await _amqpProvider.GetSubsriber<TestRequestMessage, string>(
                                                             "CrawlRequestDeadletter",
-                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.TestId))
+                                                            MessageHandlerFactory.Create<TestRequestMessage, string>(t => t.Payload.Match(p => p, () => throw new Exception("Empty")).TestId))
                                                         .Match(p => p, () => throw new System.Exception("Subscriber missing"), ex => throw ex);
 
             var numberOfDeadletterMessage = 0;

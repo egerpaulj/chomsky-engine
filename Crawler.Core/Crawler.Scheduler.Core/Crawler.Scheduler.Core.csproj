@@ -10,6 +10,6 @@
     <PackageReference Include="Quartz.Jobs" Version="3.4.0" />
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 </Project>

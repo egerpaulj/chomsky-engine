@@ -31,7 +31,7 @@ namespace Microservice.Amqp.Rabbitmq
     {
         private readonly RabbitMqSubscriberConfig _rabbitmqConfig;
         private readonly IJsonConverterProvider _jsonConverterProvider;
-        private readonly IMessageHandler<T, R> _messageHandler;
+        protected IMessageHandler<T, R> _messageHandler;
         private IConnection _connection;
         private IModel _channel;
 
@@ -92,6 +92,7 @@ namespace Microservice.Amqp.Rabbitmq
 
             _connection = _connectionFactory.CreateConnection();
             _channel = _connection.CreateModel();
+            
             _channel.BasicQos(0, _rabbitmqConfig.PrefetchCount, false);
             _consumer = new AsyncEventingBasicConsumer(_channel);
 
@@ -103,7 +104,7 @@ namespace Microservice.Amqp.Rabbitmq
         {
             try
             {
-                var result = await _messageHandler.HandleMessage(messageEvent.Message.Payload);
+                var result = await _messageHandler.HandleMessage(messageEvent.Message);
                 
                 // ACK - message will be removed from queue
                 _channel.BasicAck(messageEvent.DeliveryTag, false);
@@ -142,7 +143,8 @@ namespace Microservice.Amqp.Rabbitmq
                     CorrelationId = Guid.Parse(ea.BasicProperties.CorrelationId),
                     Id = id,
                     RetryCount = int.Parse(ea.BasicProperties.Headers["RetryCount"]?.ToString()),
-                    Context = ea.BasicProperties.Headers.ContainsKey("Context") ? Encoding.UTF8.GetString((byte[])ea.BasicProperties.Headers["Context"]) : string.Empty
+                    Context = ea.BasicProperties.Headers.ContainsKey("Context") ? Encoding.UTF8.GetString((byte[])ea.BasicProperties.Headers["Context"]) : string.Empty,
+                    RoutingKey = ea.RoutingKey,
                 };
 
 

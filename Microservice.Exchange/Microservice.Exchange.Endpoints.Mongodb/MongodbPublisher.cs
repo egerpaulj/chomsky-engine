@@ -16,6 +16,7 @@
 using System;
 using System.Threading.Tasks;
 using LanguageExt;
+using LanguageExt.ClassInstances;
 using Microservice.DataModel.Core;
 using Microservice.Mongodb.Repo;
 using Microservice.Serialization;
@@ -47,7 +48,7 @@ namespace Microservice.Exchange.Endpoints.Mongodb
                 var databaseConfiguration = new DatabaseConfiguration
                 {
                     DatabaseName = config.GetValue<string>("DatabaseName"),
-                    DocumentName = config.GetValue<string>("DocumentName")
+                    CollectionName = config.GetValue<string>("CollectionName")
                 };
 
                 _repository = new MongoDbRepository<R>(config, databaseConfiguration, _jsonConverterProvider);
@@ -101,6 +102,21 @@ namespace Microservice.Exchange.Endpoints.Mongodb
                     ErrorMessage = error,
                 }))
             .Bind<Guid, Unit>(g => async () => await Task.FromResult(Unit.Default));
+        }
+    }
+
+    public class MongoDbPublisher<T>(string name, IMongoDbRepository<T> repository) : IPublisher<T> where T : IDataModel
+    {
+        public string Name { get; } = name;
+        public IMongoDbRepository<T> repository = repository;
+
+        public TryOptionAsync<Unit> Publish(Option<Message<T>> message)
+        {
+            return message
+                .Bind(m => m.Payload)
+                .ToTryOptionAsync()
+                .Bind(p => repository.AddOrUpdate(p))
+                .Bind<Guid, Unit>(p => async () => await Task.FromResult(Unit.Default));
         }
     }
 }

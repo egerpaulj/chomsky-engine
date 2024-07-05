@@ -42,8 +42,9 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
         {
             var handler = MessageHandlerFactory.Create<CrawlRequest, CrawlRequest>(async request =>
             {
-                await crawlTask(request);
-                return request;
+                var crawlRequest = request.Payload.Match(p => p, () => throw new Exception("Empty payload"));
+                await crawlTask(crawlRequest);
+                return crawlRequest;
             });
 
             if (_subscriber == null)

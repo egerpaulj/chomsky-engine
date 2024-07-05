@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using Crawler.Configuration.Core;
 using Crawler.Configuration.Repository;
 using Crawler.Core.Parser.DocumentParts.Serialilzation;
@@ -15,12 +10,8 @@ using Microservice.Mongodb.Repo;
 using Microservice.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Crawler.Configuration.Server
 {
@@ -44,14 +35,7 @@ namespace Crawler.Configuration.Server
             services.AddTransient<IConfigurationRepository, MongoDbConfigurationRepository>();
             services.AddTransient<IMongoDbRepository<CrawlRequestModel>, MongoDbRepository<CrawlRequestModel>>();
             services.AddTransient<IJsonConverterProvider, JsonConverterProvider>();
-            
-            var databaseConfiguration = new DatabaseConfiguration
-            {
-                DatabaseName = "Crawl",
-                DocumentName = "crawl_request"
-            };
-
-            services.AddSingleton<IDatabaseConfiguration>(databaseConfiguration);
+            services.AddTransient<IDatabaseConfiguration, DatabaseConfiguration>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

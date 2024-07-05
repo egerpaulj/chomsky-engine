@@ -26,5 +26,7 @@ namespace Microservice.Exchange.Test
         
         [JsonProperty(IDataModel.IdStr)]
         public Guid Id { get;set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 }

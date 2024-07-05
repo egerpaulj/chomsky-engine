@@ -66,7 +66,7 @@ namespace Microservice.Amqp
         IObservable<Either<Message<R>, Exception>> GetMessageObservable();
 
         
-         /// <summary>
+        /// <summary>
         /// Start Consuming Messages from the Queue.
         /// </summary>
         void Start();

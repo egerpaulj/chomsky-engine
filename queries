@@ -35,33 +35,102 @@ db.uri.deleteMany({UriTypeId: 1})
 
 ---------------
 working
+
 [
   {
-    _id: 'bff0ed86-e62d-4047-87d9-5561981fcf03',
+    _id: '55fbd8f0-5a25-43ca-ab76-b3b844f243c1',
     ContinuationStrategyDefinition: 3,
     Uri: '*',
     Host: 'www.theguardian.com',
     DocumentPartDefinition: {
+      Title: [
+        {
+          Text: [],
+          Name: [],
+          BaseUri: [ 'https://www.theguardian.com' ],
+          Raw: [],
+          StyleList: [],
+          SubParts: [],
+          Anomalies: [ [] ],
+          DocPartType: [ 1 ],
+          Selector: [{ Xpath: ['//*[@data-gu-name=\'headline\']'], ContentSpecificMatch: [] }]
+        }
+      ],
+      Content: [
+        {
+          Text: [],
+          Name: [],
+          BaseUri: [ 'https://www.theguardian.com' ],
+          Raw: [],
+          StyleList: [],
+          SubParts: [],
+          Anomalies: [ [] ],
+          DocPartType: [ 1 ],
+          Selector: [{ Xpath: ['//*[@id=\'maincontent\']'], ContentSpecificMatch: [] }]
+        }
+      ],
+      Name: [],
       BaseUri: [ 'https://www.theguardian.com' ],
       Raw: [],
       StyleList: [],
-      SubParts: [],
+      SubParts: [
+        [
+          {
+            Text: [],
+            Name: [ 'Heading' ],
+            BaseUri: [ 'https://www.theguardian.com' ],
+            Raw: [],
+            StyleList: [],
+            SubParts: [],
+            Anomalies: [ [] ],
+            DocPartType: [ 1 ],
+            Selector: [{ Xpath: ['//*[@data-gu-name=\'standfirst\']'], ContentSpecificMatch: [] }]
+          }
+        ]
+      ],
       Anomalies: [ [] ],
-      DocPartType: [ 7 ],
-      Selector: [
-        {
-          Xpath: [ './/*[not(self::html)]' ],
-          ContentSpecificMatch: []
-        }
-      ]
+      DocPartType: [ 6 ],
+      Selector: [{ Xpath: [], ContentSpecificMatch: [] }]
     },
     UiActions: null,
     ShouldDownloadContent: false,
     ShouldProvideRawSource: false,
     IsUrlCollector: false,
-    BaseUri: 'https://www.theguardian.com'
+    CollectablePattern: '^https://www\\.theguardian\\.com\\D+$',
+    UrlSkipList: [
+      'localhost',
+      'about:',
+      'about:neterror',
+      '#comments',
+      'page=with:block',
+      'www.instagram.com',
+      'www.linedint.com',
+      'www.youtube.com',
+      'workforus.theguardian.com',
+      'advertising.theguardian.com',
+      'patrons.theguardian.com',
+      'https://support.theguardian.com',
+      '#top',
+      'itunes.apple.com',
+      'www.nspcc.org.uk',
+      'policies.google.com',
+      'football-daily-email-sign-up',
+      '.wordiply.com',
+      'recruiters.theguardian.com',
+      'profile.theguardian.com',
+      'support.theguardian.com',
+      'embership.theguardian.com',
+      'accuweather.com',
+      'contribute?'
+    ]
   }
+
 ]
+
+
+
+CollectablePattern: '^https://www\.theguardian\.com\D+$'
+    CollectablePattern: '^https://www.guardian.com\D+$'
 
 
 

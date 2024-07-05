@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using LanguageExt;
 using Microservice.DataModel.Core;
+using Microservice.Exchange.Core.Bertrand;
 using Microservice.Exchange.Core.Polling;
 using Microservice.Mongodb.Repo;
 using Microservice.Serialization;
@@ -35,7 +36,7 @@ namespace Microservice.Exchange.Endpoints.Mongodb
         private readonly ILogger<IConsumer<T>> _logger;
         private readonly IJsonConverterProvider _jsonConverterProvider;
         private IObserver<Either<Message<T>, ConsumerException>> _observer;
-        private IObservable<Either<Message<T>, ConsumerException>> _observable;
+        private readonly IObservable<Either<Message<T>, ConsumerException>> _observable;
         
         private FilterDefinition<BsonDocument> _filters;
         private MongoDbRepository<T> _repository;
@@ -70,13 +71,13 @@ namespace Microservice.Exchange.Endpoints.Mongodb
                 var databaseConfiguration = new DatabaseConfiguration
                 {
                     DatabaseName = config.GetValue<string>("DatabaseName"),
-                    DocumentName = config.GetValue<string>("DocumentName")
+                    CollectionName = config.GetValue<string>("CollectionName")
                 };
                 
                 _filters = await QueryParser.Parse(configuration).Match(r => r, () => throw new ExchangeBootstrapException("MongodbConsumer Configuration missing: DocumentFilters"));
                 _repository = new MongoDbRepository<T>(config, databaseConfiguration, _jsonConverterProvider);
 
-                _pollingConsumer = new PollingConsumer<T>(_logger, config, () => _repository.GetMany(_filters));
+                _pollingConsumer = new PollingConsumer<T>(_logger, () => _repository.GetMany(_filters), config.GetValue<int>(PollingConfiguration.IntervalInMsKey));
 
                 return await Task.FromResult(Unit.Default);
             });

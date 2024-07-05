@@ -23,7 +23,7 @@ const string URI_COLLECTOR_FILE = "uricollector";
 var databaseConfiguration = new DatabaseConfiguration
 {
     DatabaseName = "Crawler",
-    DocumentName = "crawl_request"
+    CollectionName = "crawl_request"
 };
 
 var configuration = TestHelper.GetConfiguration();
@@ -46,62 +46,26 @@ var amqpProvider = new AmqpProvider(configuration, jsonConverter, new RabbitMqCo
 
 IRequestPublisher _requestPublisher = new AmqpRequestPublisher(amqpProvider);
 
-Console.WriteLine("Processing Collectors in File");
-
-if (File.Exists(URI_COLLECTOR_FILE))
+if(args.Count() == 1)
 {
-    foreach (var line in File.ReadLines(URI_COLLECTOR_FILE))
-    {
-        Console.WriteLine($"Processing: {line}");
-	await PublishCollectorRequest(_crawlerConfiguration, _requestPublisher, line);
-    }
+    await PublishCollectorRequest(_crawlerConfiguration, _requestPublisher, args[0]); 
+    return;  
 }
 
-return;
-
-var collectors = await schedulerRepo.GetNewCollectorUris(100).Match(r => r, () => new List<UriDataModel>(), ex => throw ex);
-if (collectors.Any())
+if(!args.Any())
 {
-    Console.WriteLine($"Found collector URIs: {collectors.Count()}");
-    foreach (var uri in collectors)
-    {
-        var color  = Console.ForegroundColor;
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine();
-        Console.WriteLine(uri.Uri);
-        Console.ForegroundColor = color;
-
-
-        Console.WriteLine("Skip? (y/n)");
-        if (IsYes())
-            continue;
-
-        Console.WriteLine();
-        Console.WriteLine("Ignore? (y/n)");
-        if (IsYes())
-        {
-            await Ignore(schedulerRepo, uri);
-            continue;
-        }
-
-        Console.WriteLine();
-        Console.WriteLine("Onetime? (y/n)?");
-        if (IsYes())
-        {
-            await Onetime(schedulerRepo, _crawlerConfiguration, _requestPublisher, uri);
-
-        }
-        else
-        {
-            Console.WriteLine();
-            Console.WriteLine("Enter Cron: (e.g. '0 25 20/1 * * ?'");
-            var cron = Console.ReadLine();
-            uri.CronPeriod = cron;
-            await UpdateUri(schedulerRepo, uri);
-        }
-
-    }
+    await PublishCollectorsFromFile(URI_COLLECTOR_FILE, _crawlerConfiguration, _requestPublisher);
+    return;
 }
+
+if(args.Count() >= 4 && args[0] == "-n")
+{
+    await ConfigurationHelper.SaveDefaultInDatabaseAndCrawl(args[1], args[2], args[3], CrawlContinuationStrategy.DomainOnly, configRepo, _requestPublisher);
+    Console.WriteLine("Published request, Domain only, AutoDetect: " + args[2]);
+    return;
+}
+
+await ProcessCollectors(schedulerRepo, _crawlerConfiguration, _requestPublisher);
 
 bool IsYes()
 {
@@ -143,4 +107,113 @@ static async Task Onetime(SchedulerRepository schedulerRepo, ICrawlerConfigurati
     await PublishCollectorRequest(_crawlerConfiguration, _requestPublisher, uri.Uri);
     uri.IsCompleted = true;
     await UpdateUri(schedulerRepo, uri);
+}
+
+static async Task PublishCollectorsFromFile(string URI_COLLECTOR_FILE, ICrawlerConfigurationService _crawlerConfiguration, IRequestPublisher _requestPublisher)
+{
+    if (File.Exists(URI_COLLECTOR_FILE))
+    {
+        Console.WriteLine("Processing Collectors in File");
+
+        foreach (var line in File.ReadLines(URI_COLLECTOR_FILE))
+        {
+            Console.WriteLine($"Processing: {line}");
+            await PublishCollectorRequest(_crawlerConfiguration, _requestPublisher, line);
+        }
+    }
+}
+
+async Task ProcessCollectors(SchedulerRepository schedulerRepo, ICrawlerConfigurationService _crawlerConfiguration, IRequestPublisher _requestPublisher)
+{
+    var collectors = await schedulerRepo.GetNewCollectorUris(100).Match(r => r, () => new List<UriDataModel>(), ex => throw ex);
+    if (collectors.Any())
+    {
+        Console.WriteLine($"Found collector URIs: {collectors.Count()}");
+        foreach (var uri in collectors)
+        {
+            var color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine();
+            Console.WriteLine(uri.Uri);
+            Console.ForegroundColor = color;
+
+            if (uri.Uri.Contains("/film")
+            || uri.Uri.Contains("/sport")
+            || uri.Uri.Contains("/stage")
+            || uri.Uri.Contains("/commentisfree")
+            || uri.Uri.Contains("/lifeandstyle")
+            || uri.Uri.Contains("/artanddesign")
+            || uri.Uri.Contains("/music")
+            || uri.Uri.Contains("/travel")
+            || uri.Uri.Contains("/football")
+            || uri.Uri.Contains("/books")
+            || uri.Uri.Contains("/help")
+
+            )
+            {
+                Console.WriteLine("Auto-ignored");
+                await Ignore(schedulerRepo, uri);
+                continue;
+            }
+
+            if (uri.Uri.Contains("/science")
+            || uri.Uri.Contains("/culture")
+            || uri.Uri.Contains("/food")
+            || uri.Uri.Contains("/fashion")
+            || uri.Uri.Contains("/cardiff")
+            || uri.Uri.Contains("/australia-news")
+            || uri.Uri.Contains("/society")
+            || uri.Uri.Contains("/environment")
+            || uri.Uri.Contains("/politics")
+            || uri.Uri.Contains("/world")
+            || uri.Uri.Contains("/money")
+            || uri.Uri.Contains("/media")
+            || uri.Uri.Contains("/us-news")
+            || uri.Uri.Contains("/business")
+            || uri.Uri.Contains("/uk")
+            || uri.Uri.Contains("/technology")
+            || uri.Uri.Contains("/info")
+            || uri.Uri.Contains("/government-computing-network")
+            || uri.Uri.Contains("/education")
+            || uri.Uri.Contains("/global-development")
+            || uri.Uri.Contains("/tv-and-radio")
+            )
+            {
+                Console.WriteLine("Auto-onetime");
+                await Onetime(schedulerRepo, _crawlerConfiguration, _requestPublisher, uri);
+                continue;
+            }
+
+
+
+            Console.WriteLine("Skip? (y/n)");
+            if (IsYes())
+                continue;
+
+            Console.WriteLine();
+            Console.WriteLine("Ignore? (y/n)");
+            if (IsYes())
+            {
+                await Ignore(schedulerRepo, uri);
+                continue;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Onetime? (y/n)?");
+            if (IsYes())
+            {
+                await Onetime(schedulerRepo, _crawlerConfiguration, _requestPublisher, uri);
+
+            }
+            else
+            {
+                Console.WriteLine();
+                Console.WriteLine("Enter Cron: (e.g. '0 25 20/1 * * ?'");
+                var cron = Console.ReadLine();
+                uri.CronPeriod = cron;
+                await UpdateUri(schedulerRepo, uri);
+            }
+
+        }
+    }
 }

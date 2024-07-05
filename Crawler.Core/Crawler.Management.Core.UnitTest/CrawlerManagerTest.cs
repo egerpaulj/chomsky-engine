@@ -121,7 +121,8 @@ namespace Crawler.Management.Core.UnitTest
             Assert.IsNotNull(res);
         }
 
-        [TestMethod]
+        //[TestMethod]
+        // Obsolete - using an Exchange instead
         public void StartCrawlTest()
         {
             

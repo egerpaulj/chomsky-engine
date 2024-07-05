@@ -77,6 +77,11 @@ namespace Microservice.Core.Middlewear
         /// </summary>
         public static IHostBuilder SetupLogging(this IHostBuilder host)
         {
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            if (string.IsNullOrEmpty(environment))
+                Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+                
             var configuration = new ConfigurationBuilder()
                                 .SetBasePath(Environment.CurrentDirectory)
                                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json")

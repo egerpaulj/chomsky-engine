@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
 using Crawler.Core;
@@ -52,8 +53,8 @@ namespace Crawler.Stategies.Core
             .Bind(r => r.Result)
             .Bind(r => r.RequestDocumentPart)
             .ToTryOptionAsync()
-            .Bind<DocumentPart, List<DocumentPartLink>>(dp => GetDocumentPartLinks(dp))
-            .Bind<List<DocumentPartLink>, Unit>(links => _requestPublisher.PublishUri(baseUri, links, DataModel.Scheduler.UriType.Onetime));
+            .SelectMany(GetDocumentPartLinks, (dp, links) => Filter(dp, links))
+            .Bind(links => _requestPublisher.PublishUri(baseUri, links.ToList(), DataModel.Scheduler.UriType.Onetime));
         }
 
         internal static IEnumerable<DocumentPartLink> GetLinks(DocumentPart documentPart)

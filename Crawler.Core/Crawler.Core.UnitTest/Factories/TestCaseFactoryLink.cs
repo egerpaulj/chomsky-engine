@@ -121,5 +121,43 @@ namespace Crawler.Core.UnitTest
             };
         }
 
+        public static TestCase<List<string>> CreateTestCaseAnchorWithDomainLinks()
+        {
+            var xml = @"<html><header></header>
+                            <div>
+                                someOthertest1
+                                <a href='https://testdomain/firstLink'/>
+                            </div>
+                            <div>
+                                <div> 
+                                    ParentTextDifferentStyle
+                                    <div>
+                                        <a href='https://testdomain/secondlink'>
+                                            It could just <p>be</p> me
+                                        </a>
+                                        <a href='https://anotherDomain/link'>
+                                            Never me
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </html>";
+
+
+            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(@"https://testdomain/");
+
+            return new TestCase<List<string>>()
+            {
+                CrawlRequest = request,
+                Xml = xml,
+                ExpectedResult = new List<string>
+                {
+                        @"https://testdomain/firstLink",
+                        @"https://testdomain/secondlink"
+
+                }
+            };
+        }
+
     }
 }

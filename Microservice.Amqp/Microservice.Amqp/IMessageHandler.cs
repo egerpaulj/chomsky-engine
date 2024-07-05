@@ -25,6 +25,6 @@ namespace Microservice.Amqp
     /// </summary>
     public interface IMessageHandler<T, R>
     {
-        Task<R> HandleMessage(Option<T> message);
+        Task<R> HandleMessage(Option<Message<T>> message);
     }
 }

@@ -35,8 +35,8 @@ namespace Microservice.Mongodb.Test
         public void Setup()
         {
             var mongodbConfigMock = new Mock<IDatabaseConfiguration>();
-            mongodbConfigMock.Setup(m => m.DatabaseName).Returns("IntegrationTest");
-            mongodbConfigMock.Setup(m => m.DocumentName).Returns("IntegrationTestDocuments");
+            mongodbConfigMock.Setup(m => m.DatabaseName).Returns("test");
+            mongodbConfigMock.Setup(m => m.CollectionName).Returns("IntegrationTestDocuments");
 
             _testee = new MongoDbRepository<TestDataModel>(Microservice.TestHelper.TestHelper.GetConfiguration(), mongodbConfigMock.Object, Mock.Of<IJsonConverterProvider>()  );
 
@@ -155,7 +155,7 @@ namespace Microservice.Mongodb.Test
         {
             var filter = SelectAllFilter();
 
-            _testee.Delete(filter).Match(r => r, () => Unit.Default);
+            _testee.Delete(filter).Match(r => r, () => Unit.Default).Wait();
         }
 
         private static FilterDefinition<BsonDocument> SelectAllFilter()

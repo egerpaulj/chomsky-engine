@@ -58,7 +58,7 @@ namespace Crawler.Scheduler.Service
                     var databaseConfiguration = new DatabaseConfiguration
                     {
                         DatabaseName = "Crawler",
-                        DocumentName = "crawl_request"
+                        CollectionName = "crawl_request"
                     };
 
                     services.AddTransient<IConfigurationRepository, MongoDbConfigurationRepository>();

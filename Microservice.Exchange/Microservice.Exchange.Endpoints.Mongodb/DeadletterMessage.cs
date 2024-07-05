@@ -27,5 +27,7 @@ namespace Microservice.Exchange.Endpoints.Mongodb
         public string ErrorMessage { get; set; }
 
         public string Data { get; set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 }

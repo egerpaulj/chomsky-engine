@@ -26,5 +26,7 @@ namespace Microservice.Exchange.Test
         
         //public Guid TestId { get;set; }
         public Guid Id { get;set; }
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 }

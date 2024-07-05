@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
 # setup Firefox with headless support, and install the geckodriver
 RUN apt-get update -y
