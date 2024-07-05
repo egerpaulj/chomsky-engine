@@ -36,11 +36,23 @@ namespace Crawler.Strategies.General
 
         protected override IEnumerable<DocumentPartLink> Filter(DocumentPart documentPart, IEnumerable<DocumentPartLink> links)
         {
-            var baseUri = documentPart.BaseUri.Match(u => u , () => throw new CrawlStrategyException("Document Part must has a Base Uri"));
+            var baseUri = documentPart.BaseUri.Match(u => u, () => throw new CrawlStrategyException("Document Part must has a Base Uri"));
             _logger.LogInformation($"Found links in {baseUri}: {links.Count()}");
 
             return links
-            .Where(l => l.Uri.Bind<bool>(u => u.ToLowerInvariant().Contains(baseUri.ToLowerInvariant())).Match(t =>t, false));
+            .Where(l => l.Uri.Bind<bool>(u => IsWithinDomain(u, baseUri)).Match(t => t, false));
+        }
+
+        private static bool IsWithinDomain(string foundUri, string baseUri)
+        {
+            var foundBaseUri = GetBaseUri(foundUri);
+            var actualBaseUri = GetBaseUri(baseUri);
+            return foundBaseUri == actualBaseUri;
+        }
+
+        private static string GetBaseUri(string uri)
+        {
+            return new Uri(uri.ToLowerInvariant().Replace("www.", string.Empty)).Host;
         }
     }
 }

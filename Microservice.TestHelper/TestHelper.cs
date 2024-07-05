@@ -39,6 +39,8 @@ namespace Microservice.TestHelper
         /// </summary>
         public static IConfigurationRoot GetConfiguration(string environment)
         {
+            Console.WriteLine($"Configuration directory: {Directory.GetCurrentDirectory()}");
+
             return new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile($"appsettings.{environment}.json")

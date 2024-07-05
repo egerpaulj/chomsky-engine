@@ -13,7 +13,7 @@ The library provides the following:
 
 - **ConnectionStrings:** Provide the Connection string to your MongoDb instance
 - **DatabaseName:** The name of the database in MongoDb
-- **DocumentName:** The document name in the database in MongoDb
+- **CollectionName:** The document name in the database in MongoDb
 - **DocumentFilters:** Only relevant for **DataIn**, the Filters to retrieve data (Always accompanies with a **FieldName** and **FilterValue** and **LogicalOperator**)
 
 **Note:** The following MongoDb filters are available (See MongoDb Documentation for more information on Filters):
@@ -48,10 +48,10 @@ The library provides the following:
 "DataIn": {
         "MongodbConsumer": {
           "ConnectionStrings": {
-            "MongoDbConnectionString": "mongodb://10.137.0.50:27017"
+            "MongoDbConnectionString": "mongodb://10.137.0.32:27017"
           },
           "DatabaseName": "TestExchange",
-          "DocumentName": "TestDataDocument",
+          "CollectionName": "TestDataDocument",
           "IntervalInMs": "1000",
           "DocumentFilters": {
             "Eq": {
@@ -77,10 +77,10 @@ The library provides the following:
 "DataOut": {
             "MongodbPublisher": {
               "ConnectionStrings": {
-                "MongoDbConnectionString": "mongodb://10.137.0.50:27017"
+                "MongoDbConnectionString": "mongodb://10.137.0.32:27017"
               },
               "DatabaseName": "TestExchange",
-              "DocumentName": "TestDataDocument"
+              "CollectionName": "TestDataDocument"
             }
         },
 "TypeMappings" : {

@@ -1,18 +1,27 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Xml;
 using Caching.Redis;
 using Crawler.Core.Cache;
 using Crawler.Core.Management;
 using Crawler.Core.Metrics;
+using Crawler.Core.Requests;
+using Crawler.Core.Results;
 using Crawler.Core.Strategy;
+using Crawler.Management.Core.RequestHandling.Core.Amqp;
 using Crawler.Management.Core.RequestHandling.Core.FileBased;
 using Crawler.Microservice.Core;
 using Crawler.RequestHandling.Core;
 using Crawler.Strategies.General;
 using Crawler.WebDriver.Grpc.Client;
+using Elasticsearch.Net.Specification.SecurityApi;
+using Microservice.Amqp;
+using Microservice.Amqp.Rabbitmq;
 using Microservice.Grpc.Core;
+using Microservice.Serialization;
 using Microservice.TestHelper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -31,47 +40,56 @@ namespace Crawler.IntegrationTest
         private Mock<IMetricRegister> _metricRegisterMock;
         private Mock<IGrpcMetrics> _grpcMetricsMock;
         private IRequestRepository _requestRepository;
+        private IAmqpBootstrapper _amqpBootstrapper;
+        private IAmqpProvider _amqpProvider;
 
-        [TestMethod]
+        IRequestPublisher _requestPublisher;
+
+        // ToDo test the exchange instead
+        //[TestMethod]
         [TestCategory("IntegrationTest")]
         public async Task StartCrawlTestIntegration()
         {
-            // ThreadPool.SetMaxThreads(128, 32);
-            // ThreadPool.SetMinThreads(32, 32);
-            if (Directory.Exists("Requests"))
-                Directory.Delete("Requests", true);
-
+            // ARRANGE - Dependencies
             SetupIntegrationTest();
 
+            // ARRANGE - Environment
+            //await _amqpBootstrapper.Bootstrap().Match(_ => {}, () => throw new Exception("Failed to bootstrap AMQP"));
 
-            var t = _testee.Start().Match(a => a, () => throw new Exception("Failed to start crawls"));
+            // ARRANGE - Publish a crawl request
+            var environment = TestHelper.GetEnvironment();
+            var requestText = await File.ReadAllTextAsync($"Resources/56bc3065-fc3c-4af6-acc0-dda71f70c35f_{environment}.json");
+            var crawlRequest = new JsonConverterProvider().Deserialize<CrawlRequest>(requestText);
+            
+            await _requestPublisher.PublishRequest(crawlRequest).Match(_ => {}, () => throw new Exception("Arrange failed"), ex => throw ex);
 
             // ACT
-            var environment = TestHelper.GetEnvironment();
-            File.Copy($"Resources/56bc3065-fc3c-4af6-acc0-dda71f70c35f_{environment}.json", "Requests/in/56bc3065-fc3c-4af6-acc0-dda71f70c35f.json");
+            // ToDo Using Microservice.Exchange instead of CrawlerManager - delete CrawlerManager
 
-            Task.Delay(25000).Wait();
+            // var t = _testee.Start().Match(a => a, () => throw new Exception("Failed to start crawls"));
+            var subscriberOpt = _amqpProvider.GetSubsriber("CrawlResponse", MessageHandlerFactory.Create<CrawlResponse, CrawlResponse>(response => response.Payload.Match(p => p, () => throw new Exception("Fail"))));
+            
+            // ASSERT - Consume response
+            var subscriber = await subscriberOpt.Match(s => s, () => throw new Exception("missing subscriber"));
+            CrawlResponse response = null;
 
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-            while (Directory.GetFiles("Requests/out").Length == 0)
-            {
-                if (stopWatch.ElapsedMilliseconds > 40000)
-                    throw new TimeoutException("Failed to get result within 40s");
+            var result = subscriber.GetObservable().Subscribe(r => response = r.Match(ex => throw ex, r => response = r, () => throw new Exception("No messages")));
+            subscriber.Start();
 
-                await Task.Delay(3000);
-            }
+            await Task.Delay(10000);
 
-            stopWatch.Stop();
-            _testee.Stop();
-            var resultFiles = Directory.GetFiles("Requests/out").Length;
+            // if(response == null)
+            //     await Task.Delay(1000000);
 
-            Assert.AreEqual(1, resultFiles);
+            result.Dispose();
+            subscriber.Dispose();
+
+            Assert.IsNotNull(response);
+            // await _amqpBootstrapper.Purge().Match(_ => {}, () => {});
         }
 
         private void SetupIntegrationTest()
         {
-           
             _metricRegisterMock = new Mock<IMetricRegister>();
 
             var testRepository = new FileBasedRequestRepository(new DirectoryInfo("Requests"), 100, new JsonConverterProvider());
@@ -102,6 +120,12 @@ namespace Crawler.IntegrationTest
             var crawlerCache = new CrawlerCache(redisCache);
 
             var strategyMapper = new CrawlStrategiesMapper(_loggerFactory.CreateLogger<ICrawlContinuationStrategy>(), testRepository, webDriver, metricRegister);
+
+            _amqpBootstrapper = new AmqpBootstrapper(_appConfig);
+
+            _amqpProvider = new AmqpProvider(_appConfig, new JsonConverterProvider(), new RabbitMqConnectionFactory());
+
+            _requestPublisher = new AmqpRequestPublisher(_amqpProvider);
 
             _testee = new CrawlerManager(_loggerFactory.CreateLogger<CrawlerManager>(), crawlConfiguration, crawlerCache, _metricRegisterMock.Object, _requestRepository, strategyMapper);
         }

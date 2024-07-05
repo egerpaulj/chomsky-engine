@@ -24,7 +24,7 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public class DocumentPartAutodetect : DocumentPart
     {
-        public DocumentPartAutodetect(Option<string> baseUri) : base (baseUri)
+        public DocumentPartAutodetect(Option<string> baseUri) : base(baseUri)
         {
             DocPartType = DocumentPartType.AutoDetect;
             Selector = new DocumentPartSelector()
@@ -41,7 +41,7 @@ namespace Crawler.Core.Parser.DocumentParts
                 {
                     return async () =>
                     {
-                        return await MonitorPerformance.MonitorAsync( async() =>
+                        return await MonitorPerformance.MonitorAsync(async () =>
                             {
                                 var subparts = new List<DocumentPart>();
 
@@ -49,7 +49,7 @@ namespace Crawler.Core.Parser.DocumentParts
                                 {
                                     IsParsedSubpart = true,
                                     BaseUri = this.BaseUri,
-                                    Title = new DocumentPartText (BaseUri)
+                                    Title = new DocumentPartText(BaseUri)
                                     {
                                         Selector = new DocumentPartSelector
                                         {
@@ -92,15 +92,20 @@ namespace Crawler.Core.Parser.DocumentParts
                                     subparts.AddRange(tableParts);
 
                                 }
-                                
+
 
                                 // ToDo Html Agility pack error - Xpath Depth limit?
                                 // var linkNodes = doc.DocumentNode.SelectNodes(".//*[self::img or self::a]")?.ToList() ?? new List<HtmlNode>();
                                 // linkNodes = linkNodes.Distinct(new HtmlNodeComparer()).ToList();
-                                
+
                                 var linkNodes = doc.DocumentNode
                                 .Descendants()
-                                .Where(n => n.Name == "img" || n.Name == "a")
+                                .Where(n => n.Name == "a")
+                                .ToList();
+
+                                var imageNodes = doc.DocumentNode
+                                .Descendants()
+                                .Where(n => n.Name == "img")
                                 .ToList();
 
                                 if (linkNodes != null)
@@ -108,12 +113,12 @@ namespace Crawler.Core.Parser.DocumentParts
 
                                     var linkParts = await linkNodes.SelectAsync(t =>
                                     {
-                                        var documentPart = new DocumentPartFile(BaseUri)
+                                        var documentPart = new DocumentPartLink(BaseUri)
                                         {
                                             IsParsedSubpart = true
                                         };
 
-                                        var res =  documentPart.Parse(CreateDocument(new List<HtmlNode> { t }))
+                                        var res = documentPart.Parse(CreateDocument(new List<HtmlNode> { t }))
                                         .Match(u => { }, () => documentPart.AppendAnomaly(AnomalyType.MissingContent, "Failed to parse content"));
 
                                         return Task.FromResult(documentPart);
@@ -122,6 +127,23 @@ namespace Crawler.Core.Parser.DocumentParts
                                     subparts.AddRange(linkParts);
                                 }
 
+                                if (imageNodes != null)
+                                {
+                                    var linkParts = await imageNodes.SelectAsync(t =>
+                                                                        {
+                                                                            var documentPart = new DocumentPartFile(BaseUri)
+                                                                            {
+                                                                                IsParsedSubpart = true
+                                                                            };
+
+                                                                            var res = documentPart.Parse(CreateDocument(new List<HtmlNode> { t }))
+                                                                            .Match(u => { }, () => documentPart.AppendAnomaly(AnomalyType.MissingContent, "Failed to parse content"));
+
+                                                                            return Task.FromResult(documentPart);
+                                                                        });
+
+                                    subparts.AddRange(linkParts);
+                                }
 
                                 SubParts = subparts;
 

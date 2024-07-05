@@ -192,20 +192,20 @@ namespace Crawler.Scheduler.Repository
     {
         public string DatabaseName => "Crawler";
 
-        public string DocumentName => "crawl_uri";
+        public string CollectionName => "crawl_uri";
     }
 
     internal class UriDataConfiguration : IDatabaseConfiguration
     {
         public string DatabaseName => "Crawler";
 
-        public string DocumentName => "uri";
+        public string CollectionName => "uri";
     }
 
     internal class SourceDataConfiguration : IDatabaseConfiguration
     {
         public string DatabaseName => "Crawler";
 
-        public string DocumentName => "source_data";
+        public string CollectionName => "source_data";
     }
 }

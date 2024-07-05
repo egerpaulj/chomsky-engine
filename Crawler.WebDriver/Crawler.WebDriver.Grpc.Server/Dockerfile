@@ -1,6 +1,6 @@
 # build custom aspnet environment with Firefox and Gecko first: Crawler.WebDriver/AspNetFirefoxGecko/createAspRuntimeWithGecko.sh
 FROM aspnet:ff91gk31
-COPY bin/Release/net6.0/publish/ App/
+COPY bin/Release/net8.0/publish/ App/
 WORKDIR /App
 COPY webdriver.pfx /opt/certs/certificate.pfx
 COPY exportphrase /opt/certs/exportphrase

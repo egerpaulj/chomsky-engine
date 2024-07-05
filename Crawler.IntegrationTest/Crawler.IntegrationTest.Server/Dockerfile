@@ -1,5 +1,5 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
-COPY bin/Test/net6.0/publish/ App/
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+COPY bin/Test/net8.0/publish/ App/
 WORKDIR /App
 ENV ASPNETCORE_ENVIRONMENT=Test
 EXPOSE 80

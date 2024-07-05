@@ -28,9 +28,9 @@ public class RabbitMqUriHandler : IMessageHandler<CrawlUri, CrawlUri>
         _configurationRepository = configurationRepository;
     }
 
-    public async Task<CrawlUri> HandleMessage(Option<CrawlUri> m)
+    public async Task<CrawlUri> HandleMessage(Option<Message<CrawlUri>> m)
     {
-        var crawlUri = m.Match(mes => mes, () => throw new System.Exception("Empty message"));
+        var crawlUri = m.Bind(mes => mes.Payload).Match(mes => mes, () => throw new System.Exception("Empty message"));
         var uri = crawlUri.Uri.Match(u => u, () => throw new Exception("Uri is empty"));
 
         _logger.LogInformation($"Procesing Uri: {uri}: {crawlUri.UriTypeId}");
@@ -52,7 +52,7 @@ public class RabbitMqUriHandler : IMessageHandler<CrawlUri, CrawlUri>
                     };
                 var shouldSkip = await _configurationRepository.ShouldSkip(crawlUri.BaseUri, crawlUri.Uri).Match(
                     r => r, 
-                    () => true, 
+                    () => false, 
                     ex => throw new Exception("Can't determine skip uri"));
 
                 if(shouldSkip)

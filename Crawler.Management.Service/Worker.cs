@@ -38,10 +38,11 @@ namespace Crawler.Management.Service
             var promServer = new MetricServer(7777);
             promServer.Start();
 
+            await _amqpBootstrapper.Bootstrap().Match(_ => {}, () => throw new Exception("bootstrap exception"), ex => throw ex);
 
             _logger.LogInformation("Starting Crawl Exchange at: {time}", DateTime.Now);
             var exchange = await _exchangeFactory
-                .CreateMessageExchange<CrawlEsResponseModel, CrawlEsResponseModel>(
+                .CreateMessageExchange<CrawlResponse, CrawlResponse>(
                     Option<IConfiguration>.Some(_configuration),
                     "CrawlerExchange")
                 .Match(r => r, () => throw new Exception("Empty result for Exchange"), ex => throw ex);

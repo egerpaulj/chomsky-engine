@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -38,6 +38,16 @@
     <ProjectReference Include="..\..\Microservice.Amqp\Microservice.Amqp.Rabbitmq\Microservice.Amqp.Rabbitmq.csproj" />
     <ProjectReference Include="..\..\Microservice.Elasticsearch\Microservice.Elasticsearch.Repo\Microservice.Elasticsearch.Repo.csproj" />
     <ProjectReference Include="..\Microservice.Exchange.Endpoints.Csv\Microservice.Exchange.Endpoints.Csv.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.Development.Bertrand.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.Test.Bertrand.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="appsettings.Development.json">

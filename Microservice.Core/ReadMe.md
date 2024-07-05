@@ -131,7 +131,7 @@ Note: See below **Using** and **WriteTo**
       {
         "Name": "Elasticsearch",
         "Args": {
-          "nodeUris": "http://10.137.0.50:9200/",
+          "nodeUris": "http://10.137.0.32:9200/",
           "autoRegisterTemplate": true,
           "overwriteTemplate": true,
           "autoRegisterTemplateVersion": "ESv7",
@@ -308,8 +308,8 @@ Once the certificate is generated, then it can be copied to the runtime folder/d
 
 E.g.
 ```
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
-COPY bin/Release/net6.0/publish/ App/
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+COPY bin/Release/net8.0/publish/ App/
 WORKDIR /App
 
 COPY certificate.pfx /opt/certs/certificate.pfx
@@ -332,7 +332,7 @@ Client containers, that communicate with the kestrel service; should trust the n
 
 E.g.
 ```
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
 COPY certificate.pem /usr/local/share/ca-certificates/configurationservice.crt
 RUN update-ca-certificates

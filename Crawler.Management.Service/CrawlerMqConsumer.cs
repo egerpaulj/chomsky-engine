@@ -1,4 +1,5 @@
 using Crawler.Core.Requests;
+using Crawler.Core.Results;
 using Crawler.DataModel;
 using Microservice.Amqp;
 using Microservice.Amqp.Rabbitmq;
@@ -8,9 +9,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Crawler.Management.Service;
 
-public class CrawlerMqConsumer : RabbitMqConsumer<CrawlRequest, CrawlEsResponseModel>
+public class CrawlerMqConsumer : RabbitMqConsumer<CrawlRequest, CrawlResponse>
 {
-    public CrawlerMqConsumer(ILogger<RabbitMqConsumer<CrawlRequest, CrawlEsResponseModel>> logger, IJsonConverterProvider converterProvider, IRabbitMqConnectionFactory rabbitMqConnectionFactory, IMessageHandler<CrawlRequest, CrawlEsResponseModel> messageHandler) : base(logger, converterProvider, rabbitMqConnectionFactory, messageHandler)
+    public CrawlerMqConsumer(ILogger<RabbitMqConsumer<CrawlRequest, CrawlResponse>> logger, IJsonConverterProvider converterProvider, IRabbitMqConnectionFactory rabbitMqConnectionFactory, IMessageHandler<CrawlRequest, CrawlResponse> messageHandler) : base(logger, converterProvider, rabbitMqConnectionFactory, messageHandler)
     {
     }
 }

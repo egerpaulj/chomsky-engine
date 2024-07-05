@@ -103,7 +103,7 @@ namespace Crawler.Configuration.Repository
                             .Get(filter)
                             .Match(model => 
                                 model.UrlSkipList?.Any(item => u.ToLower().Contains(item.ToLower())) ?? true, 
-                                () => true, 
+                                () => false, 
                                 ex => throw ex);
             });
         }

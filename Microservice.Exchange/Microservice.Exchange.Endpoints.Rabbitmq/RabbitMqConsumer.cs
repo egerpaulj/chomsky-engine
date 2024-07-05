@@ -27,6 +27,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Microservice.Exchange.Endpoints.Rabbitmq
 {
+    public class RabbitMqConsumer<T>(ILogger<RabbitMqConsumer<T, T>> logger, IJsonConverterProvider converterProvider, IRabbitMqConnectionFactory rabbitMqConnectionFactory, IMessageHandler<T, T> messageHandler) : RabbitMqConsumer<T, T>(logger, converterProvider, rabbitMqConnectionFactory, messageHandler)
+    {
+    }
+
     /// <summary>
     /// Consumes RabbitMq message from a Queue and provides the messages to the exchange.
     /// </summary>

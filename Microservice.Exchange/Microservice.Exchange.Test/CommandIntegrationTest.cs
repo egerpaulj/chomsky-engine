@@ -29,9 +29,67 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Microservice.Exchange.Test
 {
+
+
     [TestClass]
     public class CommandIntegrationTest
     {
+
+        [TestMethod]
+        public void TestDsl()
+        {
+            var example = "DataIn:rabbitmq?host=10.137.0.1&port=5672&queue=queuename&username=guestsPAssword=guest,DataOut:console";
+            // var completeExample = "from:rabbitmq?host=10.137.0.1&port=5672&queue=queuename&username=guest&password=guest,filter:filterName, transform:tranformername, to:console";
+
+            var components = example.Split(",");
+
+            var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection()
+            .Build();
+            
+            configuration["Amqp:Contexts:DslExchange:Exchange"] = "Exchange";
+            configuration["Amqp:Contexts:TestSomeother:Exchange"] = "ExchangeAnother";
+            _ = configuration.GetSection("Amqp").GetSection("Contexts").GetChildren();
+
+
+
+
+            foreach (var component in components)
+            {
+                var uri = new Uri(component);
+                var color = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine();
+                Console.WriteLine($"Direction: {uri.Scheme}");
+                Console.WriteLine($"Target component: {uri.AbsolutePath}");
+                var compConfigKey = $"MessageExchanges:dsl:{uri.Scheme}:{uri.AbsolutePath}";
+
+                Console.ForegroundColor = color;
+                if (!string.IsNullOrEmpty(uri.Query))
+                {
+                    var query = uri.Query[1..];
+                    var parameters = query.Split("&");
+
+                    if (parameters.Length != 0)
+                        foreach (var q in parameters)
+                        {
+                            var kvp = q.Split("=");
+                            Console.WriteLine($"Configuration Key: {kvp[0]}, Value: {kvp[1]}");
+                            var paramConfigKey = $"{compConfigKey}:{kvp[0]}";
+                            configuration[paramConfigKey] = kvp[1];
+                        }
+
+                    
+
+                }
+
+                
+
+
+
+            }
+
+        }
         private IConfigurationRoot _configuration;
 
         [TestInitialize]
@@ -39,7 +97,7 @@ namespace Microservice.Exchange.Test
         {
             if (Directory.Exists("testData/command"))
                 Directory.Delete("testData/command", true);
-            
+
             Directory.CreateDirectory("testData/command/out");
 
             _configuration = TestHelper.TestHelper.GetConfiguration($"{TestHelper.TestHelper.GetEnvironment()}.Command");
@@ -77,9 +135,9 @@ namespace Microservice.Exchange.Test
                             () => throw new Exception("Failed to Create MessageExchange"),
                             ex => throw ex);
 
-                await Task.Delay(2000);
+            await Task.Delay(2000);
 
-            
+
 
             // ASSERT - Verify Data is Transformed and Written to output
             var outputfile = Directory.GetFiles($"testData/command/out/").FirstOrDefault();
@@ -96,7 +154,7 @@ namespace Microservice.Exchange.Test
 
         private static IHost CreateHost()
         {
-            return Host.CreateDefaultBuilder(new string[0])
+            return Host.CreateDefaultBuilder([])
                 .SetupLogging()
                 .ConfigureServices((hostContext, services) =>
                 {

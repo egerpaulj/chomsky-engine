@@ -47,8 +47,8 @@ namespace Microservice.Exchange.Test
             _configuration = TestHelper.TestHelper.GetConfiguration($"{TestHelper.TestHelper.GetEnvironment()}.Mongodb");
 
             var mongodbConfigMock = new Mock<IDatabaseConfiguration>();
-            mongodbConfigMock.Setup(m => m.DatabaseName).Returns("TestExchange");
-            mongodbConfigMock.Setup(m => m.DocumentName).Returns("TestDataDocument");
+            mongodbConfigMock.Setup(m => m.DatabaseName).Returns("test");
+            mongodbConfigMock.Setup(m => m.CollectionName).Returns("TestDataDocument");
 
             var mongoRepo = new MongoDbRepository<TestOutputMessage>(_configuration, mongodbConfigMock.Object, new EmptyJsonConverterProvider() );
             await mongoRepo.Delete(Builders<BsonDocument>.Filter.Where(r => true)).Match(r => {}, () => {});

@@ -16,6 +16,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using LanguageExt;
+using LanguageExt.ClassInstances;
+using LanguageExt.ClassInstances.Pred;
+using Microservice.Amqp;
 using Microservice.Amqp.Configuration;
 using Microservice.Amqp.Rabbitmq;
 using Microservice.Serialization;
@@ -84,6 +87,20 @@ namespace Microservice.Exchange.Endpoints.Rabbitmq
         public TryOptionAsync<Unit> PublishError(Option<string> message)
         {
             return message.ToTryOptionAsync().Bind(m => _publisher.Publish<string>(m));
+        }
+    }
+
+    public class RabbitMqPublisher<T>(string name, IMessagePublisher messagePublisher) : IPublisher<T>
+    {
+        public string Name { get; } = name;
+        public IMessagePublisher publisher = messagePublisher;
+
+        public TryOptionAsync<Unit> Publish(Option<Message<T>> message)
+        {
+            return message
+                .Bind(m => m.Payload)
+                .ToTryOptionAsync()
+                .Bind(p => publisher.Publish<T>(p));
         }
     }
 }

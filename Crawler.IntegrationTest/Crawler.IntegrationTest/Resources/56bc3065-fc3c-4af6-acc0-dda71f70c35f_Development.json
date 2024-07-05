@@ -6,7 +6,7 @@
     "LoadPageRequest": [
         {   
             "Uri": [
-                "http://localhost:800/activemq.html"
+                "http://localhost:5000/activemq.html"
             ]
         }
     ],
@@ -18,7 +18,7 @@
             "RequestDocumentPart": [
                 {
                     "BaseUri": [
-                        "http://localhost:800/activemq.html"
+                        "http://localhost:5000/activemq.html"
                     ],
                     "Raw": [],
                     "StyleList": [],

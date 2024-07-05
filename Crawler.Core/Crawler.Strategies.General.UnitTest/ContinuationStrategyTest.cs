@@ -66,12 +66,12 @@ namespace Crawler.Strategies.General.UnitTest
             {
                 LoadPageRequest = new LoadPageRequest
                 {
-                    Uri = "https://continueTestCase",
+                    Uri = "https://www.continueTestCase",
 
                 },
                 RequestDocument = new Document
                 {
-                    RequestDocumentPart = new DocumentPartAutodetect("https://continueTestCase"),
+                    RequestDocumentPart = new DocumentPartAutodetect("https://www.continueTestCase"),
                     DownloadContent = false,
                 }
             };
@@ -87,8 +87,8 @@ namespace Crawler.Strategies.General.UnitTest
             var noLinksStored = 0;
 
             _requestPublisherMock
-            .Setup(m => m.PublishUri(It.IsAny<string>(), It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
-            .Callback<Option<List<DocumentPartLink>>>((l) => noLinksStored = l.Match(li => li.Count, () => 0))
+            .Setup(m => m.PublishUri(It.IsAny<Option<string>>(), It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
+            .Callback<Option<string>, Option<List<DocumentPartLink>>,UriType>((_,l,_) => noLinksStored = l.Match(r => r.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
 
             // ACT
@@ -108,8 +108,8 @@ namespace Crawler.Strategies.General.UnitTest
             var request = new Request(testee, Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee), _crawlRequest);
             var noLinksStored = 0;
             _requestPublisherMock
-            .Setup(m => m.PublishUri(It.IsAny<string>(), It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
-            .Callback<Option<List<DocumentPartLink>>>((l) => noLinksStored = l.Match(li => li.Count, () => 0))
+            .Setup(m => m.PublishUri(It.IsAny<Option<string>>(), It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
+            .Callback<Option<string>, Option<List<DocumentPartLink>>,UriType>((_,l,_) => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
 
             // ACT
@@ -118,8 +118,8 @@ namespace Crawler.Strategies.General.UnitTest
             //ASSERT
             var documentPartAutodetect = CrawlerStrategyGenericTest.GetDocumentPart<DocumentPartAutodetect>(result);
             _requestPublisherMock
-            .Setup(m => m.PublishUri(It.IsAny<string>(), It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
-            .Callback<Option<List<DocumentPartLink>>>(l => noLinksStored = l.Match(li => li.Count, () => 0))
+            .Setup(m => m.PublishUri(It.IsAny<Option<string>>(), It.IsAny<Option<List<DocumentPartLink>>>(), It.IsAny<UriType>()))
+            .Callback<Option<string>, Option<List<DocumentPartLink>>,UriType>((_,l,_) => noLinksStored = l.Match(li => li.Count, () => 0))
             .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
             
             Assert.AreEqual(6, noLinksStored);
@@ -134,7 +134,7 @@ namespace Crawler.Strategies.General.UnitTest
                             </div>
                             <div>
                                 <div> 
-                                    <a href=""https://continueTestCase/UriInDomain0"" />
+                                    <a href=""https://subdomain.continueTestCase/UriInSubDomainSkip"" />
                                     <a href=""/UriInDomain1"" />
                                     <a href=""https://someotherdomain/UriNotInDomain0"" />
                                     <div>

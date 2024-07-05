@@ -29,7 +29,7 @@ namespace Microservice.Exchange.Endpoints.Command
     public class CommandConsumer : IConsumer<CommandData>, IConfigInitializor
     {
         private IObserver<Either<Message<CommandData>, ConsumerException>> _observer;
-        private IObservable<Either<Message<CommandData>, ConsumerException>> _observable;
+        private readonly IObservable<Either<Message<CommandData>, ConsumerException>> _observable;
         private readonly ILogger<CommandConsumer> _logger;
         private PollingConsumer<CommandData> _pollingConsumer;
         private string _command;
@@ -69,9 +69,9 @@ namespace Microservice.Exchange.Endpoints.Command
                 _command = config.GetValue<string>("Command");
                 _arguments = config.GetValue<string>("Arguments");
                 _workingDirectory = config.GetValue<string>("WorkingDirectory");
-                _workingDirectory = _workingDirectory ?? Environment.CurrentDirectory;
+                _workingDirectory ??= Environment.CurrentDirectory;
 
-                _pollingConsumer = new PollingConsumer<CommandData>(_logger, config, () => RunCommand(_command, _workingDirectory, _arguments));
+                _pollingConsumer = new PollingConsumer<CommandData>(_logger, () => RunCommand(_command, _workingDirectory, _arguments), config.GetValue<int>(PollingConfiguration.IntervalInMsKey));
 
                 return await Task.FromResult(Unit.Default);
             });
@@ -81,16 +81,18 @@ namespace Microservice.Exchange.Endpoints.Command
         {
             return async () => 
             {
-                var processStartInfo = new ProcessStartInfo();
-                processStartInfo.CreateNoWindow = true;
-                processStartInfo.UseShellExecute = false;
-                processStartInfo.FileName = command;
-                processStartInfo.Arguments= arguments;
-                processStartInfo.WorkingDirectory = workingDirectory;
-                processStartInfo.RedirectStandardError = true;
-                processStartInfo.RedirectStandardOutput = true;
-                
-                
+                var processStartInfo = new ProcessStartInfo
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    FileName = command,
+                    Arguments = arguments,
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+
+
                 var process = Process.Start(processStartInfo);
                 await process.WaitForExitAsync();
 
@@ -99,7 +101,7 @@ namespace Microservice.Exchange.Endpoints.Command
                     throw new Exception($"Error executing command: {command}, arguments: {arguments}, \nStdError: {await process.StandardError.ReadToEndAsync()}, \nStdOut: {await process.StandardOutput.ReadToEndAsync()}");
                 }
                 
-                return await Task.FromResult(new List<CommandData>{new CommandData()
+                return await Task.FromResult(new List<CommandData>{new()
                 {
                     Command = command,
                     Arguments = arguments,

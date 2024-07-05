@@ -29,7 +29,7 @@ namespace Crawler.Core.UnitTest.Tests
         public void ParseAutodetectArticle()
         {
             var testcase = TestCaseFactoryAutoDetect.CreateArticleTestCase();
-            DocumentPartAutoDetectTest.AssertResult(testcase);
+            AssertResult(testcase);
         }
 
         [TestMethod]
@@ -43,22 +43,12 @@ namespace Crawler.Core.UnitTest.Tests
             var articles = result.GetAllParts<DocumentPartArticle>().ToList();
             Assert.AreEqual(1, articles.Count);
 
+            var links = result.GetAllParts<DocumentPartLink>().ToList();
+            Assert.AreEqual(86, links.Count);
+
             var files = result.GetAllParts<DocumentPartFile>().ToList();
-            //Assert.AreEqual(120, files.Count);
 
-            var multipleLinks = files.Where(f => f.DownloadLinks.Match(d => d, () => new List<DocumentPartLink>()).Count > 1).ToList();
-
-            var links = files.SelectMany(f =>
-            {
-                return f.DownloadLinks.Match(d => d, () => new List<DocumentPartLink>());
-            }).ToList();
-
-            //var distinctLinks = links.Distinct(new DocumentPartLinkComparer()).ToList();
-
-            //Assert.AreEqual(distinctLinks.Count, links.Count);
-
-            Assert.AreEqual(137, links.Count);
-
+            Assert.AreEqual(34, files.Count);
         }
 
         public static void AssertResult(TestCase<ExpectedArticle> testcase)
@@ -89,11 +79,7 @@ namespace Crawler.Core.UnitTest.Tests
             var expectedTable = testcase.ExpectedResult.Table;
             DocumentPartTableTest.AssertTable(expectedTable, tables.First());
 
-            var files = result.GetAllParts<DocumentPartFile>().ToList();
-            var links = files.SelectMany(f =>
-            {
-                return f.DownloadLinks.Match(d => d, () => new List<DocumentPartLink>());
-            }).ToList();
+            var links = result.GetAllParts<DocumentPartLink>().ToList();
 
             var expectedLinks = testcase.ExpectedResult.Links;
             DocumentPartArticleTest.AssertIteratively(expectedLinks, links.Select(l => l.Uri.Match(u => u, () => throw new System.Exception("missing uri"))).ToList());

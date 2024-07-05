@@ -33,7 +33,7 @@ namespace Microservice.Mongodb.Repo
         private const string DefaultConnectionString = "mongodb://mongodb:27017";
         private const string ConnectionStringKey = "MongoDbConnectionString";
         private readonly string _databaseName = "default";
-        private readonly string _documentName = "default_document";
+        private readonly string _collectionName = "default_document";
 
         private readonly string _connectionString;
 
@@ -47,7 +47,7 @@ namespace Microservice.Mongodb.Repo
             _connectionString = configuration.GetConnectionString(ConnectionStringKey) ?? DefaultConnectionString;
             _client = new Lazy<MongoClient>(() => new MongoClient(_connectionString));
             _databaseName = databaseConfiguration.DatabaseName ?? _databaseName;
-            _documentName = databaseConfiguration.DocumentName ?? _documentName;
+            _collectionName = databaseConfiguration.CollectionName ?? _collectionName;
             _jsonConverterProvider = jsonConverterProvider;
         }
 
@@ -80,7 +80,7 @@ namespace Microservice.Mongodb.Repo
 
         public TryOptionAsync<List<T>> GetMany(Option<FilterDefinition<BsonDocument>> filter, int limit = 100, int skip = 0)
         {
-            return filter.ToTryOptionAsync().Bind(f => GetModels(f));
+            return filter.ToTryOptionAsync().Bind(f => GetModels(f, limit, skip));
         }
 
 
@@ -104,10 +104,11 @@ namespace Microservice.Mongodb.Repo
         {
             return async () =>
             {
-                var collection = Database.GetCollection<BsonDocument>(_documentName);
+                var collection = Database.GetCollection<BsonDocument>(_collectionName);
                 if (model.Id == Guid.Empty)
                 {
                     model.Id = Guid.NewGuid();
+                    model.Created = $"{DateTime.UtcNow:yyyy.MM.dd:HH:mm:ss}";
                     await collection.InsertOneAsync(GetBsonDocument(model));
                     return model.Id;
                 }
@@ -115,9 +116,15 @@ namespace Microservice.Mongodb.Repo
                 {
                     var found = await collection.Find(GetModelIdFilter(model)).FirstOrDefaultAsync();
                     if(found != null)
+                    {
+                        model.Updated = $"{DateTime.UtcNow:yyyy.MM.dd:HH:mm:ss}";
                         await collection.FindOneAndReplaceAsync(GetModelIdFilter(model), GetBsonDocument(model));
+                    }
                     else
+                    {
+                        model.Created = $"{DateTime.UtcNow:yyyy.MM.dd:HH:mm:ss}";
                         await collection.InsertOneAsync(GetBsonDocument(model));
+                    }
                     return model.Id;
                 }
             };
@@ -128,7 +135,7 @@ namespace Microservice.Mongodb.Repo
         {
             return async () =>
             {
-                var collection = Database.GetCollection<BsonDocument>(_documentName);
+                var collection = Database.GetCollection<BsonDocument>(_collectionName);
                 //var contents = await collection.FindAsync(d => true);
 
                 var matchedModel = await collection.Find(filter).FirstOrDefaultAsync();
@@ -144,7 +151,7 @@ namespace Microservice.Mongodb.Repo
         {
             return async () =>
             {
-                var collection = Database.GetCollection<BsonDocument>(_documentName);
+                var collection = Database.GetCollection<BsonDocument>(_collectionName);
                 //var contents = await collection.FindAsync(d => true);
 
                 var result = await collection.FindAsync(filter, new FindOptions<BsonDocument, BsonDocument>{Limit = limit, Skip = skip});
@@ -158,7 +165,7 @@ namespace Microservice.Mongodb.Repo
         {
             return async () =>
             {
-                var collection = Database.GetCollection<BsonDocument>(_documentName);
+                var collection = Database.GetCollection<BsonDocument>(_collectionName);
                 //var contents = await collection.FindAsync( d => true);
                 //await collection.DeleteManyAsync(d => true);
                 var result = await collection.DeleteManyAsync(filter);

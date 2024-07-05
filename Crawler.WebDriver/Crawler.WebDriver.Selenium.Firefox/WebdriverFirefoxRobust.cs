@@ -136,7 +136,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
                     _webDriverMetrics.IncPageLoadFail();
                     _logger.LogError(ex, $"Failed to load page: {uri}");
                     CleanUpWebDrivers(uri);
-                    throw ex;
+                    throw;
                 }
             };
 

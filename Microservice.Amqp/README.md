@@ -42,15 +42,15 @@ Each context name (e.g. CrawlResponse/CrawlRequest below), can be used to obtain
 Amqp": {
     "Contexts": {
       "CrawlResponse": {
-        "Exchange": "crawl",
+        "Exchange": "crawler",
         "Queue": "response_queue",
         "RoutingKey": "response*",
         "RetryCount": "0"
       },
       "CrawlRequest": {
-        "Exchange": "crawl",
+        "Exchange": "crawler",
         "Queue": "request_queue",
-        "RoutingKey": "requests*",
+        "RoutingKey": "request*",
         "RetryCount": "0"
       }
     },

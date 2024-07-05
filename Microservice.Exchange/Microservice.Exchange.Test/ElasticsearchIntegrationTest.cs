@@ -100,7 +100,7 @@ namespace Microservice.Exchange.Test
             File.WriteAllText($"testData/elasticsearch/{fileNameAsGuid}", dataIn);
             File.Move($"testData/elasticsearch/{fileNameAsGuid}", $"testData/elasticsearch/in/{fileNameAsGuid}");
 
-            await Task.Delay(3000);
+            await Task.Delay(4000);
 
             // ASSERT - Verify Data is Transformed and Written to output
             var result = await File.ReadAllTextAsync($"testData/elasticsearch/out/{fileNameAsGuid}");

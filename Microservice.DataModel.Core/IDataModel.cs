@@ -34,5 +34,8 @@ namespace Microservice.DataModel.Core
         /// The Id to uniquely identify each model instance.
         /// </summary>
         public Guid Id { get; set; }
+
+        public string Created { get; set; }
+        public string Updated { get; set; }
     }
 }
