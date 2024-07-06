@@ -50,6 +50,7 @@ public class BertrandExchangeIntegrationTest
     private readonly IMongoDbRepository<TestOutputMessage> _mongodbRepository;
     private readonly IMongoDbRepository<BertrandStateDataModel> _bertrandStateDeadletterRepository;
     private readonly IMongoDbRepository<BertrandStateDataModel> _bertrandStateRepository;
+    private readonly IMongoDbRepository<BertrandExchangeDataModel> _bertrandExchangeRepository;
     private readonly IElasticsearchRepository _elasticSearchRepository;
     private readonly IAmqpBootstrapper _amqpbootstrapper;
     private readonly IAmqpProvider _amqpProvider;
@@ -69,7 +70,9 @@ public class BertrandExchangeIntegrationTest
     readonly List<IBertrandPublisherFilter> PublisherFilters;
     readonly MongoDbBertrandConsumer<TestOutputMessage> mongoDbConsumer;
     readonly IBertrandStateStore bertrandStateStore;
+    readonly IBertrandExchangeStore bertrandExchangeStore;
     readonly IJsonConverterProvider jsonConverterProvider;
+    readonly IBertrandExchangeManager exchangeManager;
 
     public BertrandExchangeIntegrationTest()
     {
@@ -185,9 +188,19 @@ public class BertrandExchangeIntegrationTest
             CollectionName = "bertrand_exchange_test_deadletter",
             DatabaseName = "test"
         };
+        var exchangeStoreConfiguration = new DatabaseConfiguration
+        {
+            CollectionName = "bertrand_exchange_test_exchange_store",
+            DatabaseName = "test"
+        };
         _bertrandStateRepository = repositoryFactory.CreateRepository<BertrandStateDataModel>(stateStoreConfiguration);
         _bertrandStateDeadletterRepository = repositoryFactory.CreateRepository<BertrandStateDataModel>(deadletterStoreConfiguration);
         bertrandStateStore = new MongoDbBertrandStateStore(jsonConverterProvider, _bertrandStateRepository, _bertrandStateDeadletterRepository);
+
+
+        _bertrandExchangeRepository = repositoryFactory.CreateRepository<BertrandExchangeDataModel>(exchangeStoreConfiguration);
+        bertrandExchangeStore = new MongoDbBertrandExchangeStore(_bertrandExchangeRepository);
+        exchangeManager = new BertrandExchangeManager(bertrandExchangeStore, loggerFactory.CreateLogger<BertrandExchangeManager>());
         // -- State store
     }
 
@@ -203,7 +216,9 @@ public class BertrandExchangeIntegrationTest
                     Publishers,
                    logger,
                    Mock.Of<IBertrandMetrics>(),
-                   bertrandStateStore);
+                   bertrandStateStore,
+                   bertrandExchangeStore,
+                   exchangeManager);
     }
 
     [TestMethod]
@@ -216,6 +231,7 @@ public class BertrandExchangeIntegrationTest
         await _mongodbRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _bertrandStateDeadletterRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _bertrandStateRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
+        await _bertrandExchangeRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _elasticSearchRepository.Delete(EsIndexName).Match(r => { }, () => { });
 
         // SETUP - something to consume in Mongodb
@@ -254,7 +270,9 @@ public class BertrandExchangeIntegrationTest
         await _amqpbootstrapper.Bootstrap().Match(r => r, () => throw new System.Exception("Failed"));
 
         await _mongodbRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
+        
         await _bertrandStateDeadletterRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
+        await _bertrandExchangeRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _bertrandStateRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _elasticSearchRepository.Delete(EsIndexName).Match(r => { }, () => { });
 
@@ -299,6 +317,7 @@ public class BertrandExchangeIntegrationTest
 
         await _mongodbRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _bertrandStateDeadletterRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
+        await _bertrandExchangeRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _bertrandStateRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _elasticSearchRepository.Delete(EsIndexName).Match(r => { }, () => { });
 
@@ -311,10 +330,10 @@ public class BertrandExchangeIntegrationTest
         // SETUP - ensure error transformer matches the incoming message - setup to fail
         var failingTransformer = new ErrorTransformer();
         TransformerFilters.Clear();
-       
+
         TransformerFilters.Add(
         new BertrandRoutingKeyFilter("bertrand_output", failingTransformer.Name));
-       
+
         TransformerFilters.Add(
         new BertrandRoutingKeyFilter("bertrand_input", failingTransformer.Name));
 
@@ -338,7 +357,7 @@ public class BertrandExchangeIntegrationTest
         Assert.AreEqual(1, deadletter.Count);
 
         // ASSERT - cleared the state (i.e. moved to deadletter)
-        var outstanding =  await bertrandStateStore.GetOutstandingMessages().Match(r => r, () => throw new Exception("Nothing in the deadletter"), ex => throw ex);
+        var outstanding = await bertrandStateStore.GetOutstandingMessages().Match(r => r, () => throw new Exception("Nothing in the deadletter"), ex => throw ex);
         Assert.IsFalse(outstanding.Any());
     }
 
@@ -350,6 +369,7 @@ public class BertrandExchangeIntegrationTest
         await _bertrandStateDeadletterRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _bertrandStateRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
         await _elasticSearchRepository.Delete(EsIndexName).Match(r => { }, () => { });
+        await _bertrandExchangeRepository.Delete(FilterDefinition<BsonDocument>.Empty).Match(r => r, () => throw new System.Exception("Faile to purge collection"));
 
         // SETUP - Add something in state
         await _bertrandStateRepository
@@ -393,10 +413,10 @@ public class ErrorTransformer() : IBertrandTransformer
 
     public TryOptionAsync<Message<object>> Transform(Option<Message<object>> input)
     {
-        return async () => 
+        return async () =>
         {
             await Task.CompletedTask;
-            throw new Exception ("SHould fail");
+            throw new Exception("SHould fail");
         };
     }
 }

@@ -36,7 +36,8 @@ public interface IBertrandExchange
     string ExchangeName { get; }
 
     IReadOnlyList<IBertrandConsumer> GetConsumers();
-    IReadOnlyList<IBertrandPublisherFilter> GetPublisherFilters();
-    IReadOnlyList<IBetrandTransformerFilter> GetTransformerFilters();
+    IReadOnlyList<IBertrandTransformer> GetTransformers();
     IReadOnlyList<IPublisher<object>> GetPublishers();
+    IReadOnlyList<IBetrandTransformerFilter> GetTransformerFilters();
+    IReadOnlyList<IBertrandPublisherFilter> GetPublisherFilters();
 }
