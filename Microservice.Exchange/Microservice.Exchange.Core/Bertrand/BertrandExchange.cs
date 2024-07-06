@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.SomeHelp;
+using Microservice.Exchange.Bertrand;
 using Microsoft.Extensions.Logging;
 
 namespace Microservice.Exchange.Core.Bertrand;
@@ -33,26 +34,28 @@ public class BertrandExchange(
         List<IPublisher<object>> publishers,
         ILogger<BertrandExchange> logger,
         IBertrandMetrics metrics,
-        IBertrandStateStore bertrandStateStore) : IBertrandExchange, IBertrandMessageHandler
+        IBertrandStateStore bertrandStateStore,
+        IBertrandExchangeStore bertrandExchangeStore,
+        IBertrandExchangeManager bertrandExchangeManager) : IBertrandExchange, IBertrandMessageHandler
 {
-    private readonly List<IBertrandConsumer> _consumers = consumers;
-    private readonly List<IBertrandTransformer> _transformers = transformers;
-    private readonly List<IBetrandTransformerFilter> transformerFilters = transformerFilters;
-    private readonly List<IBertrandPublisherFilter> _publisherFilters = publisherFilters;
-    private readonly List<IPublisher<object>> _publishers = publishers;
+    private readonly List<IBertrandConsumer> _consumers = consumers ?? [];
+    private readonly List<IBertrandTransformer> _transformers = transformers ?? [];
+    private readonly List<IBetrandTransformerFilter> transformerFilters = transformerFilters ?? [];
+    private readonly List<IBertrandPublisherFilter> _publisherFilters = publisherFilters ?? [];
+    private readonly List<IPublisher<object>> _publishers = publishers ?? [];
     private readonly ILogger<BertrandExchange> logger = logger;
     private readonly IBertrandMetrics _metrics = metrics;
     private readonly IBertrandStateStore bertrandStateStore = bertrandStateStore;
+    private readonly IBertrandExchangeStore bertrandExchangeStore = bertrandExchangeStore;
 
     public string ExchangeName { get; } = exchangeName;
 
     public IReadOnlyList<IBertrandConsumer> GetConsumers() => _consumers;
-
-    public IReadOnlyList<IBertrandPublisherFilter> GetPublisherFilters() => _publisherFilters;
-
-    public IReadOnlyList<IBetrandTransformerFilter> GetTransformerFilters() => transformerFilters;
+    public IReadOnlyList<IBertrandTransformer> GetTransformers() => _transformers;
 
     public IReadOnlyList<IPublisher<object>> GetPublishers() => _publishers;
+    public IReadOnlyList<IBertrandPublisherFilter> GetPublisherFilters() => _publisherFilters;
+    public IReadOnlyList<IBetrandTransformerFilter> GetTransformerFilters() => transformerFilters;
 
     public TryOptionAsync<Unit> End()
     {
@@ -64,10 +67,13 @@ public class BertrandExchange(
     public TryOptionAsync<Unit> Start()
     {
         return LogInformation("Starting Exchange")
+                .Bind(RegisterExchange)
                 .Bind(ProcessOutstandingWork)
                 .Bind(StartConsumers)
                 .Bind(_ => LogInformation("Started exchange successfully"));
     }
+
+    private TryOptionAsync<Unit> RegisterExchange(Unit _) => bertrandExchangeManager.RegisterExchange(this);
 
     private TryOptionAsync<Unit> LogInformation(Option<string> message)
     {
@@ -249,6 +255,8 @@ public class BertrandExchange(
                         () => false,
                     (Func<Exception, bool>)(ex => { this.LogError(message, $"Transform-filter-match-{filter.Name}", ex); return false; }));
 
+                    isMatch &= await bertrandExchangeStore.IsTransformerActive(ExchangeName, transformer.Name).Match(r => r, () => true);
+
                     if (isMatch)
                     {
                         LogInformation(message, "Transormer matched filter: " + filter.Name);
@@ -310,6 +318,8 @@ public class BertrandExchange(
                             r => r,
                             () => false,
                             (Func<Exception, bool>)(ex => { this.LogError(message, $"Transform-filter-match-{filter.Name}", ex); return false; }));
+
+                        isMatch &= await bertrandExchangeStore.IsPublisherActive(ExchangeName, publisher.Name).Match(r => r, () => true);
 
                         if (isMatch)
                         {

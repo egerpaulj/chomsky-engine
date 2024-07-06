@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LanguageExt;
+using Microservice.Exchange.Bertrand;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,8 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
     [TestClass]
     public class BertrandExchangeTests
     {
+        private readonly Mock<IBertrandExchangeStore> mockBertrandExchangeStore = new();
+        private readonly Mock<IBertrandExchangeManager> mockBertrandExchangeManager = new();
         private Mock<IBertrandStateStore> mockBertrandSateStore;
         private List<Mock<IBertrandConsumer>> mockConsumers;
         private List<Mock<IBertrandTransformer>> mockTransformers;
@@ -51,6 +54,8 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
             mockBertrandSateStore.Setup(mock => mock.GetOutstandingMessages()).Returns(async () => await Task.FromResult(new List<Message<object>>()));
             mockBertrandSateStore.Setup(mock => mock.StoreIncomingMessage(It.IsAny<Option<Message<object>>>())).Returns(async () => await Task.FromResult(Unit.Default));
             mockBertrandSateStore.Setup(mock => mock.Delete(It.IsAny<Option<Guid>>())).Returns(async () => await Task.FromResult(Unit.Default));
+
+            mockBertrandExchangeManager.Setup(mock => mock.RegisterExchange(It.IsAny<IBertrandExchange>())).Returns(async () => await Task.FromResult(Unit.Default));
 
             // Initialize logger mock
             var serviceProvider = new ServiceCollection()
@@ -427,7 +432,9 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
                 mockPublishers.ConvertAll(p => p.Object),
                 logger,
                 Mock.Of<IBertrandMetrics>(),
-                mockBertrandSateStore.Object)
+                mockBertrandSateStore.Object,
+                mockBertrandExchangeStore.Object,
+                mockBertrandExchangeManager.Object)
                 ;
         }
 

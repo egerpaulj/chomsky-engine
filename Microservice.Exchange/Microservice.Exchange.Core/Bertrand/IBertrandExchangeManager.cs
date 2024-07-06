@@ -14,16 +14,14 @@
 //      You should have received a copy of the GNU General Public License                                                                                                                                             
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 using System;
-using System.Timers;
 using System.Threading;
-using System.Reflection.Metadata.Ecma335;
 using Microservice.Exchange.Bertrand;
+using System.Diagnostics.Contracts;
 
 namespace Microservice.Exchange.Core.Bertrand;
 
@@ -51,27 +49,15 @@ public class BertrandExchangeManager(IBertrandExchangeStore bertrandExchangeStor
     {
         return async () =>
         {
-            var model = await bertrandExchangeStore.GetExchange(bertrandExchange.ExchangeName).Match(m => m, () => new BertrandExchangeModel() { ExchangeName = bertrandExchange.ExchangeName }, ex => throw ex);
-            foreach (var filter in bertrandExchange.GetPublisherFilters())
-            {
-                if (!model.PublisherFilters.Any(f => f.Name == filter.Name))
-                {
-                    model.PublisherFilters.Add(new BertrandExchangeControlModel
-                    {
-                        Name = filter.Name,
-                        IsActive = true,
-                        RegistrationDate = DateTime.UtcNow.ToString(DateStrFormat)
+            var model = await bertrandExchangeStore.GetExchange(bertrandExchange.ExchangeName).Match(m => m.BertrandExchangeModel, () => new BertrandExchangeModel() { ExchangeName = bertrandExchange.ExchangeName }, ex => throw ex);
 
-                    });
-                }
-            }
-            foreach (var filter in bertrandExchange.GetTransformerFilters())
+            foreach (var transformer in bertrandExchange.GetTransformers())
             {
-                if (!model.TransformerFilters.Any(f => f.Name == filter.Name))
+                if (!model.Transformers.Any(f => f.Name == transformer.Name))
                 {
-                    model.TransformerFilters.Add(new BertrandExchangeControlModel
+                    model.Transformers.Add(new BertrandExchangeControlModel
                     {
-                        Name = filter.Name,
+                        Name = transformer.Name,
                         IsActive = true,
                         RegistrationDate = DateTime.UtcNow.ToString(DateStrFormat)
 
@@ -95,9 +81,37 @@ public class BertrandExchangeManager(IBertrandExchangeStore bertrandExchangeStor
             {
                 if (!model.Publishers.Any(f => f.Name == publisher.Name))
                 {
-                    model.Consumers.Add(new BertrandExchangeControlModel
+                    model.Publishers.Add(new BertrandExchangeControlModel
                     {
                         Name = publisher.Name,
+                        IsActive = true,
+                        RegistrationDate = DateTime.UtcNow.ToString(DateStrFormat)
+
+                    });
+                }
+            }
+
+            foreach (var publisherFilter in bertrandExchange.GetPublisherFilters())
+            {
+                if (!model.PublisherFilters.Any(f => f.Name == publisherFilter.Name))
+                {
+                    model.PublisherFilters.Add(new BertrandExchangeControlModel
+                    {
+                        Name = publisherFilter.Name,
+                        IsActive = true,
+                        RegistrationDate = DateTime.UtcNow.ToString(DateStrFormat)
+
+                    });
+                }
+            }
+
+            foreach (var transformerFilter in bertrandExchange.GetTransformerFilters())
+            {
+                if (!model.TransformerFilters.Any(f => f.Name == transformerFilter.Name))
+                {
+                    model.TransformerFilters.Add(new BertrandExchangeControlModel
+                    {
+                        Name = transformerFilter.Name,
                         IsActive = true,
                         RegistrationDate = DateTime.UtcNow.ToString(DateStrFormat)
 
@@ -133,7 +147,7 @@ public class BertrandExchangeManager(IBertrandExchangeStore bertrandExchangeStor
                     {
                         var shouldStopConsumer = await bertrandExchangeStore.IsConsumerActive(exchange.ExchangeName, consumer.Name).Match(r => r, false);
                         if (shouldStopConsumer)
-                            await consumer.End().Match(r => {}, () => logger.LogWarning($"{exchange.ExchangeName} exchange: failed to stop consumer: {consumer.Name}"), ex => logger.LogError(ex, $"{exchange.ExchangeName} exchange: failed to stop consumer: {consumer.Name}"));
+                            await consumer.End().Match(r => { }, () => logger.LogWarning("{ExchangeName} exchange: failed to stop consumer: {consumer}", exchange.ExchangeName, consumer.Name), ex => logger.LogError(ex, "{ExchangeName} exchange: failed to stop consumer: {consumer}", exchange.ExchangeName, consumer.Name));
                     }
                 }
 
@@ -155,7 +169,7 @@ public class BertrandExchangeManager(IBertrandExchangeStore bertrandExchangeStor
 
     public TryOptionAsync<Unit> UnregisterExchange(IBertrandExchange bertrandExchange)
     {
-        return async () => 
+        return async () =>
         {
             await semaphoreSlim.WaitAsync();
 
