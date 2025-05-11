@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 
@@ -21,7 +21,8 @@ namespace Crawler.Core.UnitTest.Factories
     {
         public static TestCase<ExpectedArticle> CreateTestCase()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                             <body>
                                 <div class='titleClass'>
                                     I am a title with a link
@@ -68,8 +69,9 @@ namespace Crawler.Core.UnitTest.Factories
                             </body>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartArticle(@"https://something");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartArticle(
+                @"https://something"
+            );
 
             return new TestCase<ExpectedArticle>()
             {
@@ -78,16 +80,23 @@ namespace Crawler.Core.UnitTest.Factories
                 ExpectedResult = new ExpectedArticle
                 {
                     Title = "I am a title with a link\n",
-                    Content = "Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
-                    Links = new List<string> { @"https://something/contentLink", @"https://somewhereelse/something", @"http://somethingelse/linkToSomewhere" },
-                    Images = new List<string> { @"https://something/pathToImage" }
-                }
+                    Content =
+                        "Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
+                    Links = new List<string>
+                    {
+                        @"https://something/contentLink",
+                        @"https://somewhereelse/something",
+                        @"http://somethingelse/linkToSomewhere",
+                    },
+                    Images = new List<string> { @"https://something/pathToImage" },
+                },
             };
         }
 
         public static TestCase<ExpectedArticle> CreateCustomTestCase()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                             <body>
                                 <div data-gu-name='headline'>
                                     I am a title with a link
@@ -137,8 +146,9 @@ namespace Crawler.Core.UnitTest.Factories
                             </body>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartArticle(@"https://something");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartArticle(
+                @"https://something"
+            );
 
             return new TestCase<ExpectedArticle>()
             {
@@ -147,10 +157,16 @@ namespace Crawler.Core.UnitTest.Factories
                 ExpectedResult = new ExpectedArticle
                 {
                     Title = "I am a title with a link\n",
-                    Content = "Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
-                    Links = new List<string> { @"https://something/contentLink", @"https://somewhereelse/something", @"http://somethingelse/linkToSomewhere" },
-                    Images = new List<string> { @"https://something/pathToImage" }
-                }
+                    Content =
+                        "Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
+                    Links = new List<string>
+                    {
+                        @"https://something/contentLink",
+                        @"https://somewhereelse/something",
+                        @"http://somethingelse/linkToSomewhere",
+                    },
+                    Images = new List<string> { @"https://something/pathToImage" },
+                },
             };
         }
     }
@@ -162,6 +178,6 @@ namespace Crawler.Core.UnitTest.Factories
         public List<string> Images { get; set; }
         public List<string> Links { get; set; }
 
-        public ExpectedTable Table {get;set;}
-}
+        public ExpectedTable Table { get; set; }
+    }
 }

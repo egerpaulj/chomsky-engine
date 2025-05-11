@@ -1,4 +1,6 @@
-docker run -d --rm --network development_network --hostname jenkins --name jenkins -p 8080:8080 -p 50000:50000 -v /var/run/docker.sock:/var/run/docker.sock -v /home/user/docker/volumes/jenkins:/var/jenkins_home -e ASPNETCORE_ENVIRONMENT='Test' jenkins/jenkins
+docker run -d --rm --network development_network --hostname jenkins --name jenkins -e DOTNET_CLI_TELEMETRY_OPTOUT:0 -p 8080:8080 -p 50000:50000 -v /var/run/docker.sock:/var/run/docker.sock -v /home/user/docker/volumes/jenkins:/var/jenkins_home -e ASPNETCORE_ENVIRONMENT='Test' jenkins/jenkins:lts-jdk17-dotnet-moby
+
+#docker run -d --rm --network development_network --hostname jenkins --name jenkins -p 8080:8080 -p 50000:50000 -v /var/run/docker.sock:/var/run/docker.sock -v /home/user/docker/volumes/jenkins:/var/jenkins_home -e ASPNETCORE_ENVIRONMENT='Test' jenkins/jenkins
 
 sleep 2
 

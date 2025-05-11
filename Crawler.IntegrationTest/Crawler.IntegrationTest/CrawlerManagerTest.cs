@@ -58,22 +58,42 @@ namespace Crawler.IntegrationTest
 
             // ARRANGE - Publish a crawl request
             var environment = TestHelper.GetEnvironment();
-            var requestText = await File.ReadAllTextAsync($"Resources/56bc3065-fc3c-4af6-acc0-dda71f70c35f_{environment}.json");
+            var requestText = await File.ReadAllTextAsync(
+                $"Resources/56bc3065-fc3c-4af6-acc0-dda71f70c35f_{environment}.json"
+            );
             var crawlRequest = new JsonConverterProvider().Deserialize<CrawlRequest>(requestText);
-            
-            await _requestPublisher.PublishRequest(crawlRequest).Match(_ => {}, () => throw new Exception("Arrange failed"), ex => throw ex);
+
+            await _requestPublisher
+                .PublishRequest(crawlRequest)
+                .Match(_ => { }, () => throw new Exception("Arrange failed"), ex => throw ex);
 
             // ACT
             // ToDo Using Microservice.Exchange instead of CrawlerManager - delete CrawlerManager
 
             // var t = _testee.Start().Match(a => a, () => throw new Exception("Failed to start crawls"));
-            var subscriberOpt = _amqpProvider.GetSubsriber("CrawlResponse", MessageHandlerFactory.Create<CrawlResponse, CrawlResponse>(response => response.Payload.Match(p => p, () => throw new Exception("Fail"))));
-            
+            var subscriberOpt = _amqpProvider.GetSubsriber(
+                "CrawlResponse",
+                MessageHandlerFactory.Create<CrawlResponse, CrawlResponse>(response =>
+                    response.Payload.Match(p => p, () => throw new Exception("Fail"))
+                )
+            );
+
             // ASSERT - Consume response
-            var subscriber = await subscriberOpt.Match(s => s, () => throw new Exception("missing subscriber"));
+            var subscriber = await subscriberOpt.Match(
+                s => s,
+                () => throw new Exception("missing subscriber")
+            );
             CrawlResponse response = null;
 
-            var result = subscriber.GetObservable().Subscribe(r => response = r.Match(ex => throw ex, r => response = r, () => throw new Exception("No messages")));
+            var result = subscriber
+                .GetObservable()
+                .Subscribe(r =>
+                    response = r.Match(
+                        ex => throw ex,
+                        r => response = r,
+                        () => throw new Exception("No messages")
+                    )
+                );
             subscriber.Start();
 
             await Task.Delay(10000);
@@ -92,7 +112,11 @@ namespace Crawler.IntegrationTest
         {
             _metricRegisterMock = new Mock<IMetricRegister>();
 
-            var testRepository = new FileBasedRequestRepository(new DirectoryInfo("Requests"), 100, new JsonConverterProvider());
+            var testRepository = new FileBasedRequestRepository(
+                new DirectoryInfo("Requests"),
+                100,
+                new JsonConverterProvider()
+            );
             _grpcMetricsMock = new Mock<IGrpcMetrics>();
 
             _appConfig = TestHelper.GetConfiguration();
@@ -102,32 +126,59 @@ namespace Crawler.IntegrationTest
                 b.AddSimpleConsole();
             });
 
-            _requestRepository = new RequestRepository(testRepository, testRepository, testRepository);
+            _requestRepository = new RequestRepository(
+                testRepository,
+                testRepository,
+                testRepository
+            );
 
             var webDriver = new GrpcWebDriverService(
                 _appConfig,
                 _loggerFactory.CreateLogger<GrpcWebDriverService>(),
                 new GrpcMetrics(),
-                new JsonConverterProvider());
+                new JsonConverterProvider()
+            );
 
             var metricRegister = new MetricRegister();
 
-            var crawlConfiguration = new CrawlerConfigurationGeneric(webDriver,
-            metricRegister,
-            _loggerFactory.CreateLogger<CrawlerConfigurationGeneric>());
+            var crawlConfiguration = new CrawlerConfigurationGeneric(
+                webDriver,
+                metricRegister,
+                _loggerFactory.CreateLogger<CrawlerConfigurationGeneric>()
+            );
 
-            var redisCache = new RedisCacheProvider(Mock.Of<ILogger<RedisCacheProvider>>(), new RedisConfiguration(_appConfig), new JsonConverterProvider());
+            var redisCache = new RedisCacheProvider(
+                Mock.Of<ILogger<RedisCacheProvider>>(),
+                new RedisConfiguration(_appConfig),
+                new JsonConverterProvider()
+            );
             var crawlerCache = new CrawlerCache(redisCache);
 
-            var strategyMapper = new CrawlStrategiesMapper(_loggerFactory.CreateLogger<ICrawlContinuationStrategy>(), testRepository, webDriver, metricRegister);
+            var strategyMapper = new CrawlStrategiesMapper(
+                _loggerFactory.CreateLogger<ICrawlContinuationStrategy>(),
+                testRepository,
+                webDriver,
+                metricRegister
+            );
 
             _amqpBootstrapper = new AmqpBootstrapper(_appConfig);
 
-            _amqpProvider = new AmqpProvider(_appConfig, new JsonConverterProvider(), new RabbitMqConnectionFactory());
+            _amqpProvider = new AmqpProvider(
+                _appConfig,
+                new JsonConverterProvider(),
+                new RabbitMqConnectionFactory()
+            );
 
-            _requestPublisher = new AmqpRequestPublisher(_amqpProvider);
+            _requestPublisher = new AmqpRequestPublisher(_amqpProvider, _amqpBootstrapper);
 
-            _testee = new CrawlerManager(_loggerFactory.CreateLogger<CrawlerManager>(), crawlConfiguration, crawlerCache, _metricRegisterMock.Object, _requestRepository, strategyMapper);
+            _testee = new CrawlerManager(
+                _loggerFactory.CreateLogger<CrawlerManager>(),
+                crawlConfiguration,
+                crawlerCache,
+                _metricRegisterMock.Object,
+                _requestRepository,
+                strategyMapper
+            );
         }
     }
 }

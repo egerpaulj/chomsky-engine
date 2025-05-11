@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections;
@@ -22,26 +22,39 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public static class DocumentPartExtensions
     {
-        public static IEnumerable<T> GetAllParts<T>(this DocumentPart documentPart) where T : DocumentPart
+        public static IEnumerable<T> GetAllParts<T>(this DocumentPart documentPart)
+            where T : DocumentPart
         {
             int iterationCount = 0;
             var partsEnumerable = Enumerable.Empty<T>();
-            if(documentPart is T)
+            if (documentPart is T)
                 partsEnumerable = partsEnumerable.Append(documentPart as T);
 
-            var allParts = RecusrsiveGetSubParts<T>(documentPart, ref partsEnumerable, ref iterationCount);
+            var allParts = RecusrsiveGetSubParts<T>(
+                documentPart,
+                ref partsEnumerable,
+                ref iterationCount
+            );
 
             return allParts;
         }
 
-        public static IEnumerable<DocumentPart> GetAllParts(this DocumentPart documentPart, string name)
+        public static IEnumerable<DocumentPart> GetAllParts(
+            this DocumentPart documentPart,
+            string name
+        )
         {
             int iterationCount = 0;
             var partsEnumerable = Enumerable.Empty<DocumentPart>();
-            if(documentPart.Name.Match(n => n, () => "") == name)
+            if (documentPart.Name.Match(n => n, () => "") == name)
                 partsEnumerable = partsEnumerable.Append(documentPart);
 
-            var allParts = RecusrsiveGetSubParts(documentPart, name, ref partsEnumerable, ref iterationCount);
+            var allParts = RecusrsiveGetSubParts(
+                documentPart,
+                name,
+                ref partsEnumerable,
+                ref iterationCount
+            );
 
             return allParts;
         }
@@ -50,25 +63,36 @@ namespace Crawler.Core.Parser.DocumentParts
         {
             int iterationCount = 0;
             var partsEnumerable = Enumerable.Empty<DocumentPart>();
-            
+
             partsEnumerable = partsEnumerable.Append(documentPart);
 
-            var allParts = RecusrsiveGetSubParts<DocumentPart>(documentPart, ref partsEnumerable, ref iterationCount);
+            var allParts = RecusrsiveGetSubParts<DocumentPart>(
+                documentPart,
+                ref partsEnumerable,
+                ref iterationCount
+            );
 
             return allParts.SelectMany(d => d.Anomalies.Match(a => a, Enumerable.Empty<Anomaly>()));
         }
 
-        private static IEnumerable<T> RecusrsiveGetSubParts<T>(DocumentPart documentPart, ref IEnumerable<T> partsEnumerable, ref int recursionLevels)
-        where T : DocumentPart
+        private static IEnumerable<T> RecusrsiveGetSubParts<T>(
+            DocumentPart documentPart,
+            ref IEnumerable<T> partsEnumerable,
+            ref int recursionLevels
+        )
+            where T : DocumentPart
         {
             ControlRecursionLevel(ref recursionLevels);
 
-            var subParts = documentPart.SubParts.Match(p => p, () => Enumerable.Empty<DocumentPart>());
+            var subParts = documentPart.SubParts.Match(
+                p => p,
+                () => Enumerable.Empty<DocumentPart>()
+            );
 
             if (subParts.Any())
             {
                 var matchedSubParts = subParts.OfType<T>();
-                
+
                 partsEnumerable = partsEnumerable.Append(matchedSubParts);
 
                 foreach (var s in subParts)
@@ -80,16 +104,26 @@ namespace Crawler.Core.Parser.DocumentParts
             return partsEnumerable;
         }
 
-        private static IEnumerable<DocumentPart> RecusrsiveGetSubParts(DocumentPart documentPart, string name, ref IEnumerable<DocumentPart> partsEnumerable, ref int recursionLevels)
+        private static IEnumerable<DocumentPart> RecusrsiveGetSubParts(
+            DocumentPart documentPart,
+            string name,
+            ref IEnumerable<DocumentPart> partsEnumerable,
+            ref int recursionLevels
+        )
         {
             ControlRecursionLevel(ref recursionLevels);
 
-            var subParts = documentPart.SubParts.Match(p => p, () => Enumerable.Empty<DocumentPart>());
+            var subParts = documentPart.SubParts.Match(
+                p => p,
+                () => Enumerable.Empty<DocumentPart>()
+            );
 
             if (subParts.Any())
             {
-                var matchedSubParts = subParts.Where(part => part.Name.Match(n => n, () => "") == name);
-                
+                var matchedSubParts = subParts.Where(part =>
+                    part.Name.Match(n => n, () => "") == name
+                );
+
                 partsEnumerable = partsEnumerable.Append(matchedSubParts);
 
                 foreach (var s in subParts)
@@ -105,7 +139,9 @@ namespace Crawler.Core.Parser.DocumentParts
         {
             recursionLevels++;
             if (recursionLevels > 5000)
-                throw new InvalidOperationException("The Document Definition is too complex. Maximum depth is 5000 elements");
+                throw new InvalidOperationException(
+                    "The Document Definition is too complex. Maximum depth is 5000 elements"
+                );
         }
     }
 }

@@ -9,13 +9,14 @@ using Crawler.RequestHandling.Core;
 public class ConfigurationHelper
 {
     public static async Task SaveDefaultInDatabaseAndCrawl(
-        string baseUri, 
-        string uri, 
+        string baseUri,
+        string uri,
         string waitXpath,
-        CrawlContinuationStrategy continuationStrategy, 
+        CrawlContinuationStrategy continuationStrategy,
         MongoDbConfigurationRepository configurationService,
         IRequestPublisher requestPublisher,
-        params string[] skiplist)
+        params string[] skiplist
+    )
     {
         var uriQualified = new Uri(uri);
         var crawlModel = new CrawlRequestModel
@@ -27,24 +28,17 @@ public class ConfigurationHelper
             ShouldProvideRawSource = true,
             UiActions = new List<UiAction>
             {
-                new UiAction
-                {
-                    Type = UiAction.ActionType.Wait,
-                    ActionData = waitXpath
-                },
-                new UiAction
-                {
-                    Type = UiAction.ActionType.Scroll,
-                    ActionData = "10"
-                }
+                new UiAction { Type = UiAction.ActionType.Wait, ActionData = waitXpath },
+                new UiAction { Type = UiAction.ActionType.Scroll, ActionData = "10" },
             },
-            UrlSkipList = skiplist.ToList()
-            
+            UrlSkipList = skiplist.ToList(),
         };
         var guid = Guid.NewGuid();
-        await configurationService.AddOrUpdate(crawlModel).Match(r => {}, () => new Exception("Failed to add new Configuraiton"), e => throw e);
-        await requestPublisher.PublishRequest(crawlModel.Map(uri, correlationId: guid, crawlId: guid))
-        .Match(_ => { }, () => Console.WriteLine("Failed to publish: " + uri));
+        await configurationService
+            .AddOrUpdate(crawlModel)
+            .Match(r => { }, () => new Exception("Failed to add new Configuraiton"), e => throw e);
+        await requestPublisher
+            .PublishRequest(crawlModel.Map(uri, correlationId: guid, crawlId: guid, isAdhoc: true))
+            .Match(_ => { }, () => Console.WriteLine("Failed to publish: " + uri));
     }
-
 }

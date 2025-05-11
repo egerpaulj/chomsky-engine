@@ -7,7 +7,6 @@ using SchedulerText;
 
 namespace Crawler.Scheduler.Core.UnitTest;
 
-
 [TestClass]
 public class CrawlSchedulerTest
 {
@@ -17,11 +16,15 @@ public class CrawlSchedulerTest
     {
         // ARRANGE
         var testJob = JobBuilder.Create<TestJob>().Build();
-        var trigger = TriggerBuilder.Create().ForJob(testJob).WithSimpleSchedule(s =>
-        {
-            s.WithIntervalInSeconds(1);
-            s.RepeatForever();
-        }).Build();
+        var trigger = TriggerBuilder
+            .Create()
+            .ForJob(testJob)
+            .WithSimpleSchedule(s =>
+            {
+                s.WithIntervalInSeconds(1);
+                s.RepeatForever();
+            })
+            .Build();
 
         var testee = Arrange(testJob, trigger);
 
@@ -38,7 +41,6 @@ public class CrawlSchedulerTest
         await testee.Stop().Match(a => a, () => throw new Exception("Empty"), ex => throw ex);
     }
 
-
     // ToDo Eh?
     //[TestMethod]
     public async Task StartScheduler_WhenCron_ThenJobsStarted()
@@ -46,7 +48,11 @@ public class CrawlSchedulerTest
         // ARRANGE
         TestJob.NoOfCalls = 0;
         var testJob = JobBuilder.Create<TestJob>().Build();
-        var trigger = TriggerBuilder.Create().ForJob(testJob).WithCronSchedule("* * * * * ?",b => b.WithMisfireHandlingInstructionFireAndProceed()).Build();
+        var trigger = TriggerBuilder
+            .Create()
+            .ForJob(testJob)
+            .WithCronSchedule("* * * * * ?", b => b.WithMisfireHandlingInstructionFireAndProceed())
+            .Build();
 
         var testee = Arrange(testJob, trigger);
 
@@ -71,7 +77,11 @@ public class CrawlSchedulerTest
 
         //IJobFactory
         var testJob = JobBuilder.Create<UnscheduledUriCrawlJob>().Build();
-        var trigger = TriggerBuilder.Create().ForJob(testJob).WithCronSchedule("* * * * * ?",b => b.WithMisfireHandlingInstructionFireAndProceed()).Build();
+        var trigger = TriggerBuilder
+            .Create()
+            .ForJob(testJob)
+            .WithCronSchedule("* * * * * ?", b => b.WithMisfireHandlingInstructionFireAndProceed())
+            .Build();
 
         var testee = Arrange(testJob, trigger);
 
@@ -88,11 +98,14 @@ public class CrawlSchedulerTest
         var jobFactoryMock = new Mock<IJobFactory>();
         jobFactoryMock
             .Setup(m => m.GetUnscheduledCrawlsJob())
-            .Returns(new Tuple<Quartz.IJobDetail, Quartz.ITrigger>(
-                testJob,
-                trigger));
+            .Returns(new Tuple<Quartz.IJobDetail, Quartz.ITrigger>(testJob, trigger));
 
-        var testee = new CrawlerScheduler(Mock.Of<ILogger<CrawlerScheduler>>(), jobFactoryMock.Object, null, Mock.Of<IRequestPublisher>());
+        var testee = new CrawlerScheduler(
+            Mock.Of<ILogger<CrawlerScheduler>>(),
+            jobFactoryMock.Object,
+            null,
+            Mock.Of<IRequestPublisher>()
+        );
         return testee;
     }
 }

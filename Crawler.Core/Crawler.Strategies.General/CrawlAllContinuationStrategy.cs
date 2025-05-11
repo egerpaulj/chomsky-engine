@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -38,7 +38,10 @@ namespace Crawler.Stategies.Core
         protected readonly ILogger _logger;
         private readonly IRequestPublisher _requestPublisher;
 
-        public CrawlAllContinuationStrategy(ILogger<ICrawlContinuationStrategy> logger, IRequestPublisher requestPublisher)
+        public CrawlAllContinuationStrategy(
+            ILogger<ICrawlContinuationStrategy> logger,
+            IRequestPublisher requestPublisher
+        )
         {
             _logger = logger;
             _requestPublisher = requestPublisher;
@@ -47,14 +50,23 @@ namespace Crawler.Stategies.Core
         public TryOptionAsync<Unit> Apply(Option<CrawlResponse> response)
         {
             var correlationId = response.Bind(r => r.CorrelationId).Match(g => g, Guid.NewGuid());
-            var baseUri = response.Bind(r => r.Result).Bind(r => r.RequestDocumentPart).Bind(r => r.BaseUri);
+            var baseUri = response
+                .Bind(r => r.Result)
+                .Bind(r => r.RequestDocumentPart)
+                .Bind(r => r.BaseUri);
 
             return response
-            .Bind(r => r.Result)
-            .Bind(r => r.RequestDocumentPart)
-            .ToTryOptionAsync()
-            .SelectMany(GetDocumentPartLinks, (dp, links) => Filter(dp, links))
-            .Bind(links => _requestPublisher.PublishUri(baseUri, links.ToList(), DataModel.Scheduler.UriType.Onetime));
+                .Bind(r => r.Result)
+                .Bind(r => r.RequestDocumentPart)
+                .ToTryOptionAsync()
+                .SelectMany(GetDocumentPartLinks, (dp, links) => Filter(dp, links))
+                .Bind(links =>
+                    _requestPublisher.PublishUri(
+                        baseUri,
+                        links.ToList(),
+                        DataModel.Scheduler.UriType.Onetime
+                    )
+                );
         }
 
         internal static IEnumerable<DocumentPartLink> GetLinks(DocumentPart documentPart)
@@ -63,10 +75,12 @@ namespace Crawler.Stategies.Core
 
             if (documentPart.DocPartType == DocumentPartType.AutoDetect)
             {
-                var fileLinks = documentPart.GetAllParts<DocumentPartFile>().SelectMany(a =>
-                {
-                    return a.DownloadLinks.Match(l => l, () => new List<DocumentPartLink>());
-                });
+                var fileLinks = documentPart
+                    .GetAllParts<DocumentPartFile>()
+                    .SelectMany(a =>
+                    {
+                        return a.DownloadLinks.Match(l => l, () => new List<DocumentPartLink>());
+                    });
                 if (fileLinks.Any())
                     links.AddRange(fileLinks);
             }
@@ -74,12 +88,17 @@ namespace Crawler.Stategies.Core
             return links;
         }
 
-        protected virtual IEnumerable<DocumentPartLink> Filter(DocumentPart documentPart, IEnumerable<DocumentPartLink> links)
+        protected virtual IEnumerable<DocumentPartLink> Filter(
+            DocumentPart documentPart,
+            IEnumerable<DocumentPartLink> links
+        )
         {
             return links;
         }
 
-        private TryOptionAsync<List<DocumentPartLink>> GetDocumentPartLinks(DocumentPart documentPart)
+        private TryOptionAsync<List<DocumentPartLink>> GetDocumentPartLinks(
+            DocumentPart documentPart
+        )
         {
             return async () =>
             {

@@ -1,0 +1,2 @@
+docker exec -ti rabbitmq rabbitmqctl list_queues -q name -p crawler > queues
+

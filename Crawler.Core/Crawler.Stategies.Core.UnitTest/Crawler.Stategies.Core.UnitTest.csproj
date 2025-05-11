@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
     <ProjectReference Include="..\Crawler.Configuration.Core\Crawler.Configuration.Core.csproj" />
     <ProjectReference Include="..\Crawler.RequestHandling.Core\Crawler.RequestHandling.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Management.Service\Crawler.Management.Service.csproj" />
   </ItemGroup>
 
 

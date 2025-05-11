@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,10 @@ namespace Crawler.Core.UnitTest
         public void ParseTableTest()
         {
             var testcase = TestCaseFactoryTable.Create();
-            DocumentPartTable result = DocumentPartTestHelper.GetResult<ExpectedTable, DocumentPartTable>(testcase);
+            DocumentPartTable result = DocumentPartTestHelper.GetResult<
+                ExpectedTable,
+                DocumentPartTable
+            >(testcase);
             AssertResults(testcase, result);
         }
 
@@ -37,18 +40,22 @@ namespace Crawler.Core.UnitTest
         {
             Assert.IsNotNull(result);
 
-            
             AssertTable(testcase.ExpectedResult, result);
         }
 
         public static void AssertTable(ExpectedTable expectedResult, DocumentPartTable result)
         {
-            var headers = result.Headers.Match(t => t, () => new List<DocumentPart>()).Cast<DocumentPart>().ToList();
-            var rows = result.Rows.Match(t => t, () => new List<DocumentPartTableRow>()).Cast<DocumentPartTableRow>().ToList();
-            
+            var headers = result
+                .Headers.Match(t => t, () => new List<DocumentPart>())
+                .Cast<DocumentPart>()
+                .ToList();
+            var rows = result
+                .Rows.Match(t => t, () => new List<DocumentPartTableRow>())
+                .Cast<DocumentPartTableRow>()
+                .ToList();
+
             Assert.AreEqual(expectedResult.Headers.Count, headers.Count);
             Assert.AreEqual(expectedResult.Rows.Count, rows.Count);
-
 
             for (var i = 0; i < headers.Count; i++)
             {
@@ -57,7 +64,9 @@ namespace Crawler.Core.UnitTest
 
             for (var i = 0; i < rows.Count; i++)
             {
-                var columns = rows[i].Columns.Match(t => t, () => throw new Exception("Empty result")).ToList();
+                var columns = rows[i]
+                    .Columns.Match(t => t, () => throw new Exception("Empty result"))
+                    .ToList();
 
                 Assert.AreEqual(expectedResult.Rows[i].Content.Count, columns.Count);
 
@@ -79,14 +88,15 @@ namespace Crawler.Core.UnitTest
                 var article = documentPart as DocumentPartArticle;
                 var content = article.Content.Match(c => c, () => new DocumentPartText(""));
                 if (content is DocumentPartText)
-                    return (article.Content.Match(c => c, () => new DocumentPartText("")) as DocumentPartText).Text;
-                return content.GetAllParts<DocumentPartText>().FirstOrDefault()?.Text ?? string.Empty;
-
+                    return (
+                        article.Content.Match(c => c, () => new DocumentPartText(""))
+                        as DocumentPartText
+                    ).Text;
+                return content.GetAllParts<DocumentPartText>().FirstOrDefault()?.Text
+                    ?? string.Empty;
             }
 
             return string.Empty;
-
-
         }
     }
 }

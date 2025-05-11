@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Threading.Tasks;
@@ -24,15 +24,21 @@ using Quartz;
 
 namespace Crawler.Scheduler.Core
 {
-    
     public class PeriodUriCrawlJob : IJob
     {
         private ILogger<PeriodUriCrawlJob> _logger;
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
 
-        private static Counter _counter = Prometheus.Metrics.CreateCounter($"job_periodic", "Runs periodically", "context");
+        private static Counter _counter = Prometheus.Metrics.CreateCounter(
+            $"job_periodic",
+            "Runs periodically",
+            "context"
+        );
 
-        public PeriodUriCrawlJob(ILogger<PeriodUriCrawlJob> logger, ICrawlerConfigurationService crawlerConfiguration)
+        public PeriodUriCrawlJob(
+            ILogger<PeriodUriCrawlJob> logger,
+            ICrawlerConfigurationService crawlerConfiguration
+        )
         {
             _logger = logger;
             _crawlerConfiguration = crawlerConfiguration;
@@ -45,7 +51,11 @@ namespace Crawler.Scheduler.Core
 
             _logger.LogInformation($"Running Periodic job: {uri}. Id: {id}");
 
-            await Schedule(uri, id ).Match(r => r, () => throw new Exception($"Failed to schedule Periodic Uri: {uri}"));
+            await Schedule(uri, id)
+                .Match(
+                    r => r,
+                    () => throw new Exception($"Failed to schedule Periodic Uri: {uri}")
+                );
         }
 
         private TryOptionAsync<Unit> Schedule(string uri, Guid uriId)
@@ -53,12 +63,16 @@ namespace Crawler.Scheduler.Core
             return async () =>
             {
                 await _crawlerConfiguration
-                .Add(new CrawlUriDataModel
+                    .Add(new CrawlUriDataModel { UriId = uriId })
+                    .Match(
+                        r =>
                         {
-                            UriId = uriId,
-                        })
-                .Match(r => {_counter?.WithLabels($"success").Inc();}, () => LogCollectionError(uri), ex => LogCollectionError(uri, ex));
-                
+                            _counter?.WithLabels($"success").Inc();
+                        },
+                        () => LogCollectionError(uri),
+                        ex => LogCollectionError(uri, ex)
+                    );
+
                 return Unit.Default;
             };
         }

@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2024  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2024  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
@@ -41,7 +41,7 @@ namespace Microservice.Exchange.Core.Polling
         Func<TryOptionAsync<List<T>>> queryDataFunc,
         int pollingIntervalInMs,
         string routingKey = ""
-            ) : IPollingConsumer<T>
+    ) : IPollingConsumer<T>
     {
         private IObserver<Either<Message<T>, ConsumerException>> _observer;
         private readonly ILogger<IConsumer<T>> _logger = logger;
@@ -68,7 +68,6 @@ namespace Microservice.Exchange.Core.Polling
                     _timer.Start();
                 }
 
-
                 return await Task.FromResult(Unit.Default);
             };
         }
@@ -87,48 +86,61 @@ namespace Microservice.Exchange.Core.Polling
 
         private async Task RunQuery()
         {
-            await _queryDataFunc().Match(
-            resultList =>
-            {
-                _logger.LogInformation($"Polling timer elapsed. Data Query Successfull. #Items: {resultList.Count}");
-
-                if (resultList.Count == 0)
-                    return;
-
-                foreach (var result in resultList)
-                {
-                    var id = (result as IDataModel)?.Id ?? Guid.NewGuid();
-                    var correlationId = id;
-                    var routingKey = _routingKey;
-
-                    if (result is IMessage message)
+            await _queryDataFunc()
+                .Match(
+                    resultList =>
                     {
-                        id = message.Id.Match(i => i, () => id);
-                        correlationId = message.CorrelationId.Match(i => i, () => correlationId);
-                        routingKey = message.RoutingKey.Match(r => r, () => string.Empty);
+                        _logger.LogInformation(
+                            $"Polling timer elapsed. Data Query Successfull. #Items: {resultList.Count}"
+                        );
+
+                        if (resultList.Count == 0)
+                            return;
+
+                        foreach (var result in resultList)
+                        {
+                            var id = (result as IDataModel)?.Id ?? Guid.NewGuid();
+                            var correlationId = id;
+                            var routingKey = _routingKey;
+
+                            if (result is IMessage message)
+                            {
+                                id = message.Id.Match(i => i, () => id);
+                                correlationId = message.CorrelationId.Match(
+                                    i => i,
+                                    () => correlationId
+                                );
+                                routingKey = message.RoutingKey.Match(r => r, () => string.Empty);
+                            }
+
+                            _observer.OnNext(
+                                new Message<T>
+                                {
+                                    Payload = result,
+                                    Id = id,
+                                    CorrelationId = correlationId,
+                                    RoutingKey = string.IsNullOrEmpty(routingKey)
+                                        ? _routingKey
+                                        : routingKey,
+                                }
+                            );
+                        }
+                    },
+                    // EMPTY
+                    () =>
+                    {
+                        _logger.LogWarning("Data Query Empty result.");
+                        _observer.OnNext(
+                            new ConsumerException(new Exception("Query returned an Empty result"))
+                        );
+                    },
+                    // ERROR
+                    ex =>
+                    {
+                        _logger.LogError(ex, "Data Query Error.");
+                        _observer.OnNext(new ConsumerException(ex));
                     }
-
-                    _observer.OnNext(new Message<T>
-                    {
-                        Payload = result,
-                        Id = id,
-                        CorrelationId = correlationId,
-                        RoutingKey = string.IsNullOrEmpty(routingKey) ? _routingKey : routingKey
-                    });
-                }
-            },
-            // EMPTY
-            () =>
-            {
-                _logger.LogWarning("Data Query Empty result.");
-                _observer.OnNext(new ConsumerException(new Exception("Query returned an Empty result")));
-            },
-            // ERROR
-            ex =>
-            {
-                _logger.LogError(ex, "Data Query Error.");
-                _observer.OnNext(new ConsumerException(ex));
-            });
+                );
         }
     }
 }

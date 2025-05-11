@@ -18,16 +18,17 @@ namespace Crawler.IntegrationTest
         public async Task TestInit()
         {
             await CreateTestData();
-
         }
 
         // ToDo Rethink -> test database missing
-        
+
         //[TestMethod]
         public async Task GetUnscheduledCrawlData_ThenNotEmpty()
         {
             var testee = CreateTestee();
-            var data = await testee.GetUnscheduledCrawlUriData().Match(r => r, () => throw new Exception("Failed to get unscheduled crawl data"));
+            var data = await testee
+                .GetUnscheduledCrawlUriData()
+                .Match(r => r, () => throw new Exception("Failed to get unscheduled crawl data"));
 
             Assert.IsTrue(data.Count > 0);
         }
@@ -37,7 +38,9 @@ namespace Crawler.IntegrationTest
         public async Task GetPeriodicCrawlData_ThenNotEmpty()
         {
             var testee = CreateTestee();
-            var data = await testee.GetPeriodicUriData().Match(r => r, () => throw new Exception("Failed to get periodic crawl data"));
+            var data = await testee
+                .GetPeriodicUriData()
+                .Match(r => r, () => throw new Exception("Failed to get periodic crawl data"));
 
             Assert.IsTrue(data.Count > 0);
         }
@@ -47,17 +50,21 @@ namespace Crawler.IntegrationTest
         public async Task GetCollectorCrawlData_ThenNotEmpty()
         {
             var testee = CreateTestee();
-            var data = await testee.GetCollectorUriData().Match(r => r, () => throw new Exception("Failed to get collector crawl data"));
+            var data = await testee
+                .GetCollectorUriData()
+                .Match(r => r, () => throw new Exception("Failed to get collector crawl data"));
 
             Assert.IsTrue(data.Count > 0);
         }
-        
+
         // ToDo Rethink -> test database missing
         // [TestMethod]
         public async Task UriLinkExists_ThenTrue()
         {
             var testee = CreateTestee();
-            var data = await testee.UriLinkExists("https://www.test.com/somewhereSpecific").Match(r => r, () => throw new Exception("Failed to check if uri exists"));
+            var data = await testee
+                .UriLinkExists("https://www.test.com/somewhereSpecific")
+                .Match(r => r, () => throw new Exception("Failed to check if uri exists"));
 
             Assert.IsTrue(data);
         }
@@ -66,18 +73,21 @@ namespace Crawler.IntegrationTest
         {
             var testee = CreateTestee();
 
-            var uriGuid = await testee.AddOrUpdate(new UriDataModel
-            {
-                CronPeriod = "* * * * * *",
-                RoutingKey = "Request.Test*",
-                Uri = "https://www.test.com/somewhereSpecific",
-                UriTypeId = UriType.Periodic
-            }).Match(r => r, () => throw new Exception("Failed to store uri data model"));
+            var uriGuid = await testee
+                .AddOrUpdate(
+                    new UriDataModel
+                    {
+                        CronPeriod = "* * * * * *",
+                        RoutingKey = "Request.Test*",
+                        Uri = "https://www.test.com/somewhereSpecific",
+                        UriTypeId = UriType.Periodic,
+                    }
+                )
+                .Match(r => r, () => throw new Exception("Failed to store uri data model"));
 
-            await testee.AddOrUpdate(new CrawlUriDataModel
-            {
-                UriId = uriGuid,
-            }).Match(r => r, () => throw new Exception("Failed to store crawl Uri data"));
+            await testee
+                .AddOrUpdate(new CrawlUriDataModel { UriId = uriGuid })
+                .Match(r => r, () => throw new Exception("Failed to store crawl Uri data"));
         }
 
         private static SchedulerRepository CreateTestee()
@@ -87,8 +97,10 @@ namespace Crawler.IntegrationTest
                 b.AddSimpleConsole();
             });
 
-            return new SchedulerRepository(TestHelper.GetConfiguration(), new JsonConverterProvider());
+            return new SchedulerRepository(
+                TestHelper.GetConfiguration(),
+                new JsonConverterProvider()
+            );
         }
-        
     }
 }

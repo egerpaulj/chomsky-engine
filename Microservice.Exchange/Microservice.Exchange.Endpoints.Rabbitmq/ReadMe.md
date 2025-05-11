@@ -27,7 +27,7 @@ This Endpoint is based on the Microservice.Amqp.Rabbitmq library. Please refer t
             },
             "Provider": {
               "Rabbitmq" : {
-                "Host": "10.137.0.32",
+                "Host": "localhost",
                 "VirtHost": "test",
                 "Port": "5671",
                 "Username": "guest",
@@ -58,7 +58,7 @@ This Endpoint is based on the Microservice.Amqp.Rabbitmq library. Please refer t
                 },
                 "Provider": {
                   "Rabbitmq" : {
-                    "Host": "10.137.0.32",
+                    "Host": "localhost",
                     "VirtHost": "test",
                     "Port": "5671",
                     "Username": "guest",

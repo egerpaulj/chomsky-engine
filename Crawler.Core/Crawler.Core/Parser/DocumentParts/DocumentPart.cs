@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -48,16 +48,18 @@ namespace Crawler.Core.Parser.DocumentParts
         public Option<DocumentPartType> DocumentPartType { get; set; }
         public Option<string> Decription { get; set; }
 
-        public Anomaly(Option<AnomalyType> anomalyType, Option<DocumentPartType> documentPartType, Option<string> decription)
+        public Anomaly(
+            Option<AnomalyType> anomalyType,
+            Option<DocumentPartType> documentPartType,
+            Option<string> decription
+        )
         {
             AnomalyType = anomalyType;
             DocumentPartType = documentPartType;
             Decription = decription;
         }
 
-        public Anomaly()
-        {
-        }
+        public Anomaly() { }
     }
 
     public enum DocumentPartType
@@ -70,7 +72,8 @@ namespace Crawler.Core.Parser.DocumentParts
         Article = 6,
         AutoDetect = 7,
         Stream = 8,
-        Form = 9
+        Form = 9,
+        Meta = 10,
     }
 
     [JsonConverter(typeof(BaseClassConverter))]
@@ -99,23 +102,26 @@ namespace Crawler.Core.Parser.DocumentParts
 
         public TryOptionAsync<Unit> Parse(Option<HtmlDocument> document)
         {
-            return ParseDocument(document)
-            .Bind(_ => ParseSubParts(document));
+            return ParseDocument(document).Bind(_ => ParseSubParts(document));
         }
 
         protected TryOptionAsync<IEnumerable<HtmlNode>> GetNodes(Option<HtmlDocument> document) =>
-                Selector
-                .ToTryOptionAsync()
-                .Bind(s => s.GetNodes(document));
+            Selector.ToTryOptionAsync().Bind(s => s.GetNodes(document));
 
-        protected TryOptionAsync<Unit> Parse<T>(Option<T> documentPart, Option<HtmlDocument> document) where T : DocumentPart
+        protected TryOptionAsync<Unit> Parse<T>(
+            Option<T> documentPart,
+            Option<HtmlDocument> document
+        )
+            where T : DocumentPart
         {
-            return documentPart.ToTryOptionAsync()
+            return documentPart
+                .ToTryOptionAsync()
                 .Bind(d =>
                 {
-                    return d.Selector.ToTryOptionAsync()
-                    .Bind(s => s.GetNodes(document))
-                    .Bind(e => d.Parse(CreateDocument(e)));
+                    return d
+                        .Selector.ToTryOptionAsync()
+                        .Bind(s => s.GetNodes(document))
+                        .Bind(e => d.Parse(CreateDocument(e)));
                 });
         }
 
@@ -123,14 +129,21 @@ namespace Crawler.Core.Parser.DocumentParts
 
         internal bool IsParsedSubpart { get; set; }
 
-
         public void AppendAnomaly(AnomalyType anomalyType, Option<string> description)
         {
             Anomalies = Anomalies.Bind<List<Anomaly>>(a =>
             {
-                var selectorText = Selector.Bind<string>(s => s.ToString()).Match(s => s, string.Empty);
+                var selectorText = Selector
+                    .Bind<string>(s => s.ToString())
+                    .Match(s => s, string.Empty);
 
-                a.Add(new Anomaly(anomalyType, DocPartType, $"{description}, Selector: {selectorText}"));
+                a.Add(
+                    new Anomaly(
+                        anomalyType,
+                        DocPartType,
+                        $"{description}, Selector: {selectorText}"
+                    )
+                );
                 return a;
             });
         }
@@ -145,15 +158,18 @@ namespace Crawler.Core.Parser.DocumentParts
             var images = element.SelectNodes(".//img")?.ToList();
             var tables = element.SelectNodes(".//table")?.ToList();
 
-            if ((anchors != null && anchors.Any() && images != null && images.Any())
-            || (((anchors != null && anchors.Any()) || (images != null && images.Any())) && (tables != null && tables.Any())))
+            if (
+                (anchors != null && anchors.Any() && images != null && images.Any())
+                || (
+                    ((anchors != null && anchors.Any()) || (images != null && images.Any()))
+                    && (tables != null && tables.Any())
+                )
+            )
             {
                 docPart = CreateDefaultArticle();
             }
-
             else if (images != null && images.Any())
                 docPart = new DocumentPartFile(BaseUri);
-
             else if (anchors != null && anchors.Any())
                 docPart = new DocumentPartLink(BaseUri);
 
@@ -173,23 +189,17 @@ namespace Crawler.Core.Parser.DocumentParts
                 BaseUri = this.BaseUri,
                 Title = new DocumentPartText(BaseUri)
                 {
-                    Selector = new DocumentPartSelector
-                    {
-                        Xpath = "//title"
-                    }
+                    Selector = new DocumentPartSelector { Xpath = "//title" },
                 },
                 Content = new DocumentPartText(BaseUri)
                 {
-                    Selector = new DocumentPartSelector()
-                    {
-                        Xpath = "//body"
-                    },
+                    Selector = new DocumentPartSelector() { Xpath = "//body" },
                     SubParts = new List<DocumentPart>
-                        {
-                            new DocumentPartLink(BaseUri),
-                            new DocumentPartFile(BaseUri),
-                        }
-                }
+                    {
+                        new DocumentPartLink(BaseUri),
+                        new DocumentPartFile(BaseUri),
+                    },
+                },
             };
         }
 
@@ -200,38 +210,44 @@ namespace Crawler.Core.Parser.DocumentParts
 
             return SubParts
                 .ToTryOptionAsync()
-                .Bind<List<DocumentPart>, Unit>(
-                    subParts =>
+                .Bind<List<DocumentPart>, Unit>(subParts =>
+                {
+                    return async () =>
                     {
-                        return async () =>
-                        {
-                            await Parallel.ForEach(subParts.Where(part => !part.IsParsedSubpart), p => p.Parse(document).Match(t => t, () => Unit.Default)).AsTask();
+                        await Parallel
+                            .ForEach(
+                                subParts.Where(part => !part.IsParsedSubpart),
+                                p => p.Parse(document).Match(t => t, () => Unit.Default)
+                            )
+                            .AsTask();
 
-                            return await Task.FromResult(Unit.Default);
-                        };
-                    }
-
-                );
+                        return await Task.FromResult(Unit.Default);
+                    };
+                });
         }
 
         protected static Option<string> ResolveUri(Option<string> baseUri, Option<string> target)
         {
             return baseUri.Bind<string>(b =>
             {
-
                 return target
-                .Bind<string>(t =>
-                {
-                    var validUri = Uri.TryCreate(t, UriKind.RelativeOrAbsolute, out var targetUri);
-                    var baseUri = new Uri(b);
-
-                    if (!validUri || !targetUri.IsAbsoluteUri)
+                    .Bind<string>(t =>
                     {
-                        targetUri = new Uri(baseUri, t);
-                    }
-                    return targetUri.AbsoluteUri;
-                })
-                .MatchUnsafe(res => res, () => null);
+                        var targetUriCleaned = t.Replace("\\", "").Replace("\"", "");
+                        var validUri = Uri.TryCreate(
+                            targetUriCleaned,
+                            UriKind.RelativeOrAbsolute,
+                            out var targetUri
+                        );
+                        var baseUri = new Uri(b);
+
+                        if (!validUri || !targetUri.IsAbsoluteUri)
+                        {
+                            targetUri = new Uri(baseUri, targetUriCleaned);
+                        }
+                        return targetUri.AbsoluteUri;
+                    })
+                    .MatchUnsafe(res => res, () => null);
             });
         }
 
@@ -243,7 +259,9 @@ namespace Crawler.Core.Parser.DocumentParts
         private static HtmlDocument GetHtmlDocument(IEnumerable<HtmlNode> nodes)
         {
             var htmlDocument = new HtmlDocument();
-            htmlDocument.DocumentNode.AppendChild(new HtmlNode(HtmlNodeType.Element, htmlDocument, 0));
+            htmlDocument.DocumentNode.AppendChild(
+                new HtmlNode(HtmlNodeType.Element, htmlDocument, 0)
+            );
             htmlDocument.DocumentNode.FirstChild.Name = "html";
             foreach (var node in nodes.Where(n => n.NodeType != HtmlNodeType.Comment))
             {

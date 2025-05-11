@@ -26,5 +26,10 @@
     <ProjectReference Include="..\Crawler.WebDriver.Core\Crawler.WebDriver.Core.csproj" />
     <ProjectReference Include="..\Crawler.Stategies.Core.UnitTest\Crawler.Stategies.Core.UnitTest.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="evaluate.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
 </Project>

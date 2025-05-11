@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -38,7 +38,11 @@ namespace Crawler.Core.Management
 
         private readonly ILogger<CrawlerConfigurationGeneric> _logger;
 
-        public CrawlerConfigurationGeneric(IWebDriverService driver, IMetricRegister metricRegister, ILogger<CrawlerConfigurationGeneric> logger)
+        public CrawlerConfigurationGeneric(
+            IWebDriverService driver,
+            IMetricRegister metricRegister,
+            ILogger<CrawlerConfigurationGeneric> logger
+        )
         {
             _driver = driver;
             _metricRegister = metricRegister;
@@ -55,11 +59,20 @@ namespace Crawler.Core.Management
             throw new NotImplementedException();
         }
 
-        public TryOptionAsync<Request> CreateRequest(Option<CrawlRequest> crawlRequest, Option<Guid> guid)
+        public TryOptionAsync<Request> CreateRequest(
+            Option<CrawlRequest> crawlRequest,
+            Option<Guid> guid
+        )
         {
             return async () =>
             {
-                return await Task.FromResult(new Request(new CrawlerStrategyGeneric(_driver, _metricRegister), null, crawlRequest));
+                return await Task.FromResult(
+                    new Request(
+                        new CrawlerStrategyGeneric(_driver, _metricRegister),
+                        null,
+                        crawlRequest
+                    )
+                );
             };
         }
 
@@ -68,25 +81,31 @@ namespace Crawler.Core.Management
             return async () =>
             {
                 var corrId = Guid.NewGuid();
-                return await Task.FromResult(new CrawlRequest()
-                {
-                    LoadPageRequest = new LoadPageRequest()
+                return await Task.FromResult(
+                    new CrawlRequest()
                     {
-                        CorrelationId = corrId,
-                        Uri = uri,
-                        UserActions = new List<UiAction>(),
-                    },
-                    CorrelationCrawlId = corrId,
-                    RequestDocument = new Document
-                    {
-                        RequestDocumentPart = new DocumentPartAutodetect(uri),
-                        DownloadContent = true,
+                        LoadPageRequest = new LoadPageRequest()
+                        {
+                            CorrelationId = corrId,
+                            Uri = uri,
+                            UserActions = new List<UiAction>(),
+                        },
+                        CorrelationCrawlId = corrId,
+                        RequestDocument = new Document
+                        {
+                            RequestDocumentPart = new DocumentPartAutodetect(uri),
+                            DownloadContent = true,
+                        },
                     }
-                });
+                );
             };
         }
 
-        public TryOptionAsync<CrawlRequest> CreateRequest(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)
+        public TryOptionAsync<CrawlRequest> CreateRequest(
+            Option<string> uri,
+            Option<Guid> correlationId,
+            Option<Guid> crawlId
+        )
         {
             throw new NotImplementedException();
         }
@@ -101,12 +120,19 @@ namespace Crawler.Core.Management
             throw new NotImplementedException();
         }
 
-        public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(Option<string> uri, Option<Guid> guid)
+        public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(
+            Option<string> uri,
+            Option<Guid> guid
+        )
         {
             return async () => await Task.FromResult(new DocumentPartAutodetect(uri));
         }
 
-        public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)
+        public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(
+            Option<string> uri,
+            Option<Guid> correlationId,
+            Option<Guid> crawlId
+        )
         {
             throw new NotImplementedException();
         }
@@ -121,7 +147,11 @@ namespace Crawler.Core.Management
             return async () => await Task.FromResult(new List<UiAction>());
         }
 
-        public TryOptionAsync<List<UiAction>> GetUiActions(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)
+        public TryOptionAsync<List<UiAction>> GetUiActions(
+            Option<string> uri,
+            Option<Guid> correlationId,
+            Option<Guid> crawlId
+        )
         {
             throw new NotImplementedException();
         }
@@ -141,20 +171,28 @@ namespace Crawler.Core.Management
             throw new NotImplementedException();
         }
 
-        public TryOptionAsync<Unit> StoreDetectedUrls(Option<List<DocumentPartLink>> links, Option<Guid> guid)
+        public TryOptionAsync<Unit> StoreDetectedUrls(
+            Option<List<DocumentPartLink>> links,
+            Option<Guid> guid
+        )
         {
             return async () =>
             {
-                links.Match(r =>
-                {
-                    foreach (var link in r)
+                links.Match(
+                    r =>
                     {
-                        var uri = link.Uri.Match(l => l, string.Empty);
-                        var text = link.Text.Match(l => l, string.Empty);
-                        
-                        _logger.LogInformation($"Found hyper link on website: {uri} with text: {text}");
-                    }
-                }, () => { });
+                        foreach (var link in r)
+                        {
+                            var uri = link.Uri.Match(l => l, string.Empty);
+                            var text = link.Text.Match(l => l, string.Empty);
+
+                            _logger.LogInformation(
+                                $"Found hyper link on website: {uri} with text: {text}"
+                            );
+                        }
+                    },
+                    () => { }
+                );
                 return await Task.FromResult(Unit.Default);
             };
         }

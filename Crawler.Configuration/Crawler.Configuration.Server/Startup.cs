@@ -27,31 +27,35 @@ namespace Crawler.Configuration.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services
-            .AddControllers()
-            .AddNewtonsoftJson(options => options.SerializerSettings.Converters.Add(new BaseClassConverter()));
-            
+                .AddControllers()
+                .AddNewtonsoftJson(options =>
+                    options.SerializerSettings.Converters.Add(new BaseClassConverter())
+                );
+
             services.AddTransient<ICrawlerConfigurationService, CrawlerConfigurationService>();
             services.AddTransient<ISchedulerRepository, SchedulerRepository>();
             services.AddTransient<IConfigurationRepository, MongoDbConfigurationRepository>();
-            services.AddTransient<IMongoDbRepository<CrawlRequestModel>, MongoDbRepository<CrawlRequestModel>>();
+            services.AddTransient<
+                IMongoDbRepository<CrawlRequestModel>,
+                MongoDbRepository<CrawlRequestModel>
+            >();
             services.AddTransient<IJsonConverterProvider, JsonConverterProvider>();
             services.AddTransient<IDatabaseConfiguration, DatabaseConfiguration>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app
-            .UseHttpsRedirection()
-            .UseRouting()
-            .SetupMetrics()
-            .UseAuthorization()
-            .UseMiddleware<CorrelationIdMiddlware>()
-            .UseMiddleware<RequestDurationMetricsMiddlewear>()
-            .UseCustomSerilogRequestLogging()
-            .UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseHttpsRedirection()
+                .UseRouting()
+                .SetupMetrics()
+                .UseAuthorization()
+                .UseMiddleware<CorrelationIdMiddlware>()
+                .UseMiddleware<RequestDurationMetricsMiddlewear>()
+                .UseCustomSerilogRequestLogging()
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                });
         }
     }
 }

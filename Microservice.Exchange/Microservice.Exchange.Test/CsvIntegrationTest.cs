@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.IO;
@@ -49,7 +49,6 @@ public class CsvIntegrationTest
     [TestMethod]
     public async Task CreateExchangeFromConfiguration_CsvRead_ThenJsonFileCreated()
     {
-        
         // ARRANGE - Create a execution host (load IServices and dependencies)
         IHost host = CreateHost();
 
@@ -57,14 +56,16 @@ public class CsvIntegrationTest
 
         // ACT - Create and start Exchange. From File => Queue
         await factory
-                .CreateMessageExchange<CsvData, CsvData>(
-                    Option<IConfiguration>.Some(_configuration),
-                    "CsvDataIn")
-                .Bind(ex => ex.Start())
-                .Match(
-                        r => r,
-                        () => throw new Exception("Failed to Create MessageExchange"),
-                        ex => throw ex);
+            .CreateMessageExchange<CsvData, CsvData>(
+                Option<IConfiguration>.Some(_configuration),
+                "CsvDataIn"
+            )
+            .Bind(ex => ex.Start())
+            .Match(
+                r => r,
+                () => throw new Exception("Failed to Create MessageExchange"),
+                ex => throw ex
+            );
 
         await Task.Delay(1000);
 
@@ -76,24 +77,24 @@ public class CsvIntegrationTest
 
         Assert.AreEqual("val1", result.Values["heading1"]);
         Assert.AreEqual("12.340", result.Values["heading2"]);
-
     }
 
     private static IHost CreateHost()
     {
         return Host.CreateDefaultBuilder(new string[0])
             .SetupLogging()
-            .ConfigureServices((hostContext, services) =>
-            {
-                services.ConfigureExchange();
+            .ConfigureServices(
+                (hostContext, services) =>
+                {
+                    services.ConfigureExchange();
 
-                var configuration = TestHelper.TestHelper.GetConfiguration() as IConfiguration;
+                    var configuration = TestHelper.TestHelper.GetConfiguration() as IConfiguration;
 
-                services.AddTransient<IConfiguration>(s => configuration);
-                services.AddTransient<ICsvFileReader, CsvFileReader>();
-                services.AddTransient<IJsonConverterProvider, CsvJsonConverterProvider>();
-
-            })
+                    services.AddTransient<IConfiguration>(s => configuration);
+                    services.AddTransient<ICsvFileReader, CsvFileReader>();
+                    services.AddTransient<IJsonConverterProvider, CsvJsonConverterProvider>();
+                }
+            )
             .Build();
     }
 }

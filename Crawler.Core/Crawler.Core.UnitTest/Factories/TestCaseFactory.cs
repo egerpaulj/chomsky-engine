@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 using Crawler.Core.Parser.DocumentParts;
@@ -22,7 +22,8 @@ namespace Crawler.Core.UnitTest
     {
         public static TestCase<string> CreateTestCaseTagBasedSimple()
         {
-            var xml = @"<html>
+            var xml =
+                @"<html>
                             <header>
                             </header>
                             <body>
@@ -32,19 +33,23 @@ namespace Crawler.Core.UnitTest
                             </body>
                         </html>";
 
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartText("something", "//div");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartText(
+                "something",
+                "//div"
+            );
 
             return new TestCase<string>()
             {
                 CrawlRequest = request,
                 Xml = xml,
-                ExpectedResult = "test1\n"
+                ExpectedResult = "test1\n",
             };
         }
 
         public static TestCase<string> CreateTestCaseContentBasedTextComplex()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                         <body>
                             <div>
                                 someOthertest1 I am some additional stuff
@@ -62,19 +67,25 @@ namespace Crawler.Core.UnitTest
 
             //var xml = @"<html><header></header><div>someOthertest1</div><div><div> ParentTextDifferentStyle<div> test1</div></div></div></html>";
 
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartText("something", "//*", "test1 I am some additional stuff");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartText(
+                "something",
+                "//*",
+                "test1 I am some additional stuff"
+            );
 
             return new TestCase<string>()
             {
                 CrawlRequest = request,
                 Xml = xml,
-                ExpectedResult = "someOthertest1 I am some additional stuff ParentTextDifferentStyle test1 I am some additional stuff\n"
+                ExpectedResult =
+                    "someOthertest1 I am some additional stuff ParentTextDifferentStyle test1 I am some additional stuff\n",
             };
         }
 
         public static TestCase<string> CreateTestCaseAttributeBasedComplex()
         {
-            var xml = @"<html>
+            var xml =
+                @"<html>
                             <header></header>
                             <div>
                                 someOthertest1
@@ -89,19 +100,23 @@ namespace Crawler.Core.UnitTest
                             </div>
                         </html>";
 
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartText("something", "//*[@class='selectMe']");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartText(
+                "something",
+                "//*[@class='selectMe']"
+            );
 
             return new TestCase<string>()
             {
                 CrawlRequest = request,
                 Xml = xml,
-                ExpectedResult = "ParentTextDifferentStyle test1\n"
+                ExpectedResult = "ParentTextDifferentStyle test1\n",
             };
         }
 
         public static TestCase<string> CreateTestCaseAttributeAndContentBasedComplex()
         {
-            var xml = @"<html>
+            var xml =
+                @"<html>
                             <header></header>
                             <div>
                                 someOthertest1
@@ -119,13 +134,16 @@ namespace Crawler.Core.UnitTest
                             </div>
                         </html>";
 
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartText("something", "//*[@class='selectMe' and contains(text(), 'should be')]");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartText(
+                "something",
+                "//*[@class='selectMe' and contains(text(), 'should be')]"
+            );
 
             return new TestCase<string>()
             {
                 CrawlRequest = request,
                 Xml = xml,
-                ExpectedResult = "I should be the only one (CCCCTestCCCCC)\n"
+                ExpectedResult = "I should be the only one (CCCCTestCCCCC)\n",
             };
         }
     }

@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
@@ -38,7 +38,10 @@ public class CsvData : IDataModel
 
     public CsvData(Option<List<string>> headers, Option<List<string>> values)
     {
-        var heads = headers.Match(h => h, () => throw new ArgumentException("headers can't be null"));
+        var heads = headers.Match(
+            h => h,
+            () => throw new ArgumentException("headers can't be null")
+        );
         var vals = values.Match(v => v, () => throw new ArgumentException("values can't be null"));
 
         if (heads.Count() != vals.Count())
@@ -55,14 +58,12 @@ public class CsvData : IDataModel
 
         if (idKey == null)
             Values.Add("Id", Guid.NewGuid().ToString());
-        else
-            if (!Guid.TryParse(Values[idKey], out var Id))
+        else if (!Guid.TryParse(Values[idKey], out var Id))
         {
             Id = Guid.NewGuid();
         }
         else
             this.Id = Id;
-
     }
 }
 
@@ -73,9 +74,13 @@ public class CsvDataJsonConverter : JsonConverter
         return objectType.IsAssignableTo(typeof(CsvData));
     }
 
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    public override object? ReadJson(
+        JsonReader reader,
+        Type objectType,
+        object? existingValue,
+        JsonSerializer serializer
+    )
     {
-
         var values = serializer.Deserialize<Dictionary<string, string>>(reader);
         return new CsvData(values ?? new Dictionary<string, string>());
     }

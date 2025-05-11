@@ -21,16 +21,18 @@ public class CommandBertranConsumer : BertrandPollingConsumerBase
         string workingDirectory,
         int intervalMs,
         string arguments = null
-        )
+    )
         : base(name, logger)
     {
-        var runCommand = CommandConsumer.RunCommand(
-            command, workingDirectory, arguments
-            );
+        var runCommand = CommandConsumer.RunCommand(command, workingDirectory, arguments);
 
-        var commandWithObjectResults = runCommand.Bind<List<CommandData>, List<object>>(data => async () => await Task.FromResult(data.Select(d => d as object).ToList()));
+        var commandWithObjectResults = runCommand.Bind<List<CommandData>, List<object>>(data =>
+            async () => await Task.FromResult(data.Select(d => d as object).ToList())
+        );
         PollingConsumer = pollingConsumerFactory.Create<object>(
-            () => commandWithObjectResults, intervalMs);
+            () => commandWithObjectResults,
+            intervalMs
+        );
     }
 
     protected override IPollingConsumer<object> PollingConsumer { get; }

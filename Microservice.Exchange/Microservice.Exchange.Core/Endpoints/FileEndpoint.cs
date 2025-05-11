@@ -1,31 +1,30 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
 using System.IO;
+using System.Reactive.Linq;
 using System.Threading;
-using Microservice.Serialization;
+using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.Common;
 using LanguageExt.DataTypes.Serialisation;
+using Microservice.Serialization;
 using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
-using System.Reactive.Linq;
 using Microsoft.Extensions.Logging;
-
 
 namespace Microservice.Exchange.Endpoints
 {
@@ -44,7 +43,10 @@ namespace Microservice.Exchange.Endpoints
 
         public string Name => "File";
 
-        public FileEndpoint(ILogger<FileEndpoint<T, R>> logger, IJsonConverterProvider jsonConverterProvider)
+        public FileEndpoint(
+            ILogger<FileEndpoint<T, R>> logger,
+            IJsonConverterProvider jsonConverterProvider
+        )
         {
             _logger = logger;
             _jsonConverterProvider = jsonConverterProvider;
@@ -62,20 +64,29 @@ namespace Microservice.Exchange.Endpoints
 
         public IObservable<Either<Message<T>, ConsumerException>> GetObservable()
         {
-            return
-            Observable.Create<FileSystemEventArgs>(o =>
-            {
-                FileSystemEventHandler eventHandler = (obj, args) => o.OnNext(args);
-                _inputFileSystemWatcher.Created += eventHandler;
-                _inputFileSystemWatcher.Disposed += (obj, args) => _inputFileSystemWatcher.Created -= eventHandler;
+            return Observable
+                .Create<FileSystemEventArgs>(o =>
+                {
+                    FileSystemEventHandler eventHandler = (obj, args) => o.OnNext(args);
+                    _inputFileSystemWatcher.Created += eventHandler;
+                    _inputFileSystemWatcher.Disposed += (obj, args) =>
+                        _inputFileSystemWatcher.Created -= eventHandler;
 
-                foreach (var existingFile in _inDirectory.GetFiles())
-                    o.OnNext(new FileSystemEventArgs(WatcherChangeTypes.Created, _inDirectory.FullName, existingFile.Name));
+                    foreach (var existingFile in _inDirectory.GetFiles())
+                        o.OnNext(
+                            new FileSystemEventArgs(
+                                WatcherChangeTypes.Created,
+                                _inDirectory.FullName,
+                                existingFile.Name
+                            )
+                        );
 
-                return () => { _inputFileSystemWatcher.Created -= eventHandler; };
-            })
-            .Select(
-                args =>
+                    return () =>
+                    {
+                        _inputFileSystemWatcher.Created -= eventHandler;
+                    };
+                })
+                .Select(args =>
                 {
                     var either = new Either<Message<T>, ConsumerException>();
 
@@ -84,19 +95,24 @@ namespace Microservice.Exchange.Endpoints
 
                     try
                     {
-                        var inData = _jsonConverterProvider.Deserialize<T>(File.ReadAllText(args.FullPath, IJsonConverterProvider.TextEncoding));
-                        Option<IMessage> imessage = (inData as IMessage) == null ? Option<IMessage>.None : Option<IMessage>.Some(inData as IMessage);
-                        either = new Message<T>(imessage)
-                        {
-                            Payload = inData,
-                            Id = id
-                        };
+                        var inData = _jsonConverterProvider.Deserialize<T>(
+                            File.ReadAllText(args.FullPath, IJsonConverterProvider.TextEncoding)
+                        );
+                        Option<IMessage> imessage =
+                            (inData as IMessage) == null
+                                ? Option<IMessage>.None
+                                : Option<IMessage>.Some(inData as IMessage);
+                        either = new Message<T>(imessage) { Payload = inData, Id = id };
                     }
                     catch (Exception e)
                     {
                         var errorMessage = $"Failed to consumer file: {args.FullPath}";
                         _logger.LogError(e, errorMessage);
-                        File.Copy(args.FullPath, Path.Combine(_errorDirectory.FullName, $"{args.Name}_error"), overwrite: true);
+                        File.Copy(
+                            args.FullPath,
+                            Path.Combine(_errorDirectory.FullName, $"{args.Name}_error"),
+                            overwrite: true
+                        );
                         either = new ConsumerException(id, errorMessage, e, this.GetType());
                     }
                     finally
@@ -110,9 +126,7 @@ namespace Microservice.Exchange.Endpoints
 
         public TryOptionAsync<Unit> Initialize(Option<IConfiguration> configuration)
         {
-            return configuration
-                .ToTryOptionAsync()
-                .Bind(InitializeDirectories);
+            return configuration.ToTryOptionAsync().Bind(InitializeDirectories);
         }
 
         public TryOptionAsync<Unit> Start()
@@ -124,59 +138,89 @@ namespace Microservice.Exchange.Endpoints
         public TryOptionAsync<Unit> Publish(Option<Message<R>> message)
         {
             return async () =>
-               {
-                   var dataIn = message.Match(r => r, () => throw new Exception("Unable to publish an empty request"));
-                   var id = dataIn.Id.Match(i => i, () => Guid.NewGuid());
-                   try
-                   {
-                       var json = dataIn.Payload.Match(p => _jsonConverterProvider.Serialize(p), () => "Empty message");
+            {
+                var dataIn = message.Match(
+                    r => r,
+                    () => throw new Exception("Unable to publish an empty request")
+                );
+                var id = dataIn.Id.Match(i => i, () => Guid.NewGuid());
+                try
+                {
+                    var json = dataIn.Payload.Match(
+                        p => _jsonConverterProvider.Serialize(p),
+                        () => "Empty message"
+                    );
 
-                       File.WriteAllText(Path.Combine(_outDirectory.FullName, id.ToString()), json, IJsonConverterProvider.TextEncoding);
+                    File.WriteAllText(
+                        Path.Combine(_outDirectory.FullName, id.ToString()),
+                        json,
+                        IJsonConverterProvider.TextEncoding
+                    );
 
-                       return await Task.FromResult(Unit.Default);
-                   }
-                   catch (Exception ex)
-                   {
-                       throw new ConsumerException(id, "Error during reponse publish", ex, GetType());
-                   }
-               };
+                    return await Task.FromResult(Unit.Default);
+                }
+                catch (Exception ex)
+                {
+                    throw new ConsumerException(id, "Error during reponse publish", ex, GetType());
+                }
+            };
         }
 
         public TryOptionAsync<Unit> PublishError(Option<ErrorMessage<T>> message)
         {
             return async () =>
-               {
-                   var dataIn = message.Match(r => r, () => throw new Exception("Unable to publish an empty request"));
-                   var id = dataIn.Message.Id.Match(i => i, () => Guid.NewGuid());
-                   try
-                   {
-                       var json = _jsonConverterProvider.Serialize(dataIn);
+            {
+                var dataIn = message.Match(
+                    r => r,
+                    () => throw new Exception("Unable to publish an empty request")
+                );
+                var id = dataIn.Message.Id.Match(i => i, () => Guid.NewGuid());
+                try
+                {
+                    var json = _jsonConverterProvider.Serialize(dataIn);
 
-                       File.WriteAllText(Path.Combine(_errorDirectory.FullName, id.ToString()), json, IJsonConverterProvider.TextEncoding);
+                    File.WriteAllText(
+                        Path.Combine(_errorDirectory.FullName, id.ToString()),
+                        json,
+                        IJsonConverterProvider.TextEncoding
+                    );
 
-                       return await Task.FromResult(Unit.Default);
-                   }
-                   catch (Exception ex)
-                   {
-                       throw new ConsumerException(id, "Error during Deadletter publish", ex, GetType());
-                   }
-               };
+                    return await Task.FromResult(Unit.Default);
+                }
+                catch (Exception ex)
+                {
+                    throw new ConsumerException(
+                        id,
+                        "Error during Deadletter publish",
+                        ex,
+                        GetType()
+                    );
+                }
+            };
         }
 
         private TryOptionAsync<Unit> InitializeDirectories(IConfiguration configuration)
         {
             return async () =>
             {
-                _inDirectory = new DirectoryInfo(configuration.GetValue<string>("InPath") ?? Environment.CurrentDirectory);
-                _outDirectory = new DirectoryInfo(configuration.GetValue<string>("OutPath") ?? Environment.CurrentDirectory);
-                _errorDirectory = new DirectoryInfo(configuration.GetValue<string>("ErrorPath") ?? Environment.CurrentDirectory);
+                _inDirectory = new DirectoryInfo(
+                    configuration.GetValue<string>("InPath") ?? Environment.CurrentDirectory
+                );
+                _outDirectory = new DirectoryInfo(
+                    configuration.GetValue<string>("OutPath") ?? Environment.CurrentDirectory
+                );
+                _errorDirectory = new DirectoryInfo(
+                    configuration.GetValue<string>("ErrorPath") ?? Environment.CurrentDirectory
+                );
 
                 await Init();
 
                 _inputFileSystemWatcher = new FileSystemWatcher(_inDirectory.FullName);
-                _inputFileSystemWatcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName;
+                _inputFileSystemWatcher.NotifyFilter =
+                    NotifyFilters.CreationTime | NotifyFilters.FileName;
                 _inputFileSystemWatcher.EnableRaisingEvents = true;
-                _inputFileSystemWatcher.Filter = configuration.GetValue<string>("FileFilter") ?? "*.*";
+                _inputFileSystemWatcher.Filter =
+                    configuration.GetValue<string>("FileFilter") ?? "*.*";
 
                 return await Task.FromResult(Unit.Default);
             };
@@ -184,7 +228,6 @@ namespace Microservice.Exchange.Endpoints
 
         private async Task Init()
         {
-
             if (AllDirectoriesExists())
             {
                 return;
@@ -207,7 +250,6 @@ namespace Microservice.Exchange.Endpoints
             {
                 _ioSemaphore.Release();
             }
-
         }
 
         private void CreateIfNotExist(DirectoryInfo info)
@@ -216,6 +258,7 @@ namespace Microservice.Exchange.Endpoints
                 info.Create();
         }
 
-        private bool AllDirectoriesExists() => _inDirectory.Exists && _outDirectory.Exists && _errorDirectory.Exists;
+        private bool AllDirectoriesExists() =>
+            _inDirectory.Exists && _outDirectory.Exists && _errorDirectory.Exists;
     }
 }

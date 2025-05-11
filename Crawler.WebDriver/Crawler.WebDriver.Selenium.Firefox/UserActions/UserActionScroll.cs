@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Threading.Tasks;
@@ -33,17 +33,21 @@ namespace Crawler.WebDriver.Selenium.UserActions
             {
                 var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutInSeconds));
                 wait.PollingInterval = TimeSpan.FromMilliseconds(300);
-                wait.Until(d => driver.ExecuteScript("return document.readyState").Equals("complete"));
+                wait.Until(d =>
+                    driver.ExecuteScript("return document.readyState").Equals("complete")
+                );
 
-                XPath.Match(xPath =>
-                {
-                    var element = driver.FindElement(By.XPath(xPath));
-                    driver.ExecuteScript("arguments[0].scrollIntoView();", element);
-                    Task.Delay(1000).Wait();
+                XPath.Match(
+                    xPath =>
+                    {
+                        var element = driver.FindElement(By.XPath(xPath));
+                        driver.ExecuteScript("arguments[0].scrollIntoView();", element);
+                        Task.Delay(1000).Wait();
+                    },
+                    () => { }
+                );
 
-                }, () => { });
-
-                if(NumberOfScrolls == 0)
+                if (NumberOfScrolls == 0)
                     return Unit.Default;
 
                 var loopControl = 0;

@@ -1,28 +1,28 @@
-//      Microservice AMQP Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2021  Paul Eger                                                                                                                                                                     
-                                                                                                                                                                                                                   
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
-                                                                                                                                                                                                                   
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
-                                                                                                                                                                                                                   
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      Microservice AMQP Libraries for .Net C#
+//      Copyright (C) 2021  Paul Eger
+
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
+
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
+
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using LanguageExt;
 using Microservice.Amqp.Configuration;
 using Microservice.Amqp.Rabbitmq.Configuration;
-using System.Linq;
-using System;
-using Microsoft.Extensions.Configuration;
 using Microservice.Serialization;
-using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace Microservice.Amqp.Rabbitmq
 {
@@ -33,7 +33,11 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly IJsonConverterProvider _converterProvider;
         private readonly IRabbitMqConnectionFactory _rabbitMqConnectionFactory;
 
-        public AmqpProvider(IConfiguration configuration, IJsonConverterProvider converterProvider, IRabbitMqConnectionFactory rabbitMqConnectionFactory)
+        public AmqpProvider(
+            IConfiguration configuration,
+            IJsonConverterProvider converterProvider,
+            IRabbitMqConnectionFactory rabbitMqConnectionFactory
+        )
         {
             _rabbitMqConnectionFactory = rabbitMqConnectionFactory;
             _amqpConfiguration = new AmqpConfiguration(configuration);
@@ -43,93 +47,182 @@ namespace Microservice.Amqp.Rabbitmq
 
         public TryOptionAsync<IMessagePublisher> GetPublisher(Option<string> contextName)
         {
-            return
-            contextName.ToTryOptionAsync()
-            .Bind((Func<string, TryOptionAsync<IMessagePublisher>>)(context => async () =>
-            {
-                var amqpContext = GetContext(context);
-                var publisher = CreatePublisher(context, amqpContext, _configuration, _converterProvider, _rabbitMqConnectionFactory);
+            return contextName
+                .ToTryOptionAsync()
+                .Bind(
+                    (Func<string, TryOptionAsync<IMessagePublisher>>)(
+                        context =>
+                            async () =>
+                            {
+                                var amqpContext = GetContextInternal(context);
+                                var publisher = CreatePublisher(
+                                    context,
+                                    amqpContext,
+                                    _configuration,
+                                    _converterProvider,
+                                    _rabbitMqConnectionFactory
+                                );
 
-                return await Task.FromResult(publisher);
-            }));
+                                return await Task.FromResult(publisher);
+                            }
+                    )
+                );
         }
 
         public static MessagePublisher CreatePublisher(
-            string context, 
-            AmqpContextConfiguration amqpContext, 
-            RabbitmqConfig configuration, 
-            IJsonConverterProvider converterProvider, 
-            IRabbitMqConnectionFactory rabbitMqConnectionFactory)
+            string context,
+            AmqpContextConfiguration amqpContext,
+            RabbitmqConfig configuration,
+            IJsonConverterProvider converterProvider,
+            IRabbitMqConnectionFactory rabbitMqConnectionFactory
+        )
         {
             var publisherConfig = CreatePublisherConfiguration(context, amqpContext, configuration);
-            return new MessagePublisher(publisherConfig, rabbitMqConnectionFactory, converterProvider);
+            return new MessagePublisher(
+                publisherConfig,
+                rabbitMqConnectionFactory,
+                converterProvider
+            );
         }
 
-        public static RabbitMqPublisherConfig CreatePublisherConfiguration(string context, AmqpContextConfiguration amqpContext, RabbitmqConfig configuration)
+        public static RabbitMqPublisherConfig CreatePublisherConfiguration(
+            string context,
+            AmqpContextConfiguration amqpContext,
+            RabbitmqConfig configuration
+        )
         {
             return new RabbitMqPublisherConfig
             {
-                Host =     configuration.Host,
+                Host = configuration.Host,
                 VirtHost = configuration.VirtHost,
                 Username = configuration.Username,
                 Password = configuration.Password,
                 Exchange = amqpContext.Exchange,
                 RoutingKey = amqpContext.RoutingKey,
-                Context = context
+                Context = context,
             };
         }
 
-        public TryOptionAsync<IMessageSubscriber<T, R>> GetSubsriber<T, R>(Option<string> contextName, IMessageHandler<T, R> messageHandler)
+        public TryOptionAsync<IMessageSubscriber<T, R>> GetSubsriber<T, R>(
+            Option<string> contextName,
+            IMessageHandler<T, R> messageHandler
+        )
         {
-            return
-            contextName.ToTryOptionAsync()
-            .Bind((Func<string, TryOptionAsync<IMessageSubscriber<T, R>>>)(context => async () =>
-            {
-                var amqpContext = GetContext(context);
-                var subscriber = CreateSubscriber(messageHandler, amqpContext, _configuration, _rabbitMqConnectionFactory, _converterProvider);
+            return contextName
+                .ToTryOptionAsync()
+                .Bind(
+                    (Func<string, TryOptionAsync<IMessageSubscriber<T, R>>>)(
+                        context =>
+                            async () =>
+                            {
+                                var amqpContext = GetContextInternal(context);
+                                var subscriber = CreateSubscriber(
+                                    messageHandler,
+                                    amqpContext,
+                                    _configuration,
+                                    _rabbitMqConnectionFactory,
+                                    _converterProvider,
+                                    queueName: null
+                                );
 
-                return await Task.FromResult(subscriber);
-            }));
+                                return await Task.FromResult(subscriber);
+                            }
+                    )
+                );
+        }
+
+        public TryOptionAsync<IMessageSubscriber<T, R>> GetSubsriber<T, R>(
+            Option<string> contextName,
+            Option<string> queueName,
+            IMessageHandler<T, R> messageHandler
+        )
+        {
+            return contextName
+                .ToTryOptionAsync()
+                .Bind(
+                    (Func<string, TryOptionAsync<IMessageSubscriber<T, R>>>)(
+                        context =>
+                            async () =>
+                            {
+                                var amqpContext = GetContextInternal(context);
+                                var subscriber = CreateSubscriber(
+                                    messageHandler,
+                                    amqpContext,
+                                    _configuration,
+                                    _rabbitMqConnectionFactory,
+                                    _converterProvider,
+                                    queueName.MatchUnsafe(q => q, () => null)
+                                );
+
+                                return await Task.FromResult(subscriber);
+                            }
+                    )
+                );
+        }
+
+        public Option<AmqpContextConfiguration> GetContext(Option<string> contextName)
+        {
+            return contextName.Match(
+                c => GetContextInternal(c),
+                () => throw new Exception("context is empty")
+            );
         }
 
         public static MessageSubscriber<T, R> CreateSubscriber<T, R>(
-            IMessageHandler<T, R> messageHandler, 
+            IMessageHandler<T, R> messageHandler,
             AmqpContextConfiguration amqpContext,
             RabbitmqConfig configuration,
             IRabbitMqConnectionFactory rabbitMqConnectionFactory,
-            IJsonConverterProvider converterProvider)
+            IJsonConverterProvider converterProvider,
+            string queueName = null
+        )
         {
-            var subscriberConfig = CreateSubscriberConfiguration(amqpContext, configuration);
-            return CreateSubscriber(messageHandler, subscriberConfig, converterProvider, rabbitMqConnectionFactory);
+            var subscriberConfig = CreateSubscriberConfiguration(
+                amqpContext,
+                configuration,
+                queueName
+            );
+            return CreateSubscriber(
+                messageHandler,
+                subscriberConfig,
+                converterProvider,
+                rabbitMqConnectionFactory
+            );
         }
 
         public static MessageSubscriber<T, R> CreateSubscriber<T, R>(
-                    IMessageHandler<T, R> messageHandler, 
-                    RabbitMqSubscriberConfig subscriberConfig,
-                    IJsonConverterProvider converterProvider,
-                    IRabbitMqConnectionFactory rabbitMqConnectionFactory)
+            IMessageHandler<T, R> messageHandler,
+            RabbitMqSubscriberConfig subscriberConfig,
+            IJsonConverterProvider converterProvider,
+            IRabbitMqConnectionFactory rabbitMqConnectionFactory
+        )
         {
             return new MessageSubscriber<T, R>(
-                                                 subscriberConfig,
-                                                 converterProvider,
-                                                 rabbitMqConnectionFactory,
-                                                 messageHandler);
+                subscriberConfig,
+                converterProvider,
+                rabbitMqConnectionFactory,
+                messageHandler
+            );
         }
 
-        public static RabbitMqSubscriberConfig CreateSubscriberConfiguration(AmqpContextConfiguration amqpContext, RabbitmqConfig configuration)
+        public static RabbitMqSubscriberConfig CreateSubscriberConfiguration(
+            AmqpContextConfiguration amqpContext,
+            RabbitmqConfig configuration,
+            string queueName
+        )
         {
             return new RabbitMqSubscriberConfig
             {
-                Host =     configuration.Host,
+                Host = configuration.Host,
                 VirtHost = configuration.VirtHost,
                 Username = configuration.Username,
                 Password = configuration.Password,
-                QueueName = amqpContext.QueueName,
-                PrefetchCount = amqpContext.PrefetchCount
+                QueueName = queueName ?? amqpContext.QueueName,
+                PrefetchCount = amqpContext.PrefetchCount,
             };
         }
 
-        private AmqpContextConfiguration GetContext(string context)
+        private AmqpContextConfiguration GetContextInternal(string context)
         {
             var match = _amqpConfiguration.AmqpContexts.FirstOrDefault(c => c.Name == context);
 
@@ -144,14 +237,16 @@ namespace Microservice.Amqp.Rabbitmq
         public static RabbitmqConfig LoadRabbitmqConfiguration(IConfiguration configuration)
         {
             var section = configuration
-                                    .GetSection(AmqpConfiguration.AmqpConfigurationRoot)
-                                    .GetSection("Provider")
-                                    .GetChildren()
-                                    .FirstOrDefault();
+                .GetSection(AmqpConfiguration.AmqpConfigurationRoot)
+                .GetSection("Provider")
+                .GetChildren()
+                .FirstOrDefault();
 
             if (section == null)
             {
-                throw new Exception($"Configuration missing for AMQP RabbitMq Provider. {configuration.GetChildren().Aggregate(new StringBuilder(), (sb, section) => sb.AppendLine(section.Key), sb => sb.ToString() )}");
+                throw new Exception(
+                    $"Configuration missing for AMQP RabbitMq Provider. {configuration.GetChildren().Aggregate(new StringBuilder(), (sb, section) => sb.AppendLine(section.Key), sb => sb.ToString())}"
+                );
             }
 
             return new RabbitmqConfig
@@ -161,7 +256,6 @@ namespace Microservice.Amqp.Rabbitmq
                 Port = section.GetValue<int>("Port"),
                 Username = section.GetValue<string>("Username"),
                 Password = section.GetValue<string>("Password"),
-
             };
         }
     }

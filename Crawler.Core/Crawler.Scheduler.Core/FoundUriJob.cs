@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Linq;
@@ -32,9 +32,17 @@ namespace Crawler.Scheduler.Core
         private readonly ISchedulerRepository _schedulerRepository;
         private readonly IConfigurationRepository _configurationRepository;
 
-        private readonly Counter _counter = Prometheus.Metrics.CreateCounter("job_uri_found", "Uris found job", "context");
+        private readonly Counter _counter = Prometheus.Metrics.CreateCounter(
+            "job_uri_found",
+            "Uris found job",
+            "context"
+        );
 
-        public FoundUriJob(ILogger<FoundUriJob> logger, ISchedulerRepository schedulerRepository, IConfigurationRepository configurationRepository)
+        public FoundUriJob(
+            ILogger<FoundUriJob> logger,
+            ISchedulerRepository schedulerRepository,
+            IConfigurationRepository configurationRepository
+        )
         {
             _logger = logger;
             _schedulerRepository = schedulerRepository;
@@ -44,58 +52,83 @@ namespace Crawler.Scheduler.Core
         public async Task Execute(IJobExecutionContext context)
         {
             _logger.LogInformation($"Running URI Found processing job");
-            await Schedule().Match(_ => {}, () => throw new Exception($"Failed to schedule FoundURIs"));
+            await Schedule()
+                .Match(_ => { }, () => throw new Exception($"Failed to schedule FoundURIs"));
         }
 
         private TryOptionAsync<Unit> Schedule()
         {
             return async () =>
             {
-                await _schedulerRepository.GetUriFoundList().Match( async list =>
-                {
-                    if(list.Any())
-                    {
-                        foreach(var uri in list)
+                await _schedulerRepository
+                    .GetUriFoundList()
+                    .Match(
+                        async list =>
                         {
-                            if(await _configurationRepository.ShouldSkip(uri.BaseUri, uri.Uri).Match(r => r, () => false))
+                            if (list.Any())
                             {
-                                uri.IsSkipped = true;
-                                uri.IsCompleted = true;
-                                await UpdateUri(uri);
-                                
-                                _counter.WithLabels("skipped").Inc();
-                                continue;
-                            }
+                                foreach (var uri in list)
+                                {
+                                    if (
+                                        await _configurationRepository
+                                            .ShouldSkip(uri.BaseUri, uri.Uri)
+                                            .Match(r => r, () => false)
+                                    )
+                                    {
+                                        uri.IsSkipped = true;
+                                        uri.IsCompleted = true;
+                                        await UpdateUri(uri);
 
-                            if(await _configurationRepository.IsCollectable(uri.Uri).Match(r => r, () => false, ex => false))
-                            {
-                                _counter.WithLabels($"collectors").Inc();
-                                uri.UriTypeId = UriType.Collector;
-                                await UpdateUri(uri);
-                            }
-                            else
-                            {
-                                _counter.WithLabels($"schedule_crawl").Inc();
-                                await _schedulerRepository.AddOrUpdate(
-                                    new CrawlUriDataModel{
-                                        UriId = uri.Id
-                                    })
-                                .Match(_ => {}, () => LogError(), ex => LogError(ex));
-                                
-                                uri.IsCompleted = true;
-                            }
+                                        _counter.WithLabels("skipped").Inc();
+                                        continue;
+                                    }
 
-                            await _schedulerRepository.AddOrUpdate(uri).Match(_ => {}, () => LogError(), ex => LogError(ex));
-                        }
-                    }
-                }, () => LogError(), ex => LogError(ex));
+                                    uri.UriTypeId =
+                                        (
+                                            await _configurationRepository
+                                                .IsCollectable(uri.Uri)
+                                                .Match(r => r, () => false, ex => false)
+                                        )
+                                            ? UriType.Collector
+                                            : uri.UriTypeId;
+
+                                    switch (uri.UriTypeId)
+                                    {
+                                        case UriType.Found:
+                                        case UriType.Onetime:
+                                            _counter.WithLabels($"schedule_crawl").Inc();
+                                            await _schedulerRepository
+                                                .AddOrUpdate(
+                                                    new CrawlUriDataModel { UriId = uri.Id }
+                                                )
+                                                .Match(
+                                                    _ => { },
+                                                    () => LogError(),
+                                                    ex => LogError(ex)
+                                                );
+
+                                            uri.IsCompleted = true;
+                                            break;
+                                    }
+
+                                    await _schedulerRepository
+                                        .AddOrUpdate(uri)
+                                        .Match(_ => { }, () => LogError(), ex => LogError(ex));
+                                }
+                            }
+                        },
+                        () => LogError(),
+                        ex => LogError(ex)
+                    );
                 return Unit.Default;
             };
         }
 
         private async Task UpdateUri(UriDataModel uri)
         {
-            await _schedulerRepository.AddOrUpdate(uri).Match(r => r, () => throw new Exception("failed to update model"), ex => throw ex);
+            await _schedulerRepository
+                .AddOrUpdate(uri)
+                .Match(r => r, () => throw new Exception("failed to update model"), ex => throw ex);
         }
 
         private void LogError(Exception ex = null)
