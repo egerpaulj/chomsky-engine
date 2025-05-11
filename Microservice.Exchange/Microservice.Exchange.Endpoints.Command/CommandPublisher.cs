@@ -26,15 +26,19 @@ namespace Microservice.Exchange.Endpoints.Command
 
         public TryOptionAsync<Unit> Initialize(Option<IConfiguration> configuration)
         {
-            return configuration.ToTryOptionAsync().Bind<IConfiguration, Unit>(config => async () =>
-            {
-                _command = config.GetValue<string>("Command");
-                _arguments = config.GetValue<string>("Arguments");
-                _workingDirectory = config.GetValue<string>("WorkingDirectory");
-                _workingDirectory = _workingDirectory ?? Environment.CurrentDirectory;
+            return configuration
+                .ToTryOptionAsync()
+                .Bind<IConfiguration, Unit>(config =>
+                    async () =>
+                    {
+                        _command = config.GetValue<string>("Command");
+                        _arguments = config.GetValue<string>("Arguments");
+                        _workingDirectory = config.GetValue<string>("WorkingDirectory");
+                        _workingDirectory = _workingDirectory ?? Environment.CurrentDirectory;
 
-                return await Task.FromResult(Unit.Default);
-            });
+                        return await Task.FromResult(Unit.Default);
+                    }
+                );
         }
 
         public TryOptionAsync<Unit> Publish(Option<Message<CommandData>> message)
@@ -42,21 +46,32 @@ namespace Microservice.Exchange.Endpoints.Command
             return message
                 .Bind(m => m.Payload)
                 .ToTryOptionAsync()
-                .Bind(m => CommandConsumer.RunCommand(_command, _workingDirectory, GetArguments(m.StdOut)))
-                .Bind<List<CommandData>, Unit>(r => async () =>
-                {
-                    var result = r.FirstOrDefault();
-
-                    if (result != null)
+                .Bind(m =>
+                    CommandConsumer.RunCommand(_command, _workingDirectory, GetArguments(m.StdOut))
+                )
+                .Bind<List<CommandData>, Unit>(r =>
+                    async () =>
                     {
-                        _logger.LogInformation($"Finished executing command: {_command}. With arguments: {result.Arguments}");
-                        _logger.LogInformation($"Command output: {result.StdOut}. Std Error: {result.StdError}");
-                    }
+                        var result = r.FirstOrDefault();
 
-                    return await Task.FromResult(Unit.Default);
-                });
+                        if (result != null)
+                        {
+                            _logger.LogInformation(
+                                $"Finished executing command: {_command}. With arguments: {result.Arguments}"
+                            );
+                            _logger.LogInformation(
+                                $"Command output: {result.StdOut}. Std Error: {result.StdError}"
+                            );
+                        }
+
+                        return await Task.FromResult(Unit.Default);
+                    }
+                );
         }
 
-        private string GetArguments(string output) => string.IsNullOrEmpty(_arguments) ? output : string.Format(_arguments, output, CultureInfo.InvariantCulture);
+        private string GetArguments(string output) =>
+            string.IsNullOrEmpty(_arguments)
+                ? output
+                : string.Format(_arguments, output, CultureInfo.InvariantCulture);
     }
 }

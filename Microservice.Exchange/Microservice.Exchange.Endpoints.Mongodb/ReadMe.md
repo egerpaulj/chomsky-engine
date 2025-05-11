@@ -48,7 +48,7 @@ The library provides the following:
 "DataIn": {
         "MongodbConsumer": {
           "ConnectionStrings": {
-            "MongoDbConnectionString": "mongodb://10.137.0.32:27017"
+            "MongoDbConnectionString": "mongodb://localhost:27017"
           },
           "DatabaseName": "TestExchange",
           "CollectionName": "TestDataDocument",
@@ -77,7 +77,7 @@ The library provides the following:
 "DataOut": {
             "MongodbPublisher": {
               "ConnectionStrings": {
-                "MongoDbConnectionString": "mongodb://10.137.0.32:27017"
+                "MongoDbConnectionString": "mongodb://localhost:27017"
               },
               "DatabaseName": "TestExchange",
               "CollectionName": "TestDataDocument"

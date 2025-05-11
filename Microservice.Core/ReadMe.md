@@ -131,7 +131,7 @@ Note: See below **Using** and **WriteTo**
       {
         "Name": "Elasticsearch",
         "Args": {
-          "nodeUris": "http://10.137.0.32:9200/",
+          "nodeUris": "http://localhost:9200/",
           "autoRegisterTemplate": true,
           "overwriteTemplate": true,
           "autoRegisterTemplateVersion": "ESv7",

@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -31,12 +31,11 @@ namespace Crawler.Strategies.General
 {
     public class CrawlStrategiesMapper : ICrawlStrategyMapper
     {
-
-
         private readonly ICrawlStrategy _genericStrategy;
 
         private readonly ICrawlContinuationStrategy _crawlAllContStrategy;
         private readonly ICrawlContinuationStrategy _crawlDomainOnlyContStrategy;
+        private readonly ICrawlContinuationStrategy _crawlOneTimeStrategy;
 
         private readonly ICrawlContinuationStrategy _crawlTrackLinksContStrategy;
 
@@ -48,20 +47,25 @@ namespace Crawler.Strategies.General
 
         public CrawlStrategiesMapper(
             ILogger<ICrawlContinuationStrategy> logger,
-            IRequestPublisher requestPublisher, 
-            IWebDriverService webDriver, 
-            IMetricRegister metricRegister)
+            IRequestPublisher requestPublisher,
+            IWebDriverService webDriver,
+            IMetricRegister metricRegister
+        )
         {
             _crawlAllContStrategy = new CrawlAllContinuationStrategy(logger, requestPublisher);
-            _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(logger, requestPublisher);
+            _crawlDomainOnlyContStrategy = new CrawlDomainOnlyContinuationStrategy(
+                logger,
+                requestPublisher
+            );
             _crawlTrackLinksContStrategy = new TrackLinksContinuationStrategy(requestPublisher);
 
             _genericStrategy = new CrawlerStrategyGeneric(webDriver, metricRegister);
+            _crawlOneTimeStrategy = new OnetimeContinuationStrategy(requestPublisher);
 
             // ToDo Non custom continuation strategy mappings in Database (and allow Factory injection)
             _hostToContStrategyMapper = new Dictionary<string, ICrawlContinuationStrategy>
             {
-                {"google.com", _crawlTrackLinksContStrategy}
+                { "google.com", _crawlTrackLinksContStrategy },
             };
 
             _uriToContStrategyMapper = new Dictionary<string, ICrawlContinuationStrategy>
@@ -71,7 +75,7 @@ namespace Crawler.Strategies.General
 
             _hostToStrategyMapper = new Dictionary<string, ICrawlStrategy>
             {
-                {"google.com", _genericStrategy}
+                { "google.com", _genericStrategy },
             };
 
             _uriToStrategyMapper = new Dictionary<string, ICrawlStrategy>
@@ -83,41 +87,63 @@ namespace Crawler.Strategies.General
         public TryOptionAsync<ICrawlStrategy> GetCrawlStrategy(Option<CrawlRequest> crawlRequest)
         {
             return crawlRequest
-                .Bind( r => r.LoadPageRequest)
+                .Bind(r => r.LoadPageRequest)
                 .Bind(l => l.Uri)
                 .ToTryOptionAsync()
-                .Bind<string, ICrawlStrategy>(u => 
-                    async () => await Task.FromResult(Option<ICrawlStrategy>.Some(GetStrategy(u))));
+                .Bind<string, ICrawlStrategy>(u =>
+                    async () => await Task.FromResult(Option<ICrawlStrategy>.Some(GetStrategy(u)))
+                );
         }
 
-
-        public TryOptionAsync<ICrawlContinuationStrategy> GetContinuationStrategy(Option<CrawlRequest> crawlRequest)
+        public TryOptionAsync<ICrawlContinuationStrategy> GetContinuationStrategy(
+            Option<CrawlRequest> crawlRequest
+        )
         {
             return crawlRequest.ToTryOptionAsync().Bind(u => MapRequestToContinuationStrategy(u));
         }
 
-        private TryOptionAsync<ICrawlContinuationStrategy> MapRequestToContinuationStrategy(CrawlRequest crawlRequest)
+        private TryOptionAsync<ICrawlContinuationStrategy> MapRequestToContinuationStrategy(
+            CrawlRequest crawlRequest
+        )
         {
             return async () =>
             {
-                var contStrategy = crawlRequest.ContinuationStrategy.Match(c => c, CrawlContinuationStrategy.None);
+                var contStrategy = crawlRequest.ContinuationStrategy.Match(
+                    c => c,
+                    CrawlContinuationStrategy.None
+                );
 
                 switch (contStrategy)
                 {
                     case CrawlContinuationStrategy.None:
                         return await Task.FromResult(Option<ICrawlContinuationStrategy>.None);
                     case CrawlContinuationStrategy.All:
-                        return await Task.FromResult(Option<ICrawlContinuationStrategy>.Some(_crawlAllContStrategy));
+                        return await Task.FromResult(
+                            Option<ICrawlContinuationStrategy>.Some(_crawlAllContStrategy)
+                        );
                     case CrawlContinuationStrategy.DomainOnly:
-                        return await Task.FromResult(Option<ICrawlContinuationStrategy>.Some(_crawlDomainOnlyContStrategy));
+                        return await Task.FromResult(
+                            Option<ICrawlContinuationStrategy>.Some(_crawlDomainOnlyContStrategy)
+                        );
                     case CrawlContinuationStrategy.TrackLinksOnly:
-                        return await Task.FromResult(Option<ICrawlContinuationStrategy>.Some(_crawlTrackLinksContStrategy));
+                        return await Task.FromResult(
+                            Option<ICrawlContinuationStrategy>.Some(_crawlTrackLinksContStrategy)
+                        );
                     case CrawlContinuationStrategy.Custom:
-                        return await Task.FromResult(Option<ICrawlContinuationStrategy>.Some(GetCustomContinuationStrategy(crawlRequest.LoadPageRequest.Bind(p => p.Uri))));
+                        return await Task.FromResult(
+                            Option<ICrawlContinuationStrategy>.Some(
+                                GetCustomContinuationStrategy(
+                                    crawlRequest.LoadPageRequest.Bind(p => p.Uri)
+                                )
+                            )
+                        );
+                    case CrawlContinuationStrategy.Onetime:
+                        return await Task.FromResult(
+                            Option<ICrawlContinuationStrategy>.Some(_crawlOneTimeStrategy)
+                        );
                     default:
                         return await Task.FromResult(Option<ICrawlContinuationStrategy>.None);
                 }
-
             };
         }
 
@@ -136,7 +162,9 @@ namespace Crawler.Strategies.General
                 return _hostToContStrategyMapper[quri.Host];
             }
 
-            throw new CrawlStrategyException($"Custom Crawl Continuation Strategy not defined for Uri: {u}");
+            throw new CrawlStrategyException(
+                $"Custom Crawl Continuation Strategy not defined for Uri: {u}"
+            );
         }
 
         private ICrawlStrategy GetStrategy(Option<string> uri)
@@ -148,10 +176,16 @@ namespace Crawler.Strategies.General
                 return _uriToStrategyMapper[u];
             }
 
-            var quri = new Uri(u);
-            if (_hostToStrategyMapper.ContainsKey(quri.Host))
+            var host = u;
+            try
             {
-                return _hostToStrategyMapper[quri.Host];
+                host = new Uri(u).Host;
+            }
+            catch (Exception) { }
+
+            if (_hostToStrategyMapper.ContainsKey(host))
+            {
+                return _hostToStrategyMapper[host];
             }
 
             return _genericStrategy;

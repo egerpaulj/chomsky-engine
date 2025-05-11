@@ -13,11 +13,16 @@ using Newtonsoft.Json;
 
 namespace Microservice.Exchange.Bertrand;
 
-public class MongoDbBertrandStateStore(IJsonConverterProvider jsonConverterProvider, IMongoDbRepository<BertrandStateDataModel> mongoDbRepository, IMongoDbRepository<BertrandStateDataModel> deadletterRepository) : IBertrandStateStore
+public class MongoDbBertrandStateStore(
+    IJsonConverterProvider jsonConverterProvider,
+    IMongoDbRepository<BertrandStateDataModel> mongoDbRepository,
+    IMongoDbRepository<BertrandStateDataModel> deadletterRepository
+) : IBertrandStateStore
 {
     private readonly IJsonConverterProvider jsonConverterProvider = jsonConverterProvider;
     private readonly IMongoDbRepository<BertrandStateDataModel> stateRepository = mongoDbRepository;
-    private readonly IMongoDbRepository<BertrandStateDataModel> deadletterRepository = deadletterRepository;
+    private readonly IMongoDbRepository<BertrandStateDataModel> deadletterRepository =
+        deadletterRepository;
 
     public TryOptionAsync<Unit> Delete(Option<Guid> id)
     {
@@ -28,45 +33,61 @@ public class MongoDbBertrandStateStore(IJsonConverterProvider jsonConverterProvi
     {
         return stateRepository
             .GetMany(Builders<BsonDocument>.Filter.Empty)
-            .Bind<List<BertrandStateDataModel>, IEnumerable<Message<object>>>(models => async () =>
-            {
-                return await Task.FromResult(
-                    models
-                                .Select(model =>
-                                    new Message<object>
-                                    {
-                                        CorrelationId = model.CorrelationId,
-                                        Id = model.Id,
-                                        Properties = model.Properties,
-                                        RoutingKey = model.RoutingKey,
-                                        Payload = jsonConverterProvider.Deserialize(model.Payload, Type.GetType(model.AssemblyQualifiedTypeName))
-                                    })
-                                .ToList()
-                );
-            });
+            .Bind<List<BertrandStateDataModel>, IEnumerable<Message<object>>>(models =>
+                async () =>
+                {
+                    return await Task.FromResult(
+                        models
+                            .Select(model => new Message<object>
+                            {
+                                CorrelationId = model.CorrelationId,
+                                Id = model.Id,
+                                Properties = model.Properties,
+                                RoutingKey = model.RoutingKey,
+                                Payload = jsonConverterProvider.Deserialize(
+                                    model.Payload,
+                                    Type.GetType(model.AssemblyQualifiedTypeName)
+                                ),
+                            })
+                            .ToList()
+                    );
+                }
+            );
     }
 
     public TryOptionAsync<Unit> StoreIncomingMessage(Option<Message<object>> message)
     {
-        return message.ToTryOptionAsync().Bind<Message<object>, Unit>(m => async () =>
-        {
-            await SaveMessageInRepo(m, stateRepository, jsonConverterProvider);
+        return message
+            .ToTryOptionAsync()
+            .Bind<Message<object>, Unit>(m =>
+                async () =>
+                {
+                    await SaveMessageInRepo(m, stateRepository, jsonConverterProvider);
 
-            return await Task.FromResult(Unit.Default);
-        });
+                    return await Task.FromResult(Unit.Default);
+                }
+            );
     }
 
     public TryOptionAsync<Unit> StoreInDeadletter(Option<Message<object>> message)
     {
-        return message.ToTryOptionAsync().Bind<Message<object>, Unit>(m => async () =>
-        {
-            await SaveMessageInRepo(m, deadletterRepository, jsonConverterProvider);
+        return message
+            .ToTryOptionAsync()
+            .Bind<Message<object>, Unit>(m =>
+                async () =>
+                {
+                    await SaveMessageInRepo(m, deadletterRepository, jsonConverterProvider);
 
-            return await Task.FromResult(Unit.Default);
-        });
+                    return await Task.FromResult(Unit.Default);
+                }
+            );
     }
 
-    private static async Task SaveMessageInRepo(Message<object> m, IMongoDbRepository<BertrandStateDataModel> repository, IJsonConverterProvider jsonConverterProvider)
+    private static async Task SaveMessageInRepo(
+        Message<object> m,
+        IMongoDbRepository<BertrandStateDataModel> repository,
+        IJsonConverterProvider jsonConverterProvider
+    )
     {
         var payload = m.Payload.Match(m => m, () => string.Empty);
         var dataModel = new BertrandStateDataModel
@@ -76,10 +97,16 @@ public class MongoDbBertrandStateStore(IJsonConverterProvider jsonConverterProvi
             Id = m.Id.Match(i => i, () => Guid.NewGuid()),
             Properties = m.Properties,
             AssemblyQualifiedTypeName = payload.GetType().AssemblyQualifiedName,
-            Payload = jsonConverterProvider.Serialize(payload)
+            Payload = jsonConverterProvider.Serialize(payload),
         };
 
-        await repository.AddOrUpdate(dataModel).Match(r => r, () => throw new Exception("Failed to store"), ex => throw new Exception("Failed to store", ex));
+        await repository
+            .AddOrUpdate(dataModel)
+            .Match(
+                r => r,
+                () => throw new Exception("Failed to store"),
+                ex => throw new Exception("Failed to store", ex)
+            );
     }
 }
 

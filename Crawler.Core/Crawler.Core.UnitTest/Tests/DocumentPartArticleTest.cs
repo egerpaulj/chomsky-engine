@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 using System.Linq;
@@ -33,19 +33,38 @@ namespace Crawler.Core.UnitTest.Tests
 
         public static void AssertResult(TestCase<ExpectedArticle> testcase)
         {
-            var result = DocumentPartTestHelper.GetResult<ExpectedArticle, DocumentPartArticle>(testcase);
+            var result = DocumentPartTestHelper.GetResult<ExpectedArticle, DocumentPartArticle>(
+                testcase
+            );
             Assert.IsNotNull(result);
             AssertResult(testcase, result);
         }
 
-        public static void AssertResult(TestCase<ExpectedArticle> testcase, DocumentPartArticle result)
+        public static void AssertResult(
+            TestCase<ExpectedArticle> testcase,
+            DocumentPartArticle result
+        )
         {
-            var titleParts = result.Title.Select(t => t.GetAllParts<DocumentPartText>()).Match(s => s, () => throw new System.Exception("Title empty")).ToList();
-            var contentParts = result.Content.Select(c => c.GetAllParts<DocumentPartText>()).Match(s => s, () => throw new System.Exception("Content empty")).ToList();
-            var links = result.Content.Select(c => c.GetAllParts<DocumentPartLink>()).Match(s => s, () => throw new System.Exception("Links empty"));
-            var images = result.Content.Select(c => c.GetAllParts<DocumentPartFile>()).Match(s => s, () => throw new System.Exception("Images empty")).ToList();
-            
-            var tables = result.Content.Select(c => c.GetAllParts<DocumentPartTable>()).Match(s => s, () => throw new System.Exception("Table empty")).ToList();
+            var titleParts = result
+                .Title.Select(t => t.GetAllParts<DocumentPartText>())
+                .Match(s => s, () => throw new System.Exception("Title empty"))
+                .ToList();
+            var contentParts = result
+                .Content.Select(c => c.GetAllParts<DocumentPartText>())
+                .Match(s => s, () => throw new System.Exception("Content empty"))
+                .ToList();
+            var links = result
+                .Content.Select(c => c.GetAllParts<DocumentPartLink>())
+                .Match(s => s, () => throw new System.Exception("Links empty"));
+            var images = result
+                .Content.Select(c => c.GetAllParts<DocumentPartFile>())
+                .Match(s => s, () => throw new System.Exception("Images empty"))
+                .ToList();
+
+            var tables = result
+                .Content.Select(c => c.GetAllParts<DocumentPartTable>())
+                .Match(s => s, () => throw new System.Exception("Table empty"))
+                .ToList();
 
             Assert.AreEqual(1, titleParts.Count);
             Assert.AreEqual(1, contentParts.Count);
@@ -53,12 +72,36 @@ namespace Crawler.Core.UnitTest.Tests
 
             DocumentPartTableTest.AssertResults(TestCaseFactoryTable.Create(), tables.First());
 
-            Assert.AreEqual(testcase.ExpectedResult.Title, titleParts.First().Text.Match(t => t, () => throw new System.Exception("Title missing")));
-            Assert.AreEqual(testcase.ExpectedResult.Content, contentParts.First().Text.Match(t => t, () => throw new System.Exception("Content missing")));
+            Assert.AreEqual(
+                testcase.ExpectedResult.Title,
+                titleParts
+                    .First()
+                    .Text.Match(t => t, () => throw new System.Exception("Title missing"))
+            );
+            Assert.AreEqual(
+                testcase.ExpectedResult.Content,
+                contentParts
+                    .First()
+                    .Text.Match(t => t, () => throw new System.Exception("Content missing"))
+            );
 
-            AssertIteratively(testcase.ExpectedResult.Links, links.Select(l => l.Uri.Match(u => u, () => throw new System.Exception("missing uri"))).ToList());
+            AssertIteratively(
+                testcase.ExpectedResult.Links,
+                links
+                    .Select(l =>
+                        l.Uri.Match(u => u, () => throw new System.Exception("missing uri"))
+                    )
+                    .ToList()
+            );
 
-            var downloadLinks = images.Bind(i => i.DownloadLinks).Bind(l => l.Select(link => link.Uri.Match(s => s, () => throw new System.Exception("uri empty")))).ToList();
+            var downloadLinks = images
+                .Bind(i => i.DownloadLinks)
+                .Bind(l =>
+                    l.Select(link =>
+                        link.Uri.Match(s => s, () => throw new System.Exception("uri empty"))
+                    )
+                )
+                .ToList();
 
             AssertIteratively(testcase.ExpectedResult.Images, downloadLinks);
         }

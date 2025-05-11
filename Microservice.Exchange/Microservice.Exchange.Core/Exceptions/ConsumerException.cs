@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 
@@ -21,13 +21,22 @@ namespace Microservice.Exchange
     {
         public string Consumer { get; }
         public Guid MessageId { get; }
-        public override string Message => $"{base.Message} - Consumer: {Consumer}. Stacktrace: {StackTrace}";
-        public ConsumerException(Guid messageId, string message, Exception exception, Type consumerType) : base(message, exception)
+        public override string Message =>
+            $"{base.Message} - Consumer: {Consumer}. Stacktrace: {StackTrace}";
+
+        public ConsumerException(
+            Guid messageId,
+            string message,
+            Exception exception,
+            Type consumerType
+        )
+            : base(message, exception)
         {
             Consumer = consumerType.Name;
             MessageId = messageId;
         }
 
-        public ConsumerException(Exception innerException) : base(innerException.Message, innerException){}
+        public ConsumerException(Exception innerException)
+            : base(innerException.Message, innerException) { }
     }
 }

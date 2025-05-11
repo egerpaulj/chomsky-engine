@@ -1,0 +1,12 @@
+.././startGit
+.././startKibana
+.././startNginx
+.././startRegistry
+.././startBaget
+.././startGrafana
+.././startMongoDb
+.././startProm
+.././startEs
+.././startJenkins
+.././startRedis
+.././startRabbitmq

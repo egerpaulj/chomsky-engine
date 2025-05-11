@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,8 @@ namespace Crawler.Core.Requests
         All = 2,
         DomainOnly = 3,
         TrackLinksOnly = 4,
-        Custom = 5
+        Custom = 5,
+        Onetime = 6,
     }
 
     public class CrawlRequest
@@ -38,6 +39,8 @@ namespace Crawler.Core.Requests
         public Option<LoadPageRequest> LoadPageRequest { get; set; }
         public Option<Document> RequestDocument { get; set; }
         public bool ProvideRaw { get; set; }
+        public bool ShouldIndex { get; set; }
+        public bool IsAdhocRequest { get; set; }
 
         public Option<Exception> Error { get; set; }
 

@@ -30,8 +30,10 @@
     <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Core\Microservice.Exchange.Core.csproj" />
     <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Endpoints.Rabbitmq\Microservice.Exchange.Endpoints.Rabbitmq.csproj" />
     <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Endpoints.Elasticsearch\Microservice.Exchange.Endpoints.Elasticsearch.csproj" />
+    <ProjectReference Include="..\Microservice.Exchange\Microservice.Exchange.Endpoints.Mongodb\Microservice.Exchange.Endpoints.Mongodb.csproj" />
     <ProjectReference Include="..\Crawler.Scheduler\Crawler.Scheduler.Repository\Crawler.Scheduler.Repository.csproj" />
     <ProjectReference Include="..\Crawler.Configuration\Crawler.Configuration.Repository\Crawler.Configuration.Repository.csproj" />
     <ProjectReference Include="..\Crawler.Core\Crawler.Scheduler.Core\Crawler.Scheduler.Core.csproj" />
+    <ProjectReference Include="..\Microservice.Mongodb\Microservice.Mongodb.Repo\Microservice.Mongodb.Repo.csproj" />
   </ItemGroup>
 </Project>

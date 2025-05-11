@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -25,11 +25,15 @@ namespace Crawler.Core.UnitTest
 {
     public class DocumentPartTestHelper
     {
-        public static CrawlRequest CreateRequestDocumentPartText(string uri = null,string xpath="", string content = null)
+        public static CrawlRequest CreateRequestDocumentPartText(
+            string uri = null,
+            string xpath = "",
+            string content = null
+        )
         {
             var request = new CrawlRequest();
             request.CrawlId = Guid.NewGuid();
-            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.LoadPageRequest = new LoadPageRequest { Uri = uri };
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
@@ -37,21 +41,22 @@ namespace Crawler.Core.UnitTest
                 {
                     Selector = new DocumentPartSelector()
                     {
-                        
                         Xpath = xpath,
-                        ContentSpecificMatch = content
+                        ContentSpecificMatch = content,
                     },
-
                 },
-
             };
             return request;
         }
 
-        public static CrawlRequest CreateRequestDocumentPartLinkText(string uri = null, string xpath="", string content = null)
+        public static CrawlRequest CreateRequestDocumentPartLinkText(
+            string uri = null,
+            string xpath = "",
+            string content = null
+        )
         {
             var request = new CrawlRequest();
-            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.LoadPageRequest = new LoadPageRequest { Uri = uri };
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
@@ -60,28 +65,29 @@ namespace Crawler.Core.UnitTest
                     Selector = new DocumentPartSelector()
                     {
                         Xpath = xpath,
-                        ContentSpecificMatch = content
+                        ContentSpecificMatch = content,
                     },
-
                 },
-
             };
             return request;
         }
 
-        public static CrawlRequest CreateRequestDocumentPartFile(string uri = null, string content = null)
+        public static CrawlRequest CreateRequestDocumentPartFile(
+            string uri = null,
+            string content = null
+        )
         {
             var documentPartFile = new DocumentPartFile(uri)
             {
                 Selector = new DocumentPartSelector()
                 {
-                    Xpath ="//*[self::a or self::img]" ,
-                    ContentSpecificMatch = content
-                }
+                    Xpath = "//*[self::a or self::img]",
+                    ContentSpecificMatch = content,
+                },
             };
 
             var request = new CrawlRequest();
-            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.LoadPageRequest = new LoadPageRequest { Uri = uri };
             request.RequestDocument = new Document()
             {
                 RequestDocumentPart = documentPartFile,
@@ -94,7 +100,7 @@ namespace Crawler.Core.UnitTest
         {
             var request = new CrawlRequest();
             request.CrawlId = Guid.NewGuid();
-            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.LoadPageRequest = new LoadPageRequest { Uri = uri };
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
@@ -105,39 +111,28 @@ namespace Crawler.Core.UnitTest
                     {
                         Selector = new DocumentPartSelector()
                         {
-                            Xpath = "//*[@class='titleClass']"
-                        }
+                            Xpath = "//*[@class='titleClass']",
+                        },
                     },
                     Content = new DocumentPartText(uri)
                     {
-                        Selector = new DocumentPartSelector()
-                        {
-                            Xpath = "//*[@class='content']"
-                        },
+                        Selector = new DocumentPartSelector() { Xpath = "//*[@class='content']" },
                         SubParts = new List<DocumentPart>()
                         {
                             // Select all images within content
-                            new DocumentPartFile (uri)
+                            new DocumentPartFile(uri)
                             {
-                                Selector = new DocumentPartSelector
-                                {
-                                    Xpath=".//img"
-                                }
+                                Selector = new DocumentPartSelector { Xpath = ".//img" },
                             },
                             // Select all links within content
-                            new DocumentPartLink (uri)
+                            new DocumentPartLink(uri)
                             {
-                                Selector = new DocumentPartSelector
-                                {
-                                    Xpath=".//a"
-                                }
+                                Selector = new DocumentPartSelector { Xpath = ".//a" },
                             },
-                            new DocumentPartTable (uri)
-                        }
-                    }
-
+                            new DocumentPartTable(uri),
+                        },
+                    },
                 },
-
             };
             return request;
         }
@@ -146,7 +141,7 @@ namespace Crawler.Core.UnitTest
         {
             var request = new CrawlRequest();
             request.CrawlId = Guid.NewGuid();
-            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.LoadPageRequest = new LoadPageRequest { Uri = uri };
             request.RequestDocument = new Document()
             {
                 DownloadContent = true,
@@ -157,31 +152,25 @@ namespace Crawler.Core.UnitTest
                     {
                         Selector = new DocumentPartSelector()
                         {
-                            Xpath = "//*[@data-gu-name='headline']"
-                        }
+                            Xpath = "//*[@data-gu-name='headline']",
+                        },
                     },
                     Content = new DocumentPartText(uri)
                     {
-                        Selector = new DocumentPartSelector()
-                        {
-                            Xpath = "//*[@id='maincontent']"
-                        },
-                        
+                        Selector = new DocumentPartSelector() { Xpath = "//*[@id='maincontent']" },
                     },
                     SubParts = new List<DocumentPart>()
                     {
                         // Select all images within content
-                        new DocumentPartText (uri)
+                        new DocumentPartText(uri)
                         {
                             Selector = new DocumentPartSelector
                             {
-                                Xpath = "//*[@data-gu-name='standfirst']"
-                            }
+                                Xpath = "//*[@data-gu-name='standfirst']",
+                            },
                         },
-                    }
-
+                    },
                 },
-
             };
             return request;
         }
@@ -192,7 +181,7 @@ namespace Crawler.Core.UnitTest
 
             var request = new CrawlRequest();
             request.CrawlId = Guid.NewGuid();
-            request.LoadPageRequest = new LoadPageRequest{Uri = uri};
+            request.LoadPageRequest = new LoadPageRequest { Uri = uri };
             request.RequestDocument = new Document()
             {
                 RequestDocumentPart = documentPartAutoDetect,
@@ -201,10 +190,13 @@ namespace Crawler.Core.UnitTest
             return request;
         }
 
-
-        internal static R GetResult<T, R>(TestCase<T> testcase) where R : DocumentPart
+        internal static R GetResult<T, R>(TestCase<T> testcase)
+            where R : DocumentPart
         {
-            var testee = testcase.RequestDocument.RequestDocumentPart.Match(d => d, () => throw new Exception("Doc Part Missing"));
+            var testee = testcase.RequestDocument.RequestDocumentPart.Match(
+                d => d,
+                () => throw new Exception("Doc Part Missing")
+            );
             var htmlDocument = new HtmlDocument();
             htmlDocument.LoadHtml(testcase.Xml);
 

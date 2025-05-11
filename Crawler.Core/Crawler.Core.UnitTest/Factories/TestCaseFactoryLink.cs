@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 using Crawler.Core.Parser.DocumentParts;
@@ -22,7 +22,8 @@ namespace Crawler.Core.UnitTest
     {
         public static TestCase<List<string>> CreateTestCaseAnchorOnly()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                             <div>
                                 someOthertest1
                                 <a href='/firstLink'/>
@@ -39,8 +40,10 @@ namespace Crawler.Core.UnitTest
                             </div>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartLinkText(@"https://something", "//a");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartLinkText(
+                @"https://something",
+                "//a"
+            );
 
             return new TestCase<List<string>>()
             {
@@ -48,15 +51,16 @@ namespace Crawler.Core.UnitTest
                 Xml = xml,
                 ExpectedResult = new List<string>
                 {
-                        @"https://something/firstLink",
-                        @"https://something/linkToSomewhere"
-                }
+                    @"https://something/firstLink",
+                    @"https://something/linkToSomewhere",
+                },
             };
         }
 
         public static TestCase<List<string>> CreateTestCaseAnchorOnlyFullUri()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                             <div>
                                 someOthertest1
                                 <a href='https://somethingElse/firstLink'/>
@@ -73,8 +77,10 @@ namespace Crawler.Core.UnitTest
                             </div>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartLinkText(@"https://something", "//a");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartLinkText(
+                @"https://something",
+                "//a"
+            );
 
             return new TestCase<List<string>>()
             {
@@ -82,15 +88,16 @@ namespace Crawler.Core.UnitTest
                 Xml = xml,
                 ExpectedResult = new List<string>
                 {
-                        @"https://somethingelse/firstLink",
-                        @"http://somethingelse/linkToSomewhere"
-                }
+                    @"https://somethingelse/firstLink",
+                    @"http://somethingelse/linkToSomewhere",
+                },
             };
         }
 
         public static TestCase<List<string>> CreateTestCaseAnchorAndContent()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                             <div>
                                 someOthertest1
                                 <a href='/firstLink'/>
@@ -107,23 +114,24 @@ namespace Crawler.Core.UnitTest
                             </div>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentPartLinkText(@"https://something", "//a", "It could just be me");
+            var request = DocumentPartTestHelper.CreateRequestDocumentPartLinkText(
+                @"https://something",
+                "//a",
+                "It could just be me"
+            );
 
             return new TestCase<List<string>>()
             {
                 CrawlRequest = request,
                 Xml = xml,
-                ExpectedResult = new List<string>
-                {
-                        @"https://something/linkToSomewhere"
-                }
+                ExpectedResult = new List<string> { @"https://something/linkToSomewhere" },
             };
         }
 
         public static TestCase<List<string>> CreateTestCaseAnchorWithDomainLinks()
         {
-            var xml = @"<html><header></header>
+            var xml =
+                @"<html><header></header>
                             <div>
                                 someOthertest1
                                 <a href='https://testdomain/firstLink'/>
@@ -143,8 +151,9 @@ namespace Crawler.Core.UnitTest
                             </div>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(@"https://testdomain/");
+            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(
+                @"https://testdomain/"
+            );
 
             return new TestCase<List<string>>()
             {
@@ -152,12 +161,10 @@ namespace Crawler.Core.UnitTest
                 Xml = xml,
                 ExpectedResult = new List<string>
                 {
-                        @"https://testdomain/firstLink",
-                        @"https://testdomain/secondlink"
-
-                }
+                    @"https://testdomain/firstLink",
+                    @"https://testdomain/secondlink",
+                },
             };
         }
-
     }
 }

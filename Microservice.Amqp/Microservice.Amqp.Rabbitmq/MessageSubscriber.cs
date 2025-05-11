@@ -1,17 +1,17 @@
-//      Microservice AMQP Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2021  Paul Eger                                                                                                                                                                     
+//      Microservice AMQP Libraries for .Net C#
+//      Copyright (C) 2021  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
@@ -43,26 +43,29 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly IConnectionFactory _connectionFactory;
 
         private event EventHandler<Either<Message<R>, Exception>> MessageReceived;
-        
 
         public MessageSubscriber(
             RabbitMqSubscriberConfig rabbitmqConfig,
             IJsonConverterProvider jsonConverterProvider,
             IRabbitMqConnectionFactory connectionFactory,
-            IMessageHandler<T, R> messageHandler)
+            IMessageHandler<T, R> messageHandler
+        )
         {
             _rabbitmqConfig = rabbitmqConfig;
             _jsonConverterProvider = jsonConverterProvider;
             _messageHandler = messageHandler;
             _connectionFactory = connectionFactory.CreateConnectionFactory(_rabbitmqConfig);
 
-            _fullMessageObservable = Observable.FromEventPattern<Either<Message<R>, Exception>>(
-                h => MessageReceived += h,
-                h => MessageReceived -= h)
+            _fullMessageObservable = Observable
+                .FromEventPattern<Either<Message<R>, Exception>>(
+                    h => MessageReceived += h,
+                    h => MessageReceived -= h
+                )
                 .Select(m => m.EventArgs);
 
-            _observable = _fullMessageObservable
-                .Select(m => m.MapLeft(m => m.Payload.Match(p => p, () => throw new Exception("Empty message"))));
+            _observable = _fullMessageObservable.Select(m =>
+                m.MapLeft(m => m.Payload.Match(p => p, () => throw new Exception("Empty message")))
+            );
         }
 
         public IObservable<Either<R, Exception>> GetObservable()
@@ -92,20 +95,26 @@ namespace Microservice.Amqp.Rabbitmq
 
             _connection = _connectionFactory.CreateConnection();
             _channel = _connection.CreateModel();
-            
+
             _channel.BasicQos(0, _rabbitmqConfig.PrefetchCount, false);
             _consumer = new AsyncEventingBasicConsumer(_channel);
 
             _consumer.Received += OnAmqpMessageReceived;
-            _channel.BasicConsume(queue: _rabbitmqConfig.QueueName, autoAck: false, consumer: _consumer);
+            _channel.BasicConsume(
+                queue: _rabbitmqConfig.QueueName,
+                autoAck: false,
+                consumer: _consumer
+            );
         }
 
-        private async Task<Either<Message<R>, Exception>> HandleMessage(MqMessageEvent<T> messageEvent)
+        private async Task<Either<Message<R>, Exception>> HandleMessage(
+            MqMessageEvent<T> messageEvent
+        )
         {
             try
             {
                 var result = await _messageHandler.HandleMessage(messageEvent.Message);
-                
+
                 // ACK - message will be removed from queue
                 _channel.BasicAck(messageEvent.DeliveryTag, false);
                 return new Message<R>
@@ -113,7 +122,7 @@ namespace Microservice.Amqp.Rabbitmq
                     Payload = result,
                     Context = messageEvent.Message.Context,
                     CorrelationId = messageEvent.Message.CorrelationId,
-                    Id = messageEvent.Message.Id
+                    Id = messageEvent.Message.Id,
                 };
             }
             catch (Exception e)
@@ -133,9 +142,9 @@ namespace Microservice.Amqp.Rabbitmq
                 var resultStr = Encoding.UTF8.GetString(ea.Body.ToArray());
                 var result = _jsonConverterProvider.Deserialize<T>(resultStr);
 
-                var id = ea.BasicProperties.Headers.ContainsKey("Id") 
-                ? Guid.Parse(Encoding.UTF8.GetString((byte[])ea.BasicProperties.Headers["Id"]))
-                : Guid.NewGuid();
+                var id = ea.BasicProperties.Headers.ContainsKey("Id")
+                    ? Guid.Parse(Encoding.UTF8.GetString((byte[])ea.BasicProperties.Headers["Id"]))
+                    : Guid.NewGuid();
 
                 var message = new Message<T>
                 {
@@ -143,16 +152,13 @@ namespace Microservice.Amqp.Rabbitmq
                     CorrelationId = Guid.Parse(ea.BasicProperties.CorrelationId),
                     Id = id,
                     RetryCount = int.Parse(ea.BasicProperties.Headers["RetryCount"]?.ToString()),
-                    Context = ea.BasicProperties.Headers.ContainsKey("Context") ? Encoding.UTF8.GetString((byte[])ea.BasicProperties.Headers["Context"]) : string.Empty,
+                    Context = ea.BasicProperties.Headers.ContainsKey("Context")
+                        ? Encoding.UTF8.GetString((byte[])ea.BasicProperties.Headers["Context"])
+                        : string.Empty,
                     RoutingKey = ea.RoutingKey,
                 };
 
-
-                return new MqMessageEvent<T>
-                {
-                    Message = message,
-                    DeliveryTag = ea.DeliveryTag
-                };
+                return new MqMessageEvent<T> { Message = message, DeliveryTag = ea.DeliveryTag };
             }
             catch (Exception)
             {

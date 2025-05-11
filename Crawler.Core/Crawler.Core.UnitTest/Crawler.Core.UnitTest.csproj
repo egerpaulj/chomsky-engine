@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Crawler.Core\Crawler.Core.csproj" />
+    <ProjectReference Include="..\..\Crawler.Management.Service\Crawler.Management.Service.csproj" />
   </ItemGroup>
 
   <ItemGroup>

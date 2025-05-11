@@ -17,14 +17,11 @@ namespace Crawler.RequestManager.Grpc.Server
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            
             Host.CreateDefaultBuilder(args)
                 .SetupLogging()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder
-                    .UseKestrelHttps()
-                    .UseStartup<Startup>();
+                    webBuilder.UseKestrelHttps().UseStartup<Startup>();
                 });
     }
 }

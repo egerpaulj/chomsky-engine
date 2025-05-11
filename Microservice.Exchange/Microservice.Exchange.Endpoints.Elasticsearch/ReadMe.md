@@ -19,7 +19,7 @@ The library provides the following:
 "DataIn": {
         "Elastic": {
           "ConnectionStrings": {
-            "ElasticsearchConnectionString": "http://10.137.0.32:9200/"
+            "ElasticsearchConnectionString": "http://localhost:9200/"
           },
           "Index": "testexchange",
           "IntervalInMs": "1000",
@@ -37,7 +37,7 @@ The library provides the following:
 "DataOut": {
             "Elastic": {
               "ConnectionStrings": {
-                "ElasticsearchConnectionString": "http://10.137.0.32:9200/"
+                "ElasticsearchConnectionString": "http://localhost:9200/"
               },
               "Index": "testexchange"
             }

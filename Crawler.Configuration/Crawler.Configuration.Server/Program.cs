@@ -23,9 +23,7 @@ namespace Crawler.Configuration.Server
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     // ToDo Make configurable - certificate vault
-                    webBuilder
-                    .UseKestrelHttps()
-                    .UseStartup<Startup>();
+                    webBuilder.UseKestrelHttps().UseStartup<Startup>();
                 });
     }
 }

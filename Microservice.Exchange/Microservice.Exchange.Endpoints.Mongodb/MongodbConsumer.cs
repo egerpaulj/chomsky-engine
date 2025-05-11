@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Reactive.Disposables;
@@ -31,19 +31,22 @@ using MongoDB.Driver;
 
 namespace Microservice.Exchange.Endpoints.Mongodb
 {
-    public class MongodbConsumer<T> : IConsumer<T>, IConfigInitializor where T : IDataModel
+    public class MongodbConsumer<T> : IConsumer<T>, IConfigInitializor
+        where T : IDataModel
     {
         private readonly ILogger<IConsumer<T>> _logger;
         private readonly IJsonConverterProvider _jsonConverterProvider;
         private IObserver<Either<Message<T>, ConsumerException>> _observer;
         private readonly IObservable<Either<Message<T>, ConsumerException>> _observable;
-        
+
         private FilterDefinition<BsonDocument> _filters;
         private MongoDbRepository<T> _repository;
         private PollingConsumer<T> _pollingConsumer;
-        
 
-        public MongodbConsumer(ILogger<MongodbConsumer<T>> logger, IJsonConverterProvider jsonConverterProvider)
+        public MongodbConsumer(
+            ILogger<MongodbConsumer<T>> logger,
+            IJsonConverterProvider jsonConverterProvider
+        )
         {
             _observable = Observable.Create<Either<Message<T>, ConsumerException>>(observer =>
             {
@@ -54,6 +57,7 @@ namespace Microservice.Exchange.Endpoints.Mongodb
             _logger = logger;
             _jsonConverterProvider = jsonConverterProvider;
         }
+
         public TryOptionAsync<Unit> End()
         {
             return _pollingConsumer?.End();
@@ -66,21 +70,40 @@ namespace Microservice.Exchange.Endpoints.Mongodb
 
         public TryOptionAsync<Unit> Initialize(Option<IConfiguration> configuration)
         {
-            return configuration.ToTryOptionAsync().Bind<IConfiguration, Unit>(config => async () =>
-            {
-                var databaseConfiguration = new DatabaseConfiguration
-                {
-                    DatabaseName = config.GetValue<string>("DatabaseName"),
-                    CollectionName = config.GetValue<string>("CollectionName")
-                };
-                
-                _filters = await QueryParser.Parse(configuration).Match(r => r, () => throw new ExchangeBootstrapException("MongodbConsumer Configuration missing: DocumentFilters"));
-                _repository = new MongoDbRepository<T>(config, databaseConfiguration, _jsonConverterProvider);
+            return configuration
+                .ToTryOptionAsync()
+                .Bind<IConfiguration, Unit>(config =>
+                    async () =>
+                    {
+                        var databaseConfiguration = new DatabaseConfiguration(
+                            collectionName: config.GetValue<string>("CollectionName"),
+                            databaseName: config.GetValue<string>("DatabaseName")
+                        );
 
-                _pollingConsumer = new PollingConsumer<T>(_logger, () => _repository.GetMany(_filters), config.GetValue<int>(PollingConfiguration.IntervalInMsKey));
+                        _filters = await QueryParser
+                            .Parse(configuration)
+                            .Match(
+                                r => r,
+                                () =>
+                                    throw new ExchangeBootstrapException(
+                                        "MongodbConsumer Configuration missing: DocumentFilters"
+                                    )
+                            );
+                        _repository = new MongoDbRepository<T>(
+                            config,
+                            databaseConfiguration,
+                            _jsonConverterProvider
+                        );
 
-                return await Task.FromResult(Unit.Default);
-            });
+                        _pollingConsumer = new PollingConsumer<T>(
+                            _logger,
+                            () => _repository.GetMany(_filters),
+                            config.GetValue<int>(PollingConfiguration.IntervalInMsKey)
+                        );
+
+                        return await Task.FromResult(Unit.Default);
+                    }
+                );
         }
 
         public TryOptionAsync<Unit> Start()

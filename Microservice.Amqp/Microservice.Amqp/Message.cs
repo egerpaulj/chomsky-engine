@@ -40,6 +40,5 @@ namespace Microservice.Amqp
         /// </summary>
         public Option<string> Context { get; set; }
         public string MessageType => typeof(T).Name;
-
     }
 }

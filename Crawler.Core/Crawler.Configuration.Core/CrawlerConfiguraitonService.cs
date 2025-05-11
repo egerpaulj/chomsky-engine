@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -31,7 +31,10 @@ namespace Crawler.Configuration.Core
         private readonly IConfigurationRepository _configurationRepository;
         private readonly ISchedulerRepository _schedulerRepository;
 
-        public CrawlerConfigurationService(IConfigurationRepository repo, ISchedulerRepository schedulerRepository)
+        public CrawlerConfigurationService(
+            IConfigurationRepository repo,
+            ISchedulerRepository schedulerRepository
+        )
         {
             _schedulerRepository = schedulerRepository;
             _configurationRepository = repo;
@@ -39,15 +42,23 @@ namespace Crawler.Configuration.Core
 
         public TryOptionAsync<Unit> Add(Option<CrawlUriDataModel> crawlUri)
         {
-            return _schedulerRepository.AddOrUpdate(crawlUri).Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
+            return _schedulerRepository
+                .AddOrUpdate(crawlUri)
+                .Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
         }
 
         public TryOptionAsync<Unit> Add(Option<UriDataModel> sourceData)
         {
-            return _schedulerRepository.AddOrUpdate(sourceData).Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
+            return _schedulerRepository
+                .AddOrUpdate(sourceData)
+                .Bind<Guid, Unit>(_ => async () => await Task.FromResult(Unit.Default));
         }
 
-        public TryOptionAsync<CrawlRequest> CreateRequest(Option<string> uri, Option<Guid> guid, Option<Guid> crawlId)
+        public TryOptionAsync<CrawlRequest> CreateRequest(
+            Option<string> uri,
+            Option<Guid> guid,
+            Option<Guid> crawlId
+        )
         {
             var correlationId = guid.Match(g => g, () => Guid.NewGuid());
             var cId = crawlId.Match(g => g, () => Guid.Empty);
@@ -55,23 +66,37 @@ namespace Crawler.Configuration.Core
             return async () =>
             {
                 return await uri.ToTryOptionAsync()
-                 .Bind(u => _configurationRepository.GetCrawlRequest(uri)).Match(r => r.Map(uri, correlationId, cId), () => 
-                 CreateGenericCrawlRequest(uri, correlationId, cId), ex => throw ex);
+                    .Bind(u => _configurationRepository.GetCrawlRequest(uri))
+                    .Match(
+                        r => r.Map(uri, correlationId, cId, isAdhoc: false),
+                        () => CreateGenericCrawlRequest(uri, correlationId, cId),
+                        ex => throw ex
+                    );
             };
         }
 
         public TryOptionAsync<CrawlRequestModel> GetCollectorCrawlRequest(Option<string> uri)
         {
-            return uri.ToTryOptionAsync().Bind((Func<string, TryOptionAsync<CrawlRequestModel>>)(u => async () =>
-           {
-               return await _configurationRepository.GetCollectorCrawlRequest(uri).Match(r => 
-               {
-                    r.ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly;
-                    return r;
-
-               },
-               CreateDefaultCollectorRequest(u));
-           }));
+            return uri.ToTryOptionAsync()
+                .Bind(
+                    (Func<string, TryOptionAsync<CrawlRequestModel>>)(
+                        u =>
+                            async () =>
+                            {
+                                return await _configurationRepository
+                                    .GetCollectorCrawlRequest(uri)
+                                    .Match(
+                                        r =>
+                                        {
+                                            r.ContinuationStrategyDefinition =
+                                                CrawlContinuationStrategy.TrackLinksOnly;
+                                            return r;
+                                        },
+                                        CreateDefaultCollectorRequest(u)
+                                    );
+                            }
+                    )
+                );
         }
 
         public TryOptionAsync<List<UriDataModel>> GetCollectorUri()
@@ -79,16 +104,29 @@ namespace Crawler.Configuration.Core
             return _schedulerRepository.GetCollectorUriData();
         }
 
-        public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)
+        public TryOptionAsync<DocumentPart> GetExpectedDocumentPart(
+            Option<string> uri,
+            Option<Guid> correlationId,
+            Option<Guid> crawlId
+        )
         {
             return CreateRequest(uri, correlationId, crawlId)
-            .Bind<CrawlRequest, DocumentPart>(r => async () => await Task.FromResult(r.RequestDocument.Bind(d => d.RequestDocumentPart)));
+                .Bind<CrawlRequest, DocumentPart>(r =>
+                    async () =>
+                        await Task.FromResult(r.RequestDocument.Bind(d => d.RequestDocumentPart))
+                );
         }
 
-        public TryOptionAsync<List<UiAction>> GetUiActions(Option<string> uri, Option<Guid> correlationId, Option<Guid> crawlId)
+        public TryOptionAsync<List<UiAction>> GetUiActions(
+            Option<string> uri,
+            Option<Guid> correlationId,
+            Option<Guid> crawlId
+        )
         {
             return CreateRequest(uri, correlationId, crawlId)
-            .Bind<CrawlRequest, List<UiAction>>(r => async () => await Task.FromResult(r.LoadPageRequest.Bind(p => p.UserActions)));
+                .Bind<CrawlRequest, List<UiAction>>(r =>
+                    async () => await Task.FromResult(r.LoadPageRequest.Bind(p => p.UserActions))
+                );
         }
 
         public TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData()
@@ -106,28 +144,49 @@ namespace Crawler.Configuration.Core
             return _schedulerRepository.GetPeriodicUriData();
         }
 
-        public TryOptionAsync<Unit> StoreDetectedUrls(Option<List<DocumentPartLink>> links, Option<Guid> guid)
+        public TryOptionAsync<Unit> StoreDetectedUrls(
+            Option<List<DocumentPartLink>> links,
+            Option<Guid> guid
+        )
         {
-            return links.ToTryOptionAsync().Bind<List<DocumentPartLink>, Unit>(list => async () =>
-           {
-               list.ForEach(async link =>
-               {
-                   await _schedulerRepository
-                   .UriLinkExists(link.Uri)
-                   .MatchAsync(_ =>
-                       Task.CompletedTask,
-                       async () =>
-                       
-                       await _schedulerRepository.AddOrUpdate(new UriDataModel
-                       {
-                           UriTypeId = UriType.Found,
-                           Uri = link.Uri.Match(u => u, () => throw new Exception("Uri can't be empty")),
-                       })
-                       .Match(r => r, () => throw new Exception("Failed to add link to DB")), ex => throw ex);
-               });
+            return links
+                .ToTryOptionAsync()
+                .Bind<List<DocumentPartLink>, Unit>(list =>
+                    async () =>
+                    {
+                        list.ForEach(async link =>
+                        {
+                            await _schedulerRepository
+                                .UriLinkExists(link.Uri)
+                                .MatchAsync(
+                                    _ => Task.CompletedTask,
+                                    async () =>
+                                        await _schedulerRepository
+                                            .AddOrUpdate(
+                                                new UriDataModel
+                                                {
+                                                    UriTypeId = UriType.Found,
+                                                    Uri = link.Uri.Match(
+                                                        u => u,
+                                                        () =>
+                                                            throw new Exception(
+                                                                "Uri can't be empty"
+                                                            )
+                                                    ),
+                                                }
+                                            )
+                                            .Match(
+                                                r => r,
+                                                () =>
+                                                    throw new Exception("Failed to add link to DB")
+                                            ),
+                                    ex => throw ex
+                                );
+                        });
 
-               return await Task.FromResult(Unit.Default);
-           });
+                        return await Task.FromResult(Unit.Default);
+                    }
+                );
         }
 
         public TryOptionAsync<Unit> UpdateCompletedTimeUtcNow(Guid id)
@@ -140,9 +199,11 @@ namespace Crawler.Configuration.Core
             return _schedulerRepository.UpdateScheduledTimeUtcNow(id);
         }
 
-
-
-        private CrawlRequest CreateGenericCrawlRequest(Option<string> uri, Guid correlationId, Guid crawlId)
+        private CrawlRequest CreateGenericCrawlRequest(
+            Option<string> uri,
+            Guid correlationId,
+            Guid crawlId
+        )
         {
             return new CrawlRequest()
             {
@@ -151,23 +212,33 @@ namespace Crawler.Configuration.Core
                     CorrelationId = correlationId,
                     Uri = uri,
                     UserActions = new List<UiAction>()
+                    {
+                        new() { Type = UiAction.ActionType.Wait, ActionData = "7" },
+                        new() { Type = UiAction.ActionType.Scroll, ActionData = "5" },
+                        new() { Type = UiAction.ActionType.Wait, ActionData = "1" },
+                        new() { Type = UiAction.ActionType.Scroll, ActionData = "5" },
+                        new() { Type = UiAction.ActionType.Scroll, ActionData = "5" },
+                    },
                 },
                 CorrelationCrawlId = correlationId,
                 RequestDocument = new Document
                 {
-                    RequestDocumentPart = new DocumentPartAutodetect(uri)
-                }
+                    RequestDocumentPart = new DocumentPartAutodetect(uri),
+                },
+                ContinuationStrategy = CrawlContinuationStrategy.All,
+                ShouldIndex = true,
+                ProvideRaw = true,
             };
         }
 
         private static CrawlRequestModel CreateDefaultCollectorRequest(string u)
         {
             return new CrawlRequestModel()
-                                {
-                                    Id = Guid.NewGuid(),
-                                    ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,
-                                    DocumentPartDefinition = new DocumentPartAutodetect(u)
-                                };
+            {
+                Id = Guid.NewGuid(),
+                ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,
+                DocumentPartDefinition = new DocumentPartAutodetect(u),
+            };
         }
     }
 }

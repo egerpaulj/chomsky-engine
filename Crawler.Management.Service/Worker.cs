@@ -1,84 +1,86 @@
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2024  Paul Eger
+
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
+
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
+
+//      You should have received a copy of the GNU General Public License
+//      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Crawler.Core.Management;
-using Crawler.Core.Requests;
-using Crawler.Core.Results;
-using Crawler.DataModel;
-using LanguageExt;
+using Crawler.RequestHandling.Core;
 using Microservice.Amqp;
-using Microservice.Exchange;
+using Microservice.Exchange.Bertrand;
+using Microservice.Mongodb.Repo;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Prometheus;
+using IMongRepositoryFactory = Microservice.Mongodb.Repo.IRepositoryFactory;
 
 namespace Crawler.Management.Service
 {
-    public class Worker : BackgroundService
+    public class Worker(
+        ILogger<Worker> logger,
+        IBertrandExchangeFactory bertrandExchangeFactory,
+        IAmqpBootstrapper amqpBootstrapper,
+        IMongRepositoryFactory mongodbFactory,
+        IConfiguration configuration
+    ) : BackgroundService
     {
-        private readonly ILogger<Worker> _logger;
-        private readonly IExchangeFactory _exchangeFactory;
-        private readonly IConfiguration _configuration;
-        private readonly IAmqpBootstrapper _amqpBootstrapper;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1,1);
-
-        public Worker(ILogger<Worker> logger, IExchangeFactory exchangeFactory, IConfiguration configuration, IAmqpBootstrapper amqpBootstrapper)
-        {
-            _logger = logger;
-            _exchangeFactory = exchangeFactory;
-            _configuration = configuration;
-            _amqpBootstrapper = amqpBootstrapper;
-        }
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var promServer = new MetricServer(7777);
             promServer.Start();
 
-            await _amqpBootstrapper.Bootstrap().Match(_ => {}, () => throw new Exception("bootstrap exception"), ex => throw ex);
+            await amqpBootstrapper
+                .Bootstrap()
+                .Match(_ => { }, () => throw new Exception("bootstrap exception"), ex => throw ex);
 
-            _logger.LogInformation("Starting Crawl Exchange at: {time}", DateTime.Now);
-            var exchange = await _exchangeFactory
-                .CreateMessageExchange<CrawlResponse, CrawlResponse>(
-                    Option<IConfiguration>.Some(_configuration),
-                    "CrawlerExchange")
-                .Match(r => r, () => throw new Exception("Empty result for Exchange"), ex => throw ex);
+            logger.LogInformation("Starting Crawl Exchange at: {time}", DateTime.Now);
+            var exchange = await bertrandExchangeFactory.CreateExchange(stoppingToken);
 
+            var stateStoreConfiguration = new DatabaseConfiguration(
+                "bertrand_exchange_crawler_state",
+                configuration
+            );
 
-            await exchange.Start()
+            var bertrandStateRepository = mongodbFactory.CreateRepository<BertrandStateDataModel>(
+                stateStoreConfiguration
+            );
+
+            await exchange
+                .Start()
                 .Match(
-                        r => r,
-                        () => throw new Exception("Failed to Start Exchange"),
-                        ex => throw ex);
+                    r => r,
+                    () => throw new Exception("Failed to Start Exchange"),
+                    ex => throw ex
+                );
 
-            _logger.LogInformation("Starting Uri Exchange at: {time}", DateTime.Now);
-            var uriExchange = await _exchangeFactory
-                .CreateMessageExchange<CrawlUri, CrawlUri>(
-                    Option<IConfiguration>.Some(_configuration),
-                    "UriExchange")
-                .Match(r => r, () => throw new Exception("Empty result for URI Exchange"), ex => throw ex);
-
-
-            await uriExchange.Start()
-                .Match(
-                        r => r,
-                        () => throw new Exception("Failed to Start URI Exchange"),
-                        ex => throw ex);
-            
             await _semaphore.WaitAsync();
             stoppingToken.Register(() => _semaphore.Release());
             await _semaphore.WaitAsync();
-            
-            await exchange.End()
-                .Match(
-                        r => r,
-                        () => throw new Exception("Failed to Stop Exchange"),
-                        ex => throw ex);
 
-            _logger.LogInformation("Crawler Exchange stopped");
+            await exchange
+                .End()
+                .Match(
+                    r => r,
+                    () => throw new Exception("Failed to Stop Exchange"),
+                    ex => throw ex
+                );
+
+            logger.LogInformation("Crawler Exchange stopped");
             promServer.Stop();
         }
     }

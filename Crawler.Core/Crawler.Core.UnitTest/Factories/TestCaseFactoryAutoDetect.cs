@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 
@@ -24,12 +24,18 @@ namespace Crawler.Core.UnitTest.Factories
             return System.IO.File.ReadAllText("Resources/broken.html");
         }
 
+        public static string GetEvaluateHtml()
+        {
+            return System.IO.File.ReadAllText("Resources/evaluate.html");
+        }
+
         public static TestCase<ExpectedArticle> CreateBrokenHtmlTestCase()
         {
             var xml = GetBrokenHtml();
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(@"https://something");
+            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(
+                @"https://something"
+            );
 
             return new TestCase<ExpectedArticle>()
             {
@@ -38,14 +44,16 @@ namespace Crawler.Core.UnitTest.Factories
                 ExpectedResult = new ExpectedArticle
                 {
                     Title = "The article header\n",
-                    Content = "Some test as title Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
-                }
+                    Content =
+                        "Some test as title Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
+                },
             };
         }
-        
+
         public static TestCase<ExpectedArticle> CreateArticleTestCase()
         {
-            var xml = @"<html>
+            var xml =
+                @"<html>
                             <header>
                                 <title>The article header</title>
                             </header>
@@ -91,8 +99,9 @@ namespace Crawler.Core.UnitTest.Factories
                             </body>
                         </html>";
 
-
-            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(@"https://something");
+            var request = DocumentPartTestHelper.CreateRequestDocumentAutoDetect(
+                @"https://something"
+            );
 
             return new TestCase<ExpectedArticle>()
             {
@@ -101,11 +110,18 @@ namespace Crawler.Core.UnitTest.Factories
                 ExpectedResult = new ExpectedArticle
                 {
                     Title = "The article header\n",
-                    Content = "Some test as title Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
-                    Links = new List<string>{@"https://something/firstLink", @"https://something/contentLink", @"https://somewhereelse/something", @"http://somethingelse/linkToSomewhere"},
+                    Content =
+                        "Some test as title Sub Title I am content of various things With differently styled Content including an image And some more content link to something link to somewhere else Header 1 Header 2 It could just be me row data 2 row 2: 1row 2: 2 row 3: 1row 3: 2 row 4: 1row 4: 2\n",
+                    Links = new List<string>
+                    {
+                        @"https://something/firstLink",
+                        @"https://something/contentLink",
+                        @"https://somewhereelse/something",
+                        @"http://somethingelse/linkToSomewhere",
+                    },
                     Table = TestCaseFactoryTable.CreateExpectedTable(),
-                    Images = new List<string>{@"https://something/pathToImage"}
-                }
+                    Images = new List<string> { @"https://something/pathToImage" },
+                },
             };
         }
     }

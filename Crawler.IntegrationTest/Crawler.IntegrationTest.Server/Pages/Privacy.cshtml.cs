@@ -17,8 +17,6 @@ namespace Crawler.IntegrationTest.Server.Pages
             _logger = logger;
         }
 
-        public void OnGet()
-        {
-        }
+        public void OnGet() { }
     }
 }

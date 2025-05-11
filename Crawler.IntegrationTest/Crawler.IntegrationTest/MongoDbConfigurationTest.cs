@@ -19,7 +19,6 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 
-
 namespace Crawler.IntegrationTest
 {
     [TestClass]
@@ -30,7 +29,8 @@ namespace Crawler.IntegrationTest
         public async Task CleanUp()
         {
             var repo = CreateRepository();
-            await repo.Delete( Builders<BsonDocument>.Filter.Empty).Match(r => r, () => throw new Exception("Delete failed"), ex => throw ex);
+            await repo.Delete(Builders<BsonDocument>.Filter.Empty)
+                .Match(r => r, () => throw new Exception("Delete failed"), ex => throw ex);
         }
 
         [TestMethod]
@@ -38,21 +38,23 @@ namespace Crawler.IntegrationTest
         public async Task ReadSelector()
         {
             var testee = CreateTestee();
-            await testee.AddOrUpdate(CreateRequest($"{TestHelper.TestUri}/whatever", isUrlCollector: false)).Match(r => r, () => throw new Exception("Failed to store"));
-            
-            var result = await testee.GetCrawlRequest("https://test.com/test")
-            .Match(r => r, () => throw new Exception("Empty result"), e => throw e);
+            await testee
+                .AddOrUpdate(CreateRequest($"{TestHelper.TestUri}/whatever", isUrlCollector: false))
+                .Match(r => r, () => throw new Exception("Failed to store"));
+
+            var result = await testee
+                .GetCrawlRequest("https://test.com/test")
+                .Match(r => r, () => throw new Exception("Empty result"), e => throw e);
 
             Assert.IsNotNull(result);
-
-        } 
+        }
 
         [TestMethod]
         [TestCategory("IntegrationTest")]
         public async Task UiActionTest()
         {
             var testee = CreateTestee();
-            
+
             var request = new CrawlRequestModel
             {
                 Id = Guid.Parse("56fbd8f0-5a25-43ca-ab76-b3b844f243c1"),
@@ -60,58 +62,73 @@ namespace Crawler.IntegrationTest
                 Host = "www.test.com",
                 ContinuationStrategyDefinition = CrawlContinuationStrategy.TrackLinksOnly,
                 IsUrlCollector = true,
-                UiActions = new List<UiAction>
-                {
-                    new UiAction
-                    {
-                        XPath= "//footer",
-                        Type = UiAction.ActionType.Scroll
-                    }
-                },
+                UiActions =
+                [
+                    new UiAction { XPath = "//footer", Type = UiAction.ActionType.Scroll },
+                ],
                 CollectablePattern = "^https://www\\.test\\.com\\D+$",
                 DocumentPartDefinition = new DocumentPartAutodetect("https://www.test.com"),
-                UrlSkipList = new List<string>
-                {
+                UrlSkipList =
+                [
                     "localhost",
                     "about:",
                     "about:neterror",
                     "#comments",
                     "page=with:block",
-                }
+                ],
             };
 
-            await testee.AddOrUpdate(request).Match(r => r, () => throw new Exception("Failed to store"));
+            await testee
+                .AddOrUpdate(request)
+                .Match(r => r, () => throw new Exception("Failed to store"));
 
-            var result = await testee.GetCollectorCrawlRequest("https://www.test.com").Match(r => r, () => throw new Exception("Failed to get"), ex => throw ex);
+            var result = await testee
+                .GetCollectorCrawlRequest("https://www.test.com")
+                .Match(r => r, () => throw new Exception("Failed to get"), ex => throw ex);
             Assert.AreEqual(request.Id, result.Id);
         }
-        
-        
+
         [TestMethod]
         [TestCategory("IntegrationTest")]
         public async Task GetConfigurationIntegrationTest()
         {
             var testee = CreateTestee();
 
-            await testee.AddOrUpdate(CreateRequest($"{TestHelper.TestUri}/whatever", isUrlCollector: false)).Match(r => r, () => throw new Exception("Failed to store"));
+            await testee
+                .AddOrUpdate(CreateRequest($"{TestHelper.TestUri}/whatever", isUrlCollector: false))
+                .Match(r => r, () => throw new Exception("Failed to store"));
 
-            var res = await testee.GetCrawlRequest($"{TestHelper.TestUri}/?q=somethingElse")
-            .Match(r => r, () => throw new System.Exception("Failed"), e => throw e);
+            var res = await testee
+                .GetCrawlRequest($"{TestHelper.TestUri}/?q=somethingElse")
+                .Match(r => r, () => throw new System.Exception("Failed"), e => throw e);
             System.Console.WriteLine(res.Id.ToString());
             Assert.IsNotNull(res);
             Assert.AreEqual("test.com", res.Host);
             Assert.AreEqual("*", res.Uri);
             Assert.AreEqual(false, res.ShouldDownloadContent);
             Assert.AreEqual(typeof(DocumentPartArticle), res.DocumentPartDefinition.GetType());
-            var xpath = res.DocumentPartDefinition.Selector.Match(s => s, () => throw new Exception("Missing selector")).Xpath.Match(x => x, () => throw new Exception("Missing xpath"));
+            var xpath = res
+                .DocumentPartDefinition.Selector.Match(
+                    s => s,
+                    () => throw new Exception("Missing selector")
+                )
+                .Xpath.Match(x => x, () => throw new Exception("Missing xpath"));
 
             Assert.AreEqual("somexpath", xpath);
 
-            var subparts = res.DocumentPartDefinition.SubParts.Match(p => p, () => throw new Exception("SUb parts empty"));
+            var subparts = res.DocumentPartDefinition.SubParts.Match(
+                p => p,
+                () => throw new Exception("SUb parts empty")
+            );
 
             Assert.AreEqual(1, subparts.Count);
             Assert.AreEqual(typeof(DocumentPartLink), subparts[0].GetType());
-            Assert.AreEqual("linkxpath", subparts[0].Selector.Bind(s => s.Xpath).Match(x => x, () => throw new Exception("Link xpath is empty")));
+            Assert.AreEqual(
+                "linkxpath",
+                subparts[0]
+                    .Selector.Bind(s => s.Xpath)
+                    .Match(x => x, () => throw new Exception("Link xpath is empty"))
+            );
 
             Assert.AreEqual(1, res.UiActions.Count);
         }
@@ -121,27 +138,32 @@ namespace Crawler.IntegrationTest
         public async Task DeleteTest()
         {
             var testee = CreateTestee();
-            await testee.DeleteAll(TestHelper.TestUri).Match(u => u, () => throw new Exception("Delete all failed"));
+            await testee
+                .DeleteAll(TestHelper.TestUri)
+                .Match(u => u, () => throw new Exception("Delete all failed"));
 
             await StoreConfigurationIntegrationTest();
-            await testee.DeleteAll(TestHelper.TestUri).Match(u => u, () => throw new Exception("Delete all failed"));
+            await testee
+                .DeleteAll(TestHelper.TestUri)
+                .Match(u => u, () => throw new Exception("Delete all failed"));
 
-            await testee.GetCrawlRequest($"{TestHelper.TestUri}/?q=somethingElse")
-            .Match(r => Assert.Fail(), () => { }, e => Assert.Fail(e.Message));
-
+            await testee
+                .GetCrawlRequest($"{TestHelper.TestUri}/?q=somethingElse")
+                .Match(r => Assert.Fail(), () => { }, e => Assert.Fail(e.Message));
         }
 
-        public async Task StoreConfigurationIntegrationTest()
+        public static async Task StoreConfigurationIntegrationTest()
         {
             var testee = CreateTestee();
             await DeleteAll();
-            var res = await testee.AddOrUpdate(CreateRequest("https://www.test.com"))
-            .Match(r => r, () => throw new System.Exception("Failed"), e => throw e);
+            var res = await testee
+                .AddOrUpdate(CreateRequest("https://www.test.com"))
+                .Match(r => r, () => throw new System.Exception("Failed"), e => throw e);
 
             Assert.IsNotNull(testee);
         }
 
-        public async Task DeleteAll()
+        public static async Task DeleteAll()
         {
             var testee = CreateTestee();
             await testee.DeleteAll(TestHelper.TestUri).Match(r => { }, () => { });
@@ -154,7 +176,12 @@ namespace Crawler.IntegrationTest
 
         private static MongoDbRepository<CrawlRequestModel> CreateRepository()
         {
-            return new MongoDbRepository<CrawlRequestModel>(TestHelper.GetConfiguration(), new MongoDbConfig(), new JsonConverterProvider());
+            var configuration = TestHelper.GetConfiguration();
+            return new MongoDbRepository<CrawlRequestModel>(
+                configuration,
+                new DatabaseConfiguration("crawl_request", "test"),
+                new JsonConverterProvider()
+            );
         }
 
         private static CrawlRequestModel CreateRequest(string uri, bool isUrlCollector = true)
@@ -162,60 +189,44 @@ namespace Crawler.IntegrationTest
             return new CrawlRequestModel
             {
                 CollectablePattern = "^https://www\\.test\\.com\\D+$",
-                UrlSkipList = new List<string>{"localhost", "about:", "about:neterror", "#comments", "page=with:block"},
+                UrlSkipList =
+                [
+                    "localhost",
+                    "about:",
+                    "about:neterror",
+                    "#comments",
+                    "page=with:block",
+                ],
                 IsUrlCollector = isUrlCollector,
                 Host = new Uri(uri).Host,
                 Uri = "*",
                 ContinuationStrategyDefinition = Core.Requests.CrawlContinuationStrategy.DomainOnly,
-                UiActions = new List<UiAction>
-                {
-                    new UiAction()
-                },
+                UiActions = [new UiAction()],
                 DocumentPartDefinition = new DocumentPartArticle(uri)
                 {
-                    Selector = new DocumentPartSelector()
-                        {
-                            Xpath = "somexpath"
-                        },
+                    Selector = new DocumentPartSelector() { Xpath = "somexpath" },
                     Title = new DocumentPartText(uri)
                     {
                         Selector = new DocumentPartSelector()
                         {
-                            Xpath = "//*[@data-gu-name='headline']"
-                        }
+                            Xpath = "//*[@data-gu-name='headline']",
+                        },
                     },
                     Content = new DocumentPartText(uri)
                     {
-                        Selector = new DocumentPartSelector()
-                        {
-                            Xpath = "//*[@id='maincontent']"
-                        },
-                        
+                        Selector = new DocumentPartSelector() { Xpath = "//*[@id='maincontent']" },
                     },
                     SubParts = new List<DocumentPart>()
                     {
                         // Select all images within content
-                        new DocumentPartLink (uri)
+                        new DocumentPartLink(uri)
                         {
                             Name = "Heading",
-                            Selector = new DocumentPartSelector
-                            {
-                                Xpath = "linkxpath"
-                            }
+                            Selector = new DocumentPartSelector { Xpath = "linkxpath" },
                         },
-                    }
-
-                }
+                    },
+                },
             };
         }
-
-        internal class MongoDbConfig : IDatabaseConfiguration
-        {
-            public string DatabaseName => "test";
-
-            public string CollectionName => "crawl_request";
-        }
-
-
     }
 }

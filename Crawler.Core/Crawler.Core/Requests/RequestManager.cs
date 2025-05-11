@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -30,8 +30,24 @@ namespace Crawler.Core.Requests
 
         private Dictionary<string, int> _recursionControl = new Dictionary<string, int>();
         private const int DownloadRecursionThreshold = 2000;
-        private const int MinThrottleValue = 8;
-        private const int MaxThrottleValue = 20;
+
+        // ToDo add to database configuration
+        private readonly Dictionary<string, int> minThrottleValues = new Dictionary<string, int>
+        {
+            { "www.londonstockexchange.com", 1 },
+            { "www.theguardian.com", 4 },
+        };
+
+        private readonly Dictionary<string, int> maxThrottleValues = new Dictionary<string, int>
+        {
+            { "www.londonstockexchange.com", 3 },
+            { "www.theguardian.com", 10 },
+        };
+
+        private const int MinThrottleValueDefault = 5;
+        private const int MaxThrottleValueDefault = 15;
+        private readonly int minThrottleValue;
+        private readonly int maxThrottleValue;
         private readonly ICache _cache;
         private readonly Random _random;
 
@@ -48,6 +64,20 @@ namespace Crawler.Core.Requests
             _cache = cache;
             _logger = logger;
             _host = host;
+
+            if (minThrottleValues.ContainsKey(host))
+            {
+                minThrottleValue = minThrottleValues[host];
+            }
+            else
+                minThrottleValue = MinThrottleValueDefault;
+
+            if (maxThrottleValues.ContainsKey(host))
+            {
+                maxThrottleValue = maxThrottleValues[host];
+            }
+            else
+                maxThrottleValue = MaxThrottleValueDefault;
         }
 
         private async Task ThrottleRequest()
@@ -63,7 +93,7 @@ namespace Crawler.Core.Requests
             var lastRequest = await _cache.GetLastRequestTime(_host).Match(d => d, DateTime.UtcNow);
             var now = DateTime.UtcNow;
 
-            var waitSeconds = _random.Next(MinThrottleValue, MaxThrottleValue);
+            var waitSeconds = _random.Next(minThrottleValue, maxThrottleValue);
 
             var timeSinceLastRequest = now - lastRequest;
 
@@ -75,10 +105,12 @@ namespace Crawler.Core.Requests
             if (waitSeconds <= 0)
                 return;
 
+            if (waitSeconds > maxThrottleValue)
+                waitSeconds = maxThrottleValue;
+
             _logger.LogInformation($"Throtting request for {waitSeconds}s: {_host}");
 
             await Task.Delay(waitSeconds * 1000);
-
         }
 
         public async Task ThrottleDownload()
@@ -88,18 +120,20 @@ namespace Crawler.Core.Requests
             {
                 var valueExists = _recursionControl.TryGetValue(_host, out var recursionCount);
                 if (valueExists && recursionCount > DownloadRecursionThreshold)
-                    throw new CrawlException("Download throttle, waited too long", ErrorType.ThrottleError);
+                    throw new CrawlException(
+                        "Download throttle, waited too long",
+                        ErrorType.ThrottleError
+                    );
 
                 // ToDo Potential Expoential backoff with a threshold would be better.....
                 _recursionControl.Add(_host, recursionCount + 1);
 
-                var waitSeconds = _random.Next(MinThrottleValue, MaxThrottleValue);
+                var waitSeconds = _random.Next(minThrottleValue, maxThrottleValue);
                 _logger.LogInformation($"Throtting download request for {waitSeconds}s: {_host}");
                 await Task.Delay(waitSeconds);
 
                 isDownloadActive = await _cache.IsActiveDownload(_host).Match(d => d, false);
             }
-
         }
 
         public TryOptionAsync<T> ThrottleRequest<T>(Func<TryOptionAsync<T>> action)
@@ -112,16 +146,45 @@ namespace Crawler.Core.Requests
                     await ThrottleRequest();
                     try
                     {
-                        return  await action().Match(res => res, () => throw new CrawlException("Request action failed (empty result)", ErrorType.PageLoadError), e => throw new CrawlException("Request action failed", ErrorType.PageLoadError, e));
+                        return await action()
+                            .Match(
+                                res => res,
+                                () =>
+                                    throw new CrawlException(
+                                        "Request action failed (empty result)",
+                                        ErrorType.PageLoadError
+                                    ),
+                                e =>
+                                    throw new CrawlException(
+                                        "Request action failed",
+                                        ErrorType.PageLoadError,
+                                        e
+                                    )
+                            );
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         _jitterTime = true;
                         throw;
                     }
                     finally
                     {
-                        await _cache.StoreLastRequest(_host).Match(u => u, () => throw new CrawlException($"Failed to store Uri in cache(empty result): {_host}", ErrorType.ThrottleError), e => throw new CrawlException($"Failed to store Uri in cache: {_host}", ErrorType.ThrottleError, e));
+                        await _cache
+                            .StoreLastRequest(_host)
+                            .Match(
+                                u => u,
+                                () =>
+                                    throw new CrawlException(
+                                        $"Failed to store Uri in cache(empty result): {_host}",
+                                        ErrorType.ThrottleError
+                                    ),
+                                e =>
+                                    throw new CrawlException(
+                                        $"Failed to store Uri in cache: {_host}",
+                                        ErrorType.ThrottleError,
+                                        e
+                                    )
+                            );
                     }
                 }
                 finally
@@ -129,7 +192,6 @@ namespace Crawler.Core.Requests
                     _requestSemaphore.Release();
                 }
             };
-
         }
 
         public TryOptionAsync<T> ThrottleDownload<T>(Func<TryOptionAsync<T>> action)
@@ -142,11 +204,40 @@ namespace Crawler.Core.Requests
                     await ThrottleDownload();
                     try
                     {
-                        return  await action().Match(res => res, () => throw new CrawlException("Download action failed (empty result)", ErrorType.FileDownloadError), e => throw new CrawlException("Request action failed", ErrorType.FileDownloadError, e));
+                        return await action()
+                            .Match(
+                                res => res,
+                                () =>
+                                    throw new CrawlException(
+                                        "Download action failed (empty result)",
+                                        ErrorType.FileDownloadError
+                                    ),
+                                e =>
+                                    throw new CrawlException(
+                                        "Request action failed",
+                                        ErrorType.FileDownloadError,
+                                        e
+                                    )
+                            );
                     }
                     finally
                     {
-                        await _cache.SetActiveDownload(_host, false).Match(u => u, () => throw new CrawlException($"Failed to Download Uri in cache (empty result): {_host}", ErrorType.ThrottleError), e => throw new CrawlException("Failed to store Download Uri in cache: {_host}", ErrorType.ThrottleError, e));
+                        await _cache
+                            .SetActiveDownload(_host, false)
+                            .Match(
+                                u => u,
+                                () =>
+                                    throw new CrawlException(
+                                        $"Failed to Download Uri in cache (empty result): {_host}",
+                                        ErrorType.ThrottleError
+                                    ),
+                                e =>
+                                    throw new CrawlException(
+                                        "Failed to store Download Uri in cache: {_host}",
+                                        ErrorType.ThrottleError,
+                                        e
+                                    )
+                            );
                     }
                 }
                 finally
@@ -154,7 +245,6 @@ namespace Crawler.Core.Requests
                     _downloadSemaphore.Release();
                 }
             };
-
         }
     }
 }

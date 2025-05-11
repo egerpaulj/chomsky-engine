@@ -9,7 +9,10 @@ namespace Microservice.Amqp.Rabbitmq.Test
 {
     public class TestHelper
     {
-        internal static Mock<IRabbitMqConnectionFactory> GetConnectionFactoryMock(out Mock<IConnection> connection, out Mock<IModel> model)
+        internal static Mock<IRabbitMqConnectionFactory> GetConnectionFactoryMock(
+            out Mock<IConnection> connection,
+            out Mock<IModel> model
+        )
         {
             var rabbitMqFactoryMock = new Mock<IRabbitMqConnectionFactory>();
 
@@ -20,7 +23,9 @@ namespace Microservice.Amqp.Rabbitmq.Test
             connectionFactoryMock.Setup(m => m.CreateConnection()).Returns(connection.Object);
             connection.Setup(m => m.CreateModel()).Returns(model.Object);
 
-            rabbitMqFactoryMock.Setup (m => m.CreateConnectionFactory(It.IsAny<RabbitmqConfig>())).Returns(connectionFactoryMock.Object);
+            rabbitMqFactoryMock
+                .Setup(m => m.CreateConnectionFactory(It.IsAny<RabbitmqConfig>()))
+                .Returns(connectionFactoryMock.Object);
 
             return rabbitMqFactoryMock;
         }

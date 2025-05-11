@@ -35,12 +35,11 @@ namespace Crawler.RequestManager.Grpc.Server
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app
-            .UseRouting()
-            .UseCustomSerilogRequestLogging()
-            .SetupMetrics()
-            .UseMiddleware<RequestDurationMetricsMiddlewear>()
-            .ConfigureGrpcService<RequestManagerService>();
+            app.UseRouting()
+                .UseCustomSerilogRequestLogging()
+                .SetupMetrics()
+                .UseMiddleware<RequestDurationMetricsMiddlewear>()
+                .ConfigureGrpcService<RequestManagerService>();
             //app.Conf
         }
     }

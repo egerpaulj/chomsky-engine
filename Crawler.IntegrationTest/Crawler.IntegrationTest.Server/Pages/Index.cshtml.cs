@@ -17,14 +17,11 @@ namespace Crawler.IntegrationTest.Server.Pages
             _logger = logger;
         }
 
-        public string Result{get;set;}
+        public string Result { get; set; }
 
-        public void OnGet()
-        {
+        public void OnGet() { }
 
-        }
-
-        public void OnPost()                
+        public void OnPost()
         {
             var input = Request.Form["input"];
             var radio = Request.Form["radioInput"];
@@ -32,12 +29,9 @@ namespace Crawler.IntegrationTest.Server.Pages
             var checkbox2 = Request.Form["checkbox2"];
             var dropdown = Request.Form["dropdown"];
 
-            
-
             Task.Delay(2000).Wait();
 
             Result = $"{input}-{radio}-{checkbox1}-{checkbox2}-{dropdown}";
-
         }
     }
 }

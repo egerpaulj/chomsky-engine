@@ -1,17 +1,17 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
@@ -29,13 +29,11 @@ namespace Crawler.Core.Parser.DocumentParts
     {
         public Option<string> Text { get; set; }
 
-        public DocumentPartText(Option<string> baseUri) : base (baseUri)
+        public DocumentPartText(Option<string> baseUri)
+            : base(baseUri)
         {
             DocPartType = DocumentPartType.Text;
-            Selector = new DocumentPartSelector()
-            {
-                Xpath = "//*"
-            };
+            Selector = new DocumentPartSelector() { Xpath = "//*" };
         }
 
         public override string ToString()
@@ -46,43 +44,49 @@ namespace Crawler.Core.Parser.DocumentParts
         protected override TryOptionAsync<Unit> ParseDocument(Option<HtmlDocument> document)
         {
             return GetNodes(document)
-                .Bind<IEnumerable<HtmlNode>, Unit>(
-                    nodes =>
+                .Bind<IEnumerable<HtmlNode>, Unit>(nodes =>
+                {
+                    return async () =>
                     {
-                        return async () =>
-                        {
-                            return await MonitorPerformance.MonitorAsync(async () => {
-
-                            var text = 
-                                nodes
-                                .Select(n =>
-                                {
-                                    return GetContent(n);
-                                })
-                                .Aggregate(new StringBuilder(),
-                                    (builder, val) => builder.AppendLine(val), b => b.ToString());
-
-                            if (!string.IsNullOrEmpty(text))
+                        return await MonitorPerformance.MonitorAsync(
+                            async () =>
                             {
-                                Text = text;
-                            }
-                            else
-                                AppendAnomaly(AnomalyType.MissingText, "Failed to find Text");
-                            
-                            return await Task.FromResult(Unit.Default);
+                                var text = nodes
+                                    .Select(n =>
+                                    {
+                                        return GetContent(n);
+                                    })
+                                    .Aggregate(
+                                        new StringBuilder(),
+                                        (builder, val) => builder.AppendLine(val),
+                                        b => b.ToString()
+                                    );
 
-                            }, "Document Part Text Parser");
-                        };
-                    });
+                                if (!string.IsNullOrEmpty(text))
+                                {
+                                    Text = text;
+                                }
+                                else
+                                    AppendAnomaly(AnomalyType.MissingText, "Failed to find Text");
+
+                                return await Task.FromResult(Unit.Default);
+                            },
+                            "Document Part Text Parser"
+                        );
+                    };
+                });
         }
 
-        private static string FocusWithoutWhitespaces(string s) => s
-        
-        ?.Split(Environment.NewLine)
-        .Where(s => !string.IsNullOrWhiteSpace(s))
-        .Aggregate(new StringBuilder(),
-                        (builder, val) => builder.Append($" {val.Trim()}"), b => b.ToString())
-        .Trim();
+        private static string FocusWithoutWhitespaces(string s) =>
+            s
+                ?.Split(Environment.NewLine)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Aggregate(
+                    new StringBuilder(),
+                    (builder, val) => builder.Append($" {val.Trim()}"),
+                    b => b.ToString()
+                )
+                .Trim();
 
         internal static string GetContent(HtmlNode n)
         {
@@ -90,7 +94,7 @@ namespace Crawler.Core.Parser.DocumentParts
             // ToDo => flag  if human readable results are needed => otherwise for data processing => it does not matter
             // ToDo Same for links and anchors
             // ToDo Poor man's paragraph detector => e.g. Large amounts of text followed by period => then Create a new paragraph
-            
+
             // if(n.Name == "table" || n.Name == "TABLE")
             // {
             //     DocumentPartTable documentPartTable = GetParsedDocumentPartTable(n);
@@ -105,7 +109,7 @@ namespace Crawler.Core.Parser.DocumentParts
             //         tableNode.InnerHtml = GetParsedDocumentPartTable(tableNode).GetTextualRepresentationOfTable();
             //     }
             // }
-            
+
             if (n.NodeType == HtmlNodeType.Element || n.NodeType == HtmlNodeType.Text)
             {
                 return FocusWithoutWhitespaces(n.InnerText);

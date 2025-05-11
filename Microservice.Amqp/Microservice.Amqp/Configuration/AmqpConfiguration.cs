@@ -1,17 +1,17 @@
-//      Microservice AMQP Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2021  Paul Eger                                                                                                                                                                     
-                                                                                                                                                                                                                   
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
-                                                                                                                                                                                                                   
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
-                                                                                                                                                                                                                   
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      Microservice AMQP Libraries for .Net C#
+//      Copyright (C) 2021  Paul Eger
+
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
+
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
+
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System.Collections.Generic;
@@ -41,10 +41,9 @@ namespace Microservice.Amqp.Configuration
         private List<AmqpContextConfiguration> LoadContexts()
         {
             var contexts = _configuration
-                                .GetSection(AmqpConfigurationRoot)
-                                .GetSection("Contexts")
-                                .GetChildren();
-
+                .GetSection(AmqpConfigurationRoot)
+                .GetSection("Contexts")
+                .GetChildren();
 
             var contextConfigurations = new List<AmqpContextConfiguration>();
 
@@ -68,15 +67,14 @@ namespace Microservice.Amqp.Configuration
             }
 
             return contextConfigurations;
-
         }
     }
 
     /// <summary>
-    /// Defines a particular application of AMQP. 
+    /// Defines a particular application of AMQP.
     ///
     /// Describes The AMQP system's representation/configuration
-    /// </summary>    
+    /// </summary>
     public class AmqpContextConfiguration
     {
         /// <summary>
@@ -88,17 +86,17 @@ namespace Microservice.Amqp.Configuration
         /// The AMQP Exchange name to publish messages.
         /// </summary>
         public string Exchange { get; set; }
-        
+
         /// <summary>
         ///  The AMQP Queue name to subscribe messages.
         /// </summary>
         public string QueueName { get; set; }
-        
+
         /// <summary>
         /// The AMQP RoutingKey helps the Exchange determine where/how to publish the message.
         /// </summary>
         public string RoutingKey { get; set; }
-        
+
         /// <summary>
         /// The number of times the message was retried
         /// </summary>
@@ -114,9 +112,10 @@ namespace Microservice.Amqp.Configuration
             if (
                 string.IsNullOrEmpty(Name)
                 || (string.IsNullOrEmpty(Exchange) && string.IsNullOrEmpty(QueueName))
-                )
-                throw new System.Exception("Empty Configuration Values are not allowed. Either the Exchange or QueueName is needed for AMQP");
+            )
+                throw new System.Exception(
+                    "Empty Configuration Values are not allowed. Either the Exchange or QueueName is needed for AMQP"
+                );
         }
-
     }
 }

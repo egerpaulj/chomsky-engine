@@ -20,27 +20,32 @@ namespace Crawler.RequestManager.Grpc.Server
         private IWebDriverService _webDriverService;
 
         public RequestManagerService(
-            ILogger<Rpc.RpcBase> logger, 
-            IGrpcMetrics metrics, 
-            IRequestManagerFactory requestManagerFactory, 
-            IWebDriverService webDriverService, 
-            IJsonConverterProvider jsonConverterProvider) 
-        : base(logger, metrics, jsonConverterProvider)
+            ILogger<Rpc.RpcBase> logger,
+            IGrpcMetrics metrics,
+            IRequestManagerFactory requestManagerFactory,
+            IWebDriverService webDriverService,
+            IJsonConverterProvider jsonConverterProvider
+        )
+            : base(logger, metrics, jsonConverterProvider)
         {
             _webDriverService = webDriverService;
             _requestManagerFactory = requestManagerFactory;
         }
-        
+
         protected override TryOptionAsync<DriverResponse> Execute(Option<DriverRequest> request)
         {
             var dlRequest = request.Bind(r => r.DownloadRequest);
             var pageLoadRequest = request.Bind(r => r.LoadPageRequest);
 
             if (pageLoadRequest.IsSome)
-                return pageLoadRequest.ToTryOptionAsync().Bind<LoadPageRequest, DriverResponse>(r => LoadPage(r));
+                return pageLoadRequest
+                    .ToTryOptionAsync()
+                    .Bind<LoadPageRequest, DriverResponse>(r => LoadPage(r));
 
             if (dlRequest.IsSome)
-                return dlRequest.ToTryOptionAsync().Bind<DownloadRequest, DriverResponse>(r => Download(r));
+                return dlRequest
+                    .ToTryOptionAsync()
+                    .Bind<DownloadRequest, DriverResponse>(r => Download(r));
 
             throw new Exception("Load Page and Download Page requests are empty");
         }
@@ -49,18 +54,33 @@ namespace Crawler.RequestManager.Grpc.Server
         {
             var requestManager = _requestManagerFactory.GetRequestManager(request.Uri);
 
-            return requestManager.ThrottleRequest(() => _webDriverService.LoadPage(request))
-                    .Bind<string, DriverResponse>(r => async () => { return await Task.FromResult(new DriverResponse { LoadPageRequest = r }); });
+            return requestManager
+                .ThrottleRequest(() => _webDriverService.LoadPage(request))
+                .Bind<string, DriverResponse>(r =>
+                    async () =>
+                    {
+                        return await Task.FromResult(new DriverResponse { LoadPageRequest = r });
+                    }
+                );
         }
 
         private TryOptionAsync<DriverResponse> Download(DownloadRequest request)
         {
             var requestManager = _requestManagerFactory.GetRequestManager(request.Uri);
 
-            return requestManager.ThrottleDownload(() => _webDriverService.Download(request)
-                   .Bind<FileData, DriverResponse>(r => async () => { return await Task.FromResult(new DriverResponse { DownloadRequest = r }); }));
+            return requestManager.ThrottleDownload(
+                () =>
+                    _webDriverService
+                        .Download(request)
+                        .Bind<FileData, DriverResponse>(r =>
+                            async () =>
+                            {
+                                return await Task.FromResult(
+                                    new DriverResponse { DownloadRequest = r }
+                                );
+                            }
+                        )
+            );
         }
-
-
     }
 }
