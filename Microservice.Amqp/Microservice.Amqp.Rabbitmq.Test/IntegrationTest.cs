@@ -391,7 +391,7 @@ namespace Amqp.IntegrationTest
         public async Task DeclareQueueTwiceThenDoesNotFail()
         {
             await _amqpBootstrapper
-                .CreateQueue("test_multiple_queue_creation", "crawler", "custom_host")
+                .CreateQueue("test_multiple_queue_creation", "int_test", "custom_host")
                 .Match(
                     _ => _,
                     () => throw new Exception("Failed to create a new Q"),
@@ -400,6 +400,13 @@ namespace Amqp.IntegrationTest
 
             await _amqpBootstrapper
                 .CreateQueue("test_multiple_queue_creation", "crawler", "custom_host")
+                .Match(
+                    _ => _,
+                    () => throw new Exception("Failed to create a new Q"),
+                    ex => throw ex
+                );
+            await _amqpBootstrapper
+                .CreateQueue("test_multiple_queue_creation 2", "crawler", "custom_host")
                 .Match(
                     _ => _,
                     () => throw new Exception("Failed to create a new Q"),

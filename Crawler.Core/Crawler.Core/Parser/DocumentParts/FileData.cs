@@ -19,7 +19,8 @@ namespace Crawler.Core.Parser.DocumentParts
 {
     public class FileData
     {
-        public Option<string> Data { get; set; }
+        public Option<string> DataStr { get; set; }
+        public Option<string> DataBytes { get; set; }
         public Option<string> Name { get; set; }
         public Option<string> Uri { get; set; }
         public Option<string> Error { get; set; }

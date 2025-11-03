@@ -122,11 +122,11 @@ namespace Microservice.Exchange.Endpoints.Mongodb
         }
     }
 
-    public class MongoDbPublisher<T>(string name, IMongoDbRepository<T> repository) : IPublisher<T>
+    public class MongoDbPublisher<T>(string name, IMongoDbAddOrUpdate<T> repository) : IPublisher<T>
         where T : IDataModel
     {
         public string Name { get; } = name;
-        public IMongoDbRepository<T> repository = repository;
+        public IMongoDbAddOrUpdate<T> repository = repository;
 
         public TryOptionAsync<Unit> Publish(Option<Message<T>> message)
         {

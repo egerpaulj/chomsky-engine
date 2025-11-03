@@ -24,13 +24,22 @@ using MongoDB.Driver;
 
 namespace Microservice.Mongodb.Repo
 {
-    public interface IMongoDbRepository<T>
+    public interface IMongoDbAddOrUpdate<T>
         where T : IDataModel
     {
         /// <summary>
         /// Add or update a document in MongoDb. Document T is Serialized to JSON and added/updated in MongoDb.
         /// </summary>
         TryOptionAsync<Guid> AddOrUpdate(Option<T> document);
+    }
+
+    public interface IMongoDbRepository<T> : IMongoDbAddOrUpdate<T>
+        where T : IDataModel
+    {
+        /// <summary>
+        /// Creates the collection if missing.
+        /// </summary>
+        TryOptionAsync<Unit> EnsureCollectionExists();
 
         /// <summary>
         /// Get a Document T from MongoDb with Guid id.

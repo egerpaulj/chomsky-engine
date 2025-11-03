@@ -25,10 +25,8 @@ using LanguageExt;
 
 namespace Crawler.Core.Parser.DocumentParts
 {
-    public class DocumentPartMeta : DocumentPart
+    public class DocumentPartMeta : DocumentPartText
     {
-        public Option<string> Text { get; set; }
-
         public DocumentPartMeta(Option<string> baseUri)
             : base(baseUri)
         {

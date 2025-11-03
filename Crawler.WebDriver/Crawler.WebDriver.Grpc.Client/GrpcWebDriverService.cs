@@ -87,7 +87,10 @@ namespace Crawler.WebDriver.Grpc.Client
                 );
         }
 
-        public TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request)
+        public TryOptionAsync<string> LoadPage(
+            Option<LoadPageRequest> request,
+            bool isRetrying = false
+        )
         {
             var correlationId = request
                 .Bind(r => r.CorrelationId)

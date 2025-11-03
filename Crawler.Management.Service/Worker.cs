@@ -56,9 +56,10 @@ namespace Crawler.Management.Service
                 configuration
             );
 
-            var bertrandStateRepository = mongodbFactory.CreateRepository<BertrandStateDataModel>(
-                stateStoreConfiguration
-            );
+            var bertrandStateRepository =
+                mongodbFactory.CreateRepositoryAsync<BertrandStateDataModel>(
+                    stateStoreConfiguration
+                );
 
             await exchange
                 .Start()

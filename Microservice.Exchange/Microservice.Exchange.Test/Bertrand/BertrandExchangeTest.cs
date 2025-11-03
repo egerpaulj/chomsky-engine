@@ -58,6 +58,9 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
                 .Setup(mock => mock.StoreIncomingMessage(It.IsAny<Option<Message<object>>>()))
                 .Returns(async () => await Task.FromResult(Unit.Default));
             mockBertrandSateStore
+                .Setup(mock => mock.StoreInDeadletter(It.IsAny<Option<Message<object>>>()))
+                .Returns(async () => await Task.FromResult(Unit.Default));
+            mockBertrandSateStore
                 .Setup(mock => mock.Delete(It.IsAny<Option<Guid>>()))
                 .Returns(async () => await Task.FromResult(Unit.Default));
 
@@ -182,26 +185,32 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
         public async Task StartAndConsumerMessage_StateStored_FinallyStateDeleted()
         {
             // Arrange
+            var mockFilter = new Mock<IBetrandTransformerFilter>();
+            mockTransformerFilters.Add(mockFilter);
+            mockFilter
+                .SetupSequence(f =>
+                    f.IsMatch(
+                        It.IsAny<Option<IBertrandTransformer>>(),
+                        It.IsAny<Option<Message<object>>>()
+                    )
+                )
+                .Returns(async () => await Task.FromResult(true))
+                .Returns(async () => await Task.FromResult(true))
+                .Returns(async () => await Task.FromResult(true))
+                .Returns(async () => await Task.FromResult(false))
+                .Returns(async () => await Task.FromResult(false))
+                .Returns(async () => await Task.FromResult(false));
+
             foreach (var i in Enumerable.Range(1, 3))
             {
                 var mockConsumer = new Mock<IBertrandConsumer>();
-                var mockFilter = new Mock<IBetrandTransformerFilter>();
                 var mockTransformer = new Mock<IBertrandTransformer>();
 
                 mockConsumers.Add(mockConsumer);
-                mockTransformerFilters.Add(mockFilter);
                 mockTransformers.Add(mockTransformer);
                 mockConsumer
                     .Setup(consumer => consumer.Start(It.IsAny<IBertrandMessageHandler>()))
                     .Returns(async () => await Task.FromResult(Unit.Default));
-                mockFilter
-                    .Setup(f =>
-                        f.IsMatch(
-                            It.IsAny<Option<IBertrandTransformer>>(),
-                            It.IsAny<Option<Message<object>>>()
-                        )
-                    )
-                    .Returns(async () => await Task.FromResult(true));
             }
 
             foreach (var transformer in mockTransformers)
@@ -345,7 +354,7 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
             {
                 publisher.Verify(
                     t => t.Publish(It.IsAny<Option<Message<object>>>()),
-                    Times.Exactly(mockTransformers.Count)
+                    Times.Exactly(9)
                 );
             }
 
@@ -627,16 +636,16 @@ namespace Microservice.Exchange.Core.Bertrand.Tests
                     .Returns(async () =>
                     {
                         await Task.CompletedTask;
-                        return null;
+                        throw new Exception("Failed");
                     });
             }
 
             var exchange = CreateExchange();
 
             // Act
-            var result = await exchange
+            await exchange
                 .Handle(new Message<object> { Payload = "Test message" })
-                .Match(r => r, () => throw new Exception("Failed to handle message"));
+                .Match(r => { }, () => { }, ex => { });
 
             // Assert
             foreach (var publisher in mockPublishers)

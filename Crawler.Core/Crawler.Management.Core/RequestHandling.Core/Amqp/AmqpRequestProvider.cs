@@ -26,6 +26,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
 {
     public class AmqpRequestProvider : IRequestProvider, IDisposable
     {
+        internal const string LegacyRequestProviderContext = "Legacy";
         internal const string RequestProviderContext = "CrawlRequest";
         internal const string UriProviderContext = "CrawlUri";
 

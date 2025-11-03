@@ -14,6 +14,7 @@
 //      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Core.Metrics;
@@ -81,9 +82,29 @@ namespace Crawler.Core.Parser.DocumentParts
             return nodes
                 .Select(n =>
                 {
-                    if (n.Name.ToLower() == "img")
+                    if (n.Name.ToLower() == "object")
+                    {
+                        var uri = ResolveUri(BaseUri, n.Attributes["data"]?.Value);
+                        var part = new DocumentPartLink(BaseUri)
+                        {
+                            Text = DocumentPartText.GetContent(n),
+                            Uri = uri,
+                            IsParsedSubpart = true,
+                        };
+
+                        if (part.Uri.IsNone)
+                        {
+                            part.AppendAnomaly(
+                                AnomalyType.MissingFileLink,
+                                $"missing file uri in data in {n.InnerHtml}"
+                            );
+                        }
+                        return part;
+                    }
+                    if (n.Name.ToLower() == "img" || n.Name.ToLower() == "iframe")
                     {
                         var uri = ResolveUri(BaseUri, n.Attributes["src"]?.Value);
+
                         var part = new DocumentPartLink(BaseUri)
                         {
                             Text = DocumentPartText.GetContent(n),
@@ -103,6 +124,16 @@ namespace Crawler.Core.Parser.DocumentParts
                     }
 
                     var uriHref = ResolveUri(BaseUri, n.Attributes["href"]?.Value);
+
+                    if (
+                        uriHref.Match(
+                            r => string.IsNullOrEmpty(new FileInfo(r).Extension),
+                            () => false
+                        )
+                    )
+                    {
+                        return null;
+                    }
                     var partLink = new DocumentPartLink(BaseUri)
                     {
                         Text = DocumentPartText.GetContent(n),
@@ -120,6 +151,7 @@ namespace Crawler.Core.Parser.DocumentParts
 
                     return partLink;
                 })
+                .Where(o => o != null)
                 .Distinct(new DocumentPartLinkComparer())
                 .ToList();
         }

@@ -86,7 +86,10 @@ namespace Crawler.WebDriver.Selenium.Firefox
             return DownloadBytes(uri, correlationId).Bind(result => CreateFileData(result, uri));
         }
 
-        public TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request)
+        public TryOptionAsync<string> LoadPage(
+            Option<LoadPageRequest> request,
+            bool isRetrying = false
+        )
         {
             var requestEither = request.ToEitherAsync(
                 new PageLoadException(null, "Request is empty")
@@ -147,7 +150,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
                     {
                         Name = fileName,
                         Uri = uri,
-                        Data = binaryData,
+                        DataBytes = binaryData,
                     }
                 );
             };

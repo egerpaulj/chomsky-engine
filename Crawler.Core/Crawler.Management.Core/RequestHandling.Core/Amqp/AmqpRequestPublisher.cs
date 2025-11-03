@@ -15,10 +15,12 @@
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
+using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
@@ -30,12 +32,17 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
     public class AmqpRequestPublisher : IRequestPublisher
     {
         private readonly IMessagePublisher requestPublisher;
+        private readonly IMessagePublisher legacyRequestPublisher;
         private readonly IMessagePublisher uriPublisher;
         private readonly IAmqpProvider amqpProvider;
         private readonly IAmqpBootstrapper amqpBootstrapper;
-        private bool disposedValue;
+        private readonly IConfigurationRepository configurationRepository;
 
-        public AmqpRequestPublisher(IAmqpProvider amqpProvider, IAmqpBootstrapper amqpBootstrapper)
+        public AmqpRequestPublisher(
+            IAmqpProvider amqpProvider,
+            IAmqpBootstrapper amqpBootstrapper,
+            IConfigurationRepository configurationRepository
+        )
         {
             requestPublisher = amqpProvider
                 .GetPublisher(AmqpRequestProvider.RequestProviderContext)
@@ -48,6 +55,19 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
                     }
                 )
                 .Result;
+
+            legacyRequestPublisher = amqpProvider
+                .GetPublisher(AmqpRequestProvider.LegacyRequestProviderContext)
+                .Match(
+                    p => p,
+                    () => throw new System.Exception("Failed to get AMQP request publisher"),
+                    ex =>
+                    {
+                        throw ex;
+                    }
+                )
+                .Result;
+
             uriPublisher = amqpProvider
                 .GetPublisher(AmqpRequestProvider.UriProviderContext)
                 .Match(
@@ -61,6 +81,7 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
                 .Result;
             this.amqpProvider = amqpProvider;
             this.amqpBootstrapper = amqpBootstrapper;
+            this.configurationRepository = configurationRepository;
         }
 
         public TryOptionAsync<Unit> PublishRequest(Option<CrawlRequest> request)
@@ -77,37 +98,69 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
             }
             catch (Exception) { }
 
-            return PrepareForPublish(host, req)
-                .Bind(message => requestPublisher.Publish<CrawlRequest>(message));
+            return PrepareForPublish(host, uriStr, req)
+                .Bind(message => GetRequestPublisher(uriStr).Publish<CrawlRequest>(message));
+        }
+
+        private IMessagePublisher GetRequestPublisher(string uri) =>
+            IsLegacy(uri) ? legacyRequestPublisher : requestPublisher;
+
+        private bool IsLegacy(string uri) =>
+            uri.Contains("www.theguardian.com")
+            && !uri.Contains("2025")
+            && (
+                uri != "https://www.theguardian.com"
+                && !Regex.IsMatch(uri, @"^https://www\.theguardian\.com\D+$")
+            );
+
+        private TryOptionAsync<string> GetRoutingKey(
+            string host,
+            string uri,
+            CrawlRequest crawlRequest
+        )
+        {
+            return configurationRepository
+                .IsCollectable(uri)
+                .Bind<bool, string>(isCollectable =>
+                    async () =>
+                        await Task.FromResult(!isCollectable && IsLegacy(uri) ? "legacy" : host)
+                );
         }
 
         private TryOptionAsync<Message<CrawlRequest>> PrepareForPublish(
             string host,
+            string uri,
             CrawlRequest crawlRequest
         )
         {
-            return amqpProvider
-                .GetContext(AmqpRequestProvider.RequestProviderContext)
-                .ToTryOptionAsync()
-                .Bind<AmqpContextConfiguration, Message<CrawlRequest>>(c =>
-                    async () =>
-                    {
-                        await amqpBootstrapper
-                            .CreateQueue(host, c.Exchange, host)
-                            .Match(
-                                r => r,
-                                () => throw new Exception("Failed to create queue: " + host),
-                                ex => throw ex
-                            );
-                        return new Message<CrawlRequest>
-                        {
-                            Context = AmqpRequestProvider.RequestProviderContext,
-                            CorrelationId = crawlRequest.CorrelationCrawlId,
-                            Id = Guid.NewGuid(),
-                            RoutingKey = crawlRequest.IsAdhocRequest ? "request*" : host,
-                            Payload = crawlRequest,
-                        };
-                    }
+            return GetRoutingKey(host, uri, crawlRequest)
+                .Bind(routingKey =>
+                    amqpProvider
+                        .GetContext(AmqpRequestProvider.RequestProviderContext)
+                        .ToTryOptionAsync()
+                        .Bind<AmqpContextConfiguration, Message<CrawlRequest>>(c =>
+                            async () =>
+                            {
+                                await amqpBootstrapper
+                                    .CreateQueue(host, c.Exchange, host)
+                                    .Match(
+                                        r => r,
+                                        () =>
+                                            throw new Exception("Failed to create queue: " + host),
+                                        ex => throw ex
+                                    );
+                                return new Message<CrawlRequest>
+                                {
+                                    Context = AmqpRequestProvider.RequestProviderContext,
+                                    CorrelationId = crawlRequest.CorrelationCrawlId,
+                                    Id = Guid.NewGuid(),
+                                    RoutingKey = crawlRequest.IsAdhocRequest
+                                        ? "request*"
+                                        : routingKey,
+                                    Payload = crawlRequest,
+                                };
+                            }
+                        )
                 );
         }
 

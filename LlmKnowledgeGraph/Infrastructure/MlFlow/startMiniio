@@ -1,0 +1,2 @@
+docker run -d --rm --network development_network --hostname miniio --name miniio -v PATH_TO_YOUR_VOLUME:/data -p 9010:9000 -p 9011:9001 \
+  quay.io/minio/minio server /data --console-address ":9001"

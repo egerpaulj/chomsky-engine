@@ -29,7 +29,7 @@ namespace Microservice.Exchange.Test
                 .ToTryOptionAsync()
                 .Map(message =>
                 {
-                    return message.CopyData(
+                    return message.CopyDataInto(
                         new Message<TestEsOutputMessage>
                         {
                             Payload = new TestEsOutputMessage()

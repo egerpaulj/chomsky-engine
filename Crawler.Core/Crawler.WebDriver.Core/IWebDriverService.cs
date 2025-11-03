@@ -22,7 +22,7 @@ namespace Crawler.WebDriver.Core
 {
     public interface IWebDriverService
     {
-        TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request);
+        TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request, bool isRetrying = false);
         TryOptionAsync<FileData> Download(Option<DownloadRequest> Uri);
     }
 }

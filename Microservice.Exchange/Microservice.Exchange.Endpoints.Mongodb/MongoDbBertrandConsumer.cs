@@ -24,6 +24,7 @@ using Microservice.Mongodb.Repo;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ZstdSharp;
 
 namespace Microservice.Exchange.Endpoints.Mongodb;
 
@@ -43,9 +44,12 @@ public class MongoDbBertrandConsumer<T> : BertrandPollingConsumerBase
     )
         : base(name, loggerFactory.CreateLogger<MongoDbBertrandConsumer<T>>())
     {
-        var repository = repositoryFactory.CreateRepository<T>(databaseConfiguration);
-        var query = repository.GetMany(filters, limit, skip).Bind(Convert);
-        PollingConsumer = pollingConsumerFactory.Create(() => query, pollingIntervalMs);
+        var repository = repositoryFactory.CreateRepositoryAsync<T>(databaseConfiguration).Result;
+        var query = repository
+            .GetMany(filters, limit, skip)
+            .Bind(Convert)
+            .Match(r => r, () => throw new System.Exception("Error"));
+        PollingConsumer = pollingConsumerFactory.Create<object>(() => query, pollingIntervalMs);
     }
 
     protected override IPollingConsumer<object> PollingConsumer { get; }

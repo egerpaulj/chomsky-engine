@@ -34,10 +34,13 @@ namespace Crawler.DataModel
 
         public Option<string> Error { get; set; }
         public Option<string> Uri { get; set; }
+        public string UriText { get; set; }
 
         public Option<string> Raw { get; set; }
         public string Created { get; set; }
         public string Updated { get; set; }
+        public string DataPipelineUpdated { get; set; }
+
         public bool IsIndexed { get; set; }
     }
 

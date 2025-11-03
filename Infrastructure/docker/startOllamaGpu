@@ -1,0 +1,1 @@
+docker run -d --gpus=all --rm --network development_network --hostname ollama -v /home/user/docker/volumes/ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama

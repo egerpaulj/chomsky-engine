@@ -27,37 +27,40 @@ namespace Microservice.Exchange
         void IncError(string label);
     }
 
-    public class ExchangeMetrics : IExchangeMetrics
+    public class ExchangeMetrics(string exchangeName) : IExchangeMetrics
     {
         private readonly Counter _inputCounter = Prometheus.Metrics.CreateCounter(
             "data_input",
             "count of data input",
-            "context"
+            "context",
+            "exchange_name"
         );
         private readonly Counter _outputCounter = Prometheus.Metrics.CreateCounter(
             "data_output",
             "count of data input",
-            "context"
+            "context",
+            "exchange_name"
         );
         private readonly Counter _errorCounter = Prometheus.Metrics.CreateCounter(
             "data_error",
             "count of data input",
-            "context"
+            "context",
+            "exchange_name"
         );
 
         public void IncError(string label)
         {
-            _errorCounter.WithLabels(label).Inc();
+            _errorCounter.WithLabels(label, exchangeName).Inc();
         }
 
         public void IncInput(string label)
         {
-            _inputCounter.WithLabels(label).Inc();
+            _inputCounter.WithLabels(label, exchangeName).Inc();
         }
 
         public void IncOutput(string label)
         {
-            _outputCounter.WithLabels(label).Inc();
+            _outputCounter.WithLabels(label, exchangeName).Inc();
         }
     }
 }

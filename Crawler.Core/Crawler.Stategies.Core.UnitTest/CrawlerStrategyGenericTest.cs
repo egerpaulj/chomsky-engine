@@ -18,6 +18,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Core.Metrics;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Requests;
 using Crawler.Core.Strategy;
 using Crawler.Core.UnitTest;
@@ -51,7 +52,8 @@ namespace Crawler.Stategies.Core.UnitTest
 
             var testee = new CrawlerStrategyGeneric(
                 webDriverMock.Object,
-                metricRegisterMock.Object
+                metricRegisterMock.Object,
+                Mock.Of<IDataExtractor>()
             );
 
             var request = new Request(testee, null, crawlRequest);
@@ -309,7 +311,7 @@ namespace Crawler.Stategies.Core.UnitTest
         {
             var webDriverMock = new Mock<IWebDriverService>();
             webDriverMock
-                .Setup(m => m.LoadPage(It.IsAny<Option<LoadPageRequest>>()))
+                .Setup(m => m.LoadPage(It.IsAny<Option<LoadPageRequest>>(), It.IsAny<bool>()))
                 .Returns(async () => await Task.FromResult(xml));
 
             return webDriverMock;
@@ -335,7 +337,8 @@ namespace Crawler.Stategies.Core.UnitTest
             webDriverMock = CreateMockWebDriver(testcase.Xml);
             var testee = new CrawlerStrategyGeneric(
                 webDriverMock.Object,
-                Mock.Of<IMetricRegister>()
+                Mock.Of<IMetricRegister>(),
+                Mock.Of<IDataExtractor>()
             );
             return testee;
         }

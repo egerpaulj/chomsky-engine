@@ -40,7 +40,7 @@ namespace Microservice.Exchange.Endpoints.Rabbitmq
         private readonly IRabbitMqConnectionFactory _rabbitMqConnectionFactory;
         private readonly ILogger<RabbitMqPublisher<T, R>> _logger;
 
-        private MessagePublisher _publisher;
+        private IMessagePublisher _publisher;
         private AmqpContextConfiguration _contextConfiguration;
 
         public RabbitMqPublisher(

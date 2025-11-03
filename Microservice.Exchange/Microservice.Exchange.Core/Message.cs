@@ -48,7 +48,7 @@ namespace Microservice.Exchange
             );
         }
 
-        public Message<R> CopyData<R>(Message<R> message)
+        public Message<R> CopyDataInto<R>(Message<R> message)
         {
             message.Id = Id;
             message.RoutingKey = RoutingKey;

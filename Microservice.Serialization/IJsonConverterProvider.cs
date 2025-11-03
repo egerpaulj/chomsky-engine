@@ -94,6 +94,9 @@ namespace Microservice.Serialization
             if (type == typeof(Double))
                 return double.Parse(valueStr);
 
+            if (type == typeof(Guid))
+                return Guid.Parse(valueStr);
+
             return JsonConvert.DeserializeObject(valueStr, type, converter.GetJsonConverters());
         }
 

@@ -35,13 +35,13 @@ namespace Crawler.Core.Requests
         private readonly Dictionary<string, int> minThrottleValues = new Dictionary<string, int>
         {
             { "www.londonstockexchange.com", 1 },
-            { "www.theguardian.com", 4 },
+            { "www.theguardian.com", 3 },
         };
 
         private readonly Dictionary<string, int> maxThrottleValues = new Dictionary<string, int>
         {
             { "www.londonstockexchange.com", 3 },
-            { "www.theguardian.com", 10 },
+            { "www.theguardian.com", 7 },
         };
 
         private const int MinThrottleValueDefault = 5;
@@ -113,28 +113,28 @@ namespace Crawler.Core.Requests
             await Task.Delay(waitSeconds * 1000);
         }
 
-        public async Task ThrottleDownload()
-        {
-            var isDownloadActive = await _cache.IsActiveDownload(_host).Match(d => d, false);
-            while (isDownloadActive)
-            {
-                var valueExists = _recursionControl.TryGetValue(_host, out var recursionCount);
-                if (valueExists && recursionCount > DownloadRecursionThreshold)
-                    throw new CrawlException(
-                        "Download throttle, waited too long",
-                        ErrorType.ThrottleError
-                    );
+        // private async Task ThrottleLargeDownloadsDownload()
+        // {
+        //     var isDownloadActive = await _cache.IsActiveDownload(_host).Match(d => d, false);
+        //     while (isDownloadActive)
+        //     {
+        //         var valueExists = _recursionControl.TryGetValue(_host, out var recursionCount);
+        //         if (valueExists && recursionCount > DownloadRecursionThreshold)
+        //             throw new CrawlException(
+        //                 "Download throttle, waited too long",
+        //                 ErrorType.ThrottleError
+        //             );
 
-                // ToDo Potential Expoential backoff with a threshold would be better.....
-                _recursionControl.Add(_host, recursionCount + 1);
+        //         // ToDo Potential Expoential backoff with a threshold would be better.....
+        //         _recursionControl.Add(_host, recursionCount + 1);
 
-                var waitSeconds = _random.Next(minThrottleValue, maxThrottleValue);
-                _logger.LogInformation($"Throtting download request for {waitSeconds}s: {_host}");
-                await Task.Delay(waitSeconds);
+        //         var waitSeconds = _random.Next(minThrottleValue, maxThrottleValue);
+        //         _logger.LogInformation($"Throtting download request for {waitSeconds}s: {_host}");
+        //         await Task.Delay(waitSeconds);
 
-                isDownloadActive = await _cache.IsActiveDownload(_host).Match(d => d, false);
-            }
-        }
+        //         isDownloadActive = await _cache.IsActiveDownload(_host).Match(d => d, false);
+        //     }
+        // }
 
         public TryOptionAsync<T> ThrottleRequest<T>(Func<TryOptionAsync<T>> action)
         {
@@ -201,7 +201,7 @@ namespace Crawler.Core.Requests
                 await _downloadSemaphore.WaitAsync();
                 try
                 {
-                    await ThrottleDownload();
+                    await ThrottleRequest();
                     try
                     {
                         return await action()

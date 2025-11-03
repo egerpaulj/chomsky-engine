@@ -78,7 +78,9 @@ namespace Microservice.Exchange.Endpoints.Command
 
                         _pollingConsumer = new PollingConsumer<CommandData>(
                             _logger,
-                            () => RunCommand(_command, _workingDirectory, _arguments),
+                            () =>
+                                RunCommand(_command, _workingDirectory, _arguments)
+                                    .Match(r => r, () => []),
                             config.GetValue<int>(PollingConfiguration.IntervalInMsKey)
                         );
 

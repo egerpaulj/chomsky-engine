@@ -27,23 +27,41 @@ using Quartz;
 
 namespace Crawler.Scheduler.Core
 {
-    public class StockCollectionJob(
-        IConfigurationRepository configurationRepository,
-        IRequestPublisher requestPublisher,
-        ILogger<UriCollectionJob> logger
-    ) : IJob
+    public class StockCollectionJob : IJob
     {
+        public StockCollectionJob(
+            IConfigurationRepository configurationRepository,
+            IRequestPublisher requestPublisher,
+            ILogger<UriCollectionJob> logger
+        )
+        {
+            this.configurationRepository = configurationRepository;
+            this.requestPublisher = requestPublisher;
+            this.logger = logger;
+        }
+
         private static Counter counter = Metrics.CreateCounter(
             $"job_stock_collection",
             "stock uris",
             "context"
         );
+        private readonly IConfigurationRepository configurationRepository;
+        private readonly IRequestPublisher requestPublisher;
+        private readonly ILogger<UriCollectionJob> logger;
 
         public async Task Execute(IJobExecutionContext context)
         {
             logger.LogInformation($"Running Stock Collection job");
             await Schedule()
-                .Match(_ => { }, () => throw new Exception($"Failed to schedule stock collection"));
+                .Match(
+                    _ => { },
+                    () => throw new Exception($"Failed to schedule stock collection"),
+                    ex =>
+                    {
+                        logger.LogError(ex, "Stock collection job failed");
+                        throw ex;
+                    }
+                );
         }
 
         private TryOptionAsync<Unit> Schedule()
@@ -56,7 +74,7 @@ namespace Crawler.Scheduler.Core
                 {
                     var uri =
                         $"https://www.londonstockexchange.com/live-markets/market-data-dashboard/price-explorer?page={page}";
-                    Console.WriteLine($"Processing: {uri}");
+                    logger.LogInformation($"Processing: {uri}");
 
                     await configurationRepository
                         .GetCrawlRequest(uri)
@@ -70,7 +88,8 @@ namespace Crawler.Scheduler.Core
                                 )
                             )
                         )
-                        .Match(_ => { }, () => LogStockError(uri), ex => LogStockError(uri, ex));counter.WithLabels($"failed").Inc();
+                        .Match(_ => { }, () => LogStockError(uri), ex => LogStockError(uri, ex));
+                    counter.WithLabels($"failed").Inc();
 
                     counter.WithLabels($"published").Inc();
                 }

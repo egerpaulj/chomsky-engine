@@ -59,7 +59,7 @@ public class CrawlRequestTransformer<TIn, TOut>(
                     .Bind(mes => mes.Payload)
                     .Match(mes => mes, () => throw new System.Exception("Empty message"));
             var output = new Message<object>();
-            output = inputMessage.CopyData(output);
+            output = inputMessage.CopyDataInto(output);
             output.RoutingKey = routingKey;
 
             logger.LogInformation(

@@ -51,7 +51,7 @@ namespace Crawler.Scheduler.Service
                         services.AddTransient<IJsonConverterProvider, JsonConverterProvider>();
                         services.AddSingleton<IRequestPublisher, AmqpRequestPublisher>();
                         services.AddSingleton<IAmqpProvider, AmqpProvider>();
-                        services.AddTransient<IAmqpBootstrapper, AmqpBootstrapper>();
+                        services.AddSingleton<IAmqpBootstrapper, AmqpBootstrapper>();
                         services.AddTransient<
                             IRabbitMqConnectionFactory,
                             RabbitMqConnectionFactory
@@ -67,11 +67,11 @@ namespace Crawler.Scheduler.Service
                             hostContext.Configuration
                         );
 
-                        services.AddTransient<
+                        services.AddSingleton<
                             IConfigurationRepository,
                             MongoDbConfigurationRepository
                         >();
-                        services.AddTransient<
+                        services.AddSingleton<
                             IMongoDbRepository<CrawlRequestModel>,
                             MongoDbRepository<CrawlRequestModel>
                         >();

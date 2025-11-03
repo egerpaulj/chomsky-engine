@@ -225,9 +225,9 @@ namespace Crawler.Configuration.Core
                 {
                     RequestDocumentPart = new DocumentPartAutodetect(uri),
                 },
-                ContinuationStrategy = CrawlContinuationStrategy.All,
-                ShouldIndex = true,
-                ProvideRaw = true,
+                ContinuationStrategy = CrawlContinuationStrategy.TrackLinksOnly,
+                ShouldIndex = false,
+                ProvideRaw = false,
             };
         }
 

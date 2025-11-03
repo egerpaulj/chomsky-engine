@@ -7,6 +7,7 @@ using Crawler.Configuration.Core;
 using Crawler.Core;
 using Crawler.Core.Parser.DocumentParts;
 using Crawler.Core.Parser.DocumentParts.Serialilzation;
+using Crawler.Core.Results;
 using Crawler.Core.UserActions;
 using Crawler.DataModel;
 using LanguageExt;
@@ -83,7 +84,10 @@ namespace Crawler.Configuration.Repository
                         return await _mongoDocumentRepository
                             .Get(filter)
                             .Match(
-                                model => new Regex(model.CollectablePattern).IsMatch(u),
+                                model =>
+                                    !string.IsNullOrEmpty(model.CollectablePattern)
+                                        ? new Regex(model.CollectablePattern).IsMatch(u)
+                                        : false,
                                 () => false,
                                 ex => throw ex
                             );
@@ -100,6 +104,13 @@ namespace Crawler.Configuration.Repository
                     async (buri, filter) =>
                     {
                         var u = uri.Match(r => r, string.Empty);
+                        var notInWhiteList = !CrawlResponseData.WhiteList.Any(w =>
+                            u.ToLowerInvariant().StartsWith(w)
+                        );
+
+                        if (notInWhiteList)
+                            return true;
+
                         return await _mongoDocumentRepository
                             .Get(filter)
                             .Match(

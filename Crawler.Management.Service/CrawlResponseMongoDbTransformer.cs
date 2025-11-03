@@ -41,7 +41,7 @@ public class CrawlResponseMongoDbTransformer<TIn>(string name) : IBertrandTransf
                     .Match(mes => mes, () => throw new System.Exception("Empty message"));
 
             var output = new Message<object>();
-            output = inputMessage.CopyData(output);
+            output = inputMessage.CopyDataInto(output);
             output.RoutingKey = name;
 
             output.Payload = MapToMongodb(message);
@@ -59,6 +59,10 @@ public class CrawlResponseMongoDbTransformer<TIn>(string name) : IBertrandTransf
             Raw = response.Raw,
             Result = response.Result,
             Uri = response.Uri,
+            UriText = response.Uri.Match(
+                u => u,
+                () => throw new Exception("Empty uri is not allowed")
+            ),
             IsIndexed = response.ShouldIndex,
         };
     }

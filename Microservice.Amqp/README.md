@@ -58,7 +58,7 @@ Amqp": {
       "Rabbitmq" : {
         "Host": "localhost",
         "VirtHost": "/",
-        "Port": "5671",
+        "Port": "5672",
         "Username": "guest",
         "Password": "guest"
       }

@@ -59,6 +59,21 @@ namespace Microservice.Mongodb.Repo
             _jsonConverterProvider = jsonConverterProvider;
         }
 
+        public TryOptionAsync<Unit> EnsureCollectionExists()
+        {
+            return async () =>
+            {
+                var collections = await Database.ListCollectionNamesAsync();
+
+                if (!collections.ToList().Any(c => c == _collectionName))
+                {
+                    await Database.CreateCollectionAsync(_collectionName);
+                }
+
+                return Unit.Default;
+            };
+        }
+
         public TryOptionAsync<Guid> AddOrUpdate(Option<T> document)
         {
             return document.ToTryOptionAsync().Bind(model => AddOrUpdate(model));

@@ -18,6 +18,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
+using Crawler.Core.Requests;
+using Crawler.Core.Results;
 using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
@@ -76,15 +78,61 @@ namespace Crawler.Scheduler.Core
                         .Select(crawlUri =>
                             _schedulerRepository
                                 .GetUriData(crawlUri.UriId)
-                                .Bind(uriData =>
-                                    _crawlerConfiguration.CreateRequest(
-                                        uriData.Uri,
-                                        correlationId: Guid.NewGuid(),
-                                        crawlUri.Id
-                                    )
+                                .Bind<UriDataModel, Tuple<UriDataModel, CrawlRequest>>(uriData =>
+                                    async () =>
+                                    {
+                                        var request = await _crawlerConfiguration
+                                            .CreateRequest(
+                                                uriData.Uri,
+                                                correlationId: Guid.NewGuid(),
+                                                crawlUri.Id
+                                            )
+                                            .Match(
+                                                r => r,
+                                                () =>
+                                                    throw new Exception(
+                                                        "Empty uri data is not allowed: {crawlUri.UriId}"
+                                                    ),
+                                                ex => throw ex
+                                            );
+                                        return new Tuple<UriDataModel, CrawlRequest>(
+                                            uriData,
+                                            request
+                                        );
+                                    }
                                 )
-                                .Bind(request =>
+                                .BindAsync(async tupleResponse =>
                                 {
+                                    var uriData = tupleResponse.Item1;
+                                    var request = tupleResponse.Item2;
+                                    var uri = request
+                                        .LoadPageRequest.Bind(r => r.Uri)
+                                        .Match(r => r, () => string.Empty);
+
+                                    if (
+                                        !CrawlResponseData.WhiteList.Any(w =>
+                                            uri.ToLowerInvariant().StartsWith(w)
+                                        )
+                                    )
+                                    {
+                                        _logger.LogInformation(
+                                            $"Skip Scheduling. Uri not in whitelist. Uri: {uri}"
+                                        );
+
+                                        uriData.IsCompleted = true;
+                                        uriData.IsSkipped = true;
+
+                                        await _schedulerRepository
+                                            .AddOrUpdate(uriData)
+                                            .Match(
+                                                r => r,
+                                                () => throw new Exception("Failed to update model"),
+                                                ex => throw ex
+                                            );
+
+                                        return async () => await Task.FromResult(Unit.Default);
+                                    }
+
                                     _logger.LogInformation(
                                         $"Scheduling crawl. RequestId: {request.Id}, Uri: {crawlUri.UriId}"
                                     );

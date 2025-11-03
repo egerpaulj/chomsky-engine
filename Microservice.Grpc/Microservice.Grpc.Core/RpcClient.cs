@@ -59,7 +59,14 @@ namespace Microservice.Grpc.Core
             {
                 try
                 {
-                    using var channel = GrpcChannel.ForAddress(serverAddress);
+                    using var channel = GrpcChannel.ForAddress(
+                        serverAddress,
+                        new GrpcChannelOptions
+                        {
+                            MaxSendMessageSize = null,
+                            MaxReceiveMessageSize = null,
+                        }
+                    );
                     var client = new RpcClient(channel);
 
                     _metrics.IncSent(_name);

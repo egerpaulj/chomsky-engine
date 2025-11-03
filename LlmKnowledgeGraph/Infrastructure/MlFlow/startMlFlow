@@ -1,0 +1,22 @@
+#Create the database
+# See mlflow jupyter notebook
+
+docker run -d \
+  --name mlflow \
+  --rm \
+  -p 5050:5000 \
+  --network development_network \
+  -v PATH_TO_YOUR_VOLUME:/mlruns \
+  -e MLFLOW_BACKEND_STORE_URI="postgresql://postgres:postgres@postgres:5432/mlflow_db" \
+  -e MLFLOW_S3_ENDPOINT_URL="http://miniio:9000" \
+  -e AWS_ACCESS_KEY_ID="minioadmin" \
+  -e AWS_SECRET_ACCESS_KEY="minioadmin" \
+  -e MLFLOW_ARTIFACT_UPLOAD_DOWNLOAD_TIMEOUT=200 \
+  -e GUNICORN_CMD_ARGS=--timeout=60 \
+  mlflow:boto3 \
+  mlflow server \
+    --backend-store-uri "postgresql://postgres:postgres@postgres:5432/mlflow_db" \
+    --artifacts-destination s3://mlflow \
+    --host 0.0.0.0 \
+    --port 5000 \
+    --gunicorn-opts "--log-level debug"

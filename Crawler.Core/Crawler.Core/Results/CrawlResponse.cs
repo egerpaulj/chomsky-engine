@@ -20,6 +20,49 @@ using LanguageExt;
 
 namespace Crawler.Core.Results
 {
+    public class CrawlResponseData
+    {
+        public static IReadOnlyList<string> WhiteList =
+        [
+            "https://chomsky.info",
+            "http://chomsky.info",
+            "chomsky.info",
+            "https://www.amnesty.org",
+            "http://www.amnesty.org",
+            "www.amnesty.org",
+            "https://www.cdc.gov",
+            "http://www.cdc.gov",
+            "www.cdc.gov",
+            "https://www.theguardian.com",
+            "http://www.theguardian.com",
+            "www.theguardian.com",
+            "https://www.medialens.org",
+            "http://www.medialens.org",
+            "www.medialens.org",
+            "https://fair.org",
+            "http://fair.org",
+            "fair.org",
+            "https://www.undocs.org",
+            "https://undocs.org",
+            "http://undocs.org",
+            "http://www.undocs.org",
+            "www.undocs.org",
+            "undocs.org",
+            "https://main.un.org",
+            "http://main.un.org",
+            "main.un.org",
+            "https://press.un.org",
+            "http://press.un.org",
+            "press.un.org",
+            "https://docs.un.org",
+            "http://docs.un.org",
+            "https://www.docs.un.org",
+            "http://www.docs.un.org",
+            "www.docs.un.org",
+            "docs.un.org",
+        ];
+    }
+
     public class CrawlResponse
     {
         public Option<DateTime> Timestamp { get; set; }

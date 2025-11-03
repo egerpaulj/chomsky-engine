@@ -35,7 +35,9 @@ public class WorkerDeadletter(
         );
 
         var bertrandStateDeadletterRepository =
-            mongodbFactory.CreateRepository<BertrandStateDataModel>(deadletterStoreConfiguration);
+            await mongodbFactory.CreateRepositoryAsync<BertrandStateDataModel>(
+                deadletterStoreConfiguration
+            );
 
         do
         {

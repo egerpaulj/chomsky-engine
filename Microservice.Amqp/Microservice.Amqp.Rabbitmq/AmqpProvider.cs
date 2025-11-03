@@ -15,6 +15,7 @@
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,6 +33,8 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly AmqpConfiguration _amqpConfiguration;
         private readonly IJsonConverterProvider _converterProvider;
         private readonly IRabbitMqConnectionFactory _rabbitMqConnectionFactory;
+
+        private static ConcurrentDictionary<string, IMessagePublisher> publishers = new();
 
         public AmqpProvider(
             IConfiguration configuration,
@@ -63,13 +66,13 @@ namespace Microservice.Amqp.Rabbitmq
                                     _rabbitMqConnectionFactory
                                 );
 
-                                return await Task.FromResult(publisher);
+                                return Option<IMessagePublisher>.Some(publisher);
                             }
                     )
                 );
         }
 
-        public static MessagePublisher CreatePublisher(
+        public static IMessagePublisher CreatePublisher(
             string context,
             AmqpContextConfiguration amqpContext,
             RabbitmqConfig configuration,
@@ -78,10 +81,16 @@ namespace Microservice.Amqp.Rabbitmq
         )
         {
             var publisherConfig = CreatePublisherConfiguration(context, amqpContext, configuration);
-            return new MessagePublisher(
-                publisherConfig,
-                rabbitMqConnectionFactory,
-                converterProvider
+
+            var key =
+                $"{publisherConfig.Host}{publisherConfig.Exchange}{amqpContext.Exchange}{amqpContext.RoutingKey}";
+            return publishers.GetOrAdd(
+                key,
+                _ => new MessagePublisher(
+                    publisherConfig,
+                    rabbitMqConnectionFactory,
+                    converterProvider
+                )
             );
         }
 
@@ -95,6 +104,7 @@ namespace Microservice.Amqp.Rabbitmq
             {
                 Host = configuration.Host,
                 VirtHost = configuration.VirtHost,
+                Port = configuration.Port,
                 Username = configuration.Username,
                 Password = configuration.Password,
                 Exchange = amqpContext.Exchange,
@@ -215,6 +225,7 @@ namespace Microservice.Amqp.Rabbitmq
             {
                 Host = configuration.Host,
                 VirtHost = configuration.VirtHost,
+                Port = configuration.Port,
                 Username = configuration.Username,
                 Password = configuration.Password,
                 QueueName = queueName ?? amqpContext.QueueName,

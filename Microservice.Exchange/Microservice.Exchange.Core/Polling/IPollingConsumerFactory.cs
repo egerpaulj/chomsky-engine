@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using LanguageExt;
 using Microservice.DataModel.Core;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ namespace Microservice.Exchange.Core.Polling;
 
 public interface IPollingConsumerFactory
 {
-    IPollingConsumer<T> Create<T>(Func<TryOptionAsync<List<T>>> queryDataFunc, int intervalInMs);
+    IPollingConsumer<T> Create<T>(Func<Task<List<T>>> queryDataFunc, int intervalInMs);
 }
 
 public class PollingConsumerFactory(ILoggerFactory loggerFactory, string routingKey = "")
@@ -33,10 +34,7 @@ public class PollingConsumerFactory(ILoggerFactory loggerFactory, string routing
     readonly ILoggerFactory loggerFactory = loggerFactory;
     readonly string routingKey = routingKey;
 
-    public IPollingConsumer<T> Create<T>(
-        Func<TryOptionAsync<List<T>>> queryDataFunc,
-        int intervalInMs
-    )
+    public IPollingConsumer<T> Create<T>(Func<Task<List<T>>> queryDataFunc, int intervalInMs)
     {
         return new PollingConsumer<T>(
             loggerFactory.CreateLogger<IConsumer<T>>(),
