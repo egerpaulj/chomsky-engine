@@ -97,7 +97,14 @@ namespace Microservice.Exchange.Endpoints.Mongodb
 
                         _pollingConsumer = new PollingConsumer<T>(
                             _logger,
-                            () => _repository.GetMany(_filters),
+                            () =>
+                                _repository
+                                    .GetMany(_filters)
+                                    .Match(
+                                        r => r,
+                                        () => throw new Exception("Empty results"),
+                                        ex => throw ex
+                                    ),
                             config.GetValue<int>(PollingConfiguration.IntervalInMsKey)
                         );
 

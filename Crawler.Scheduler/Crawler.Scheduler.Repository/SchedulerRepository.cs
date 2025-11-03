@@ -181,7 +181,7 @@ namespace Crawler.Scheduler.Repository
             return async () =>
             {
                 var filter = Builders<BsonDocument>.Filter.Eq("UriTypeId", (int)UriType.Onetime);
-                filter &= (Builders<BsonDocument>.Filter.Eq("IsCompleted", false));
+                filter &= Builders<BsonDocument>.Filter.Eq("IsCompleted", false);
 
                 return await Task.FromResult(filter);
             };

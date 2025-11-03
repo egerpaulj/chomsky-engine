@@ -14,8 +14,11 @@
 //      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 using LanguageExt;
 using Microservice.Amqp.Configuration;
 using Microservice.Amqp.Rabbitmq.Configuration;
@@ -24,29 +27,46 @@ using RabbitMQ.Client;
 
 namespace Microservice.Amqp.Rabbitmq
 {
-    public class AmqpBootstrapper : IAmqpBootstrapper
+    public class AmqpBootstrapper : IAmqpBootstrapper, IDisposable
     {
         private readonly RabbitmqConfig _config;
         private readonly AmqpConfiguration _amqpConfiguration;
+
+        private IConnection connection;
+        private IModel channel;
+        private readonly ConcurrentBag<string> createdQueueNames = [];
+        private bool disposedValue;
+        private readonly ConnectionFactory connectionFactory;
 
         public AmqpBootstrapper(IConfiguration configuration)
         {
             _config = AmqpProvider.LoadRabbitmqConfiguration(configuration);
             _amqpConfiguration = new AmqpConfiguration(configuration);
+
+            connectionFactory = CreateChanellFactory();
+            ConnectToRabbitMq();
+        }
+
+        private void ConnectToRabbitMq()
+        {
+            connection = connectionFactory.CreateConnection();
+            channel = connection.CreateModel();
         }
 
         public TryOptionAsync<Unit> Bootstrap()
         {
             return async () =>
             {
-                var connectionFactory = CreateChanellFactory();
-
-                // Connect to RabbitMQ and Create Exchanges and Queues.
-                using (var connection = connectionFactory.CreateConnection())
-                using (var channel = connection.CreateModel())
+                try
                 {
+                    // Connect to RabbitMQ and Create Exchanges and Queues.
                     foreach (var context in _amqpConfiguration.AmqpContexts)
                     {
+                        if (createdQueueNames.Exists(s => s == context.QueueName))
+                            continue;
+
+                        createdQueueNames.Add(context.QueueName);
+
                         // Message in the Exchange will be directly sent to a Queue
                         channel.ExchangeDeclare(context.Exchange, "direct", true, false);
 
@@ -84,6 +104,13 @@ namespace Microservice.Amqp.Rabbitmq
                         }
                     }
                 }
+                catch
+                {
+                    channel.Dispose();
+                    connection.Dispose();
+
+                    ConnectToRabbitMq();
+                }
 
                 return await Task.FromResult(Unit.Default);
             };
@@ -117,12 +144,13 @@ namespace Microservice.Amqp.Rabbitmq
         {
             return async () =>
             {
-                ConnectionFactory connectionFactory = CreateChanellFactory();
-
-                // Connect to RabbitMQ and Create Exchanges and Queues.
-                using (var connection = connectionFactory.CreateConnection())
-                using (var channel = connection.CreateModel())
+                try
                 {
+                    if (createdQueueNames.Exists(s => s == queueName))
+                        return Unit.Default;
+
+                    createdQueueNames.Add(queueName);
+
                     // Create a Queue and link to the exchange. Specify all message with the respective Routing Key, to be sent to this Queue.
                     // Also ensure NACKed message are sent to the Deadletter exchange.
                     var queueResult = channel.QueueDeclare(
@@ -142,6 +170,13 @@ namespace Microservice.Amqp.Rabbitmq
                     channel.QueueBind($"{queueName}_dlq", $"{exchangeName}_dlq", routingKey);
                     channel.QueueBind(queueName, exchangeName, routingKey);
                 }
+                catch
+                {
+                    channel.Dispose();
+                    connection.Dispose();
+
+                    ConnectToRabbitMq();
+                }
 
                 return await Task.FromResult(Unit.Default);
             };
@@ -152,6 +187,7 @@ namespace Microservice.Amqp.Rabbitmq
             {
                 HostName = _config.Host,
                 VirtualHost = _config.VirtHost,
+                Port = _config.Port,
                 UserName = _config.Username,
                 Password = _config.Password,
             };
@@ -164,6 +200,7 @@ namespace Microservice.Amqp.Rabbitmq
                 {
                     HostName = _config.Host,
                     VirtualHost = _config.VirtHost,
+                    Port = _config.Port,
                     UserName = _config.Username,
                     Password = _config.Password,
                 };
@@ -186,6 +223,27 @@ namespace Microservice.Amqp.Rabbitmq
 
                 return await Task.FromResult(Unit.Default);
             };
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    channel.Dispose();
+                    connection.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

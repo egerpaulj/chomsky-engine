@@ -30,7 +30,7 @@ public class CommandBertranConsumer : BertrandPollingConsumerBase
             async () => await Task.FromResult(data.Select(d => d as object).ToList())
         );
         PollingConsumer = pollingConsumerFactory.Create<object>(
-            () => commandWithObjectResults,
+            () => commandWithObjectResults.Match(r => r, () => []),
             intervalMs
         );
     }

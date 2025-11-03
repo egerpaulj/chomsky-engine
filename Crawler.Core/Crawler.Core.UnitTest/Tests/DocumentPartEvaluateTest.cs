@@ -58,9 +58,6 @@ public class DocumentPartEvaluateTest
             CrawlerId = Guid.NewGuid(),
             CorrelationId = Guid.NewGuid(),
         };
-        var transformedStock = StockDataMongoDbTransformer<CrawlResponse>
-            .MapToMongodb(crawlResponse)
-            .ToList();
 
         Assert.IsNotNull(tables);
     }

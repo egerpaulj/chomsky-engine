@@ -20,6 +20,9 @@ using Crawler.Configuration.Core;
 using Crawler.Configuration.Repository;
 using Crawler.Core.Cache;
 using Crawler.Core.Metrics;
+using Crawler.Core.Parser.File;
+using Crawler.Data.Repository;
+using Crawler.Data.Uitilities;
 using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using Crawler.Management.Core.RequestHandling.Core.Amqp;
@@ -73,6 +76,11 @@ namespace Crawler.Management.Service
                             "crawl_request",
                             hostContext.Configuration
                         );
+
+                        services.AddSingleton<
+                            ICrawlerResponseShardedRepository,
+                            CrawlerResponseShardedRepository
+                        >();
                         services.AddSingleton<IDatabaseConfiguration>(databaseConfiguration);
                         services.AddSingleton<
                             IMongoDbRepository<CrawlRequestModel>,
@@ -89,8 +97,8 @@ namespace Crawler.Management.Service
                         >();
 
                         // Cache Data
-                        services.AddTransient<ICache, CrawlerCache>();
-                        services.AddTransient<ICacheProvider, RedisCacheProvider>();
+                        services.AddSingleton<ICache, CrawlerCache>();
+                        services.AddSingleton<ICacheProvider, RedisCacheProvider>();
                         services.AddTransient<IRedisConfiguration, RedisConfiguration>();
 
                         // Metrics for Prometheus
@@ -102,14 +110,15 @@ namespace Crawler.Management.Service
                         services.AddTransient<IGrpcMetrics, GrpcMetrics>();
 
                         // Crawl Strategies mapped using URI
+                        services.AddTransient<IDataExtractor, DataExtractor>();
                         services.AddTransient<ICrawlStrategyMapper, CrawlStrategiesMapper>();
-                        services.AddTransient<IRequestPublisher, AmqpRequestPublisher>();
+                        services.AddSingleton<IRequestPublisher, AmqpRequestPublisher>();
                         services.AddSingleton<IAmqpProvider, AmqpProvider>();
-                        services.AddTransient<
+                        services.AddSingleton<
                             IRabbitMqConnectionFactory,
                             RabbitMqConnectionFactory
                         >();
-                        services.AddTransient<IAmqpBootstrapper, AmqpBootstrapper>();
+                        services.AddSingleton<IAmqpBootstrapper, AmqpBootstrapper>();
 
                         // Bertrand exchange
                         services.AddTransient<IBertrandExchangeFactory, BertrandExchangeFactory>();

@@ -14,6 +14,7 @@
 //      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+using System;
 using LanguageExt;
 using Microservice.DataModel.Core;
 using Microservice.Elasticsearch.Repo;
@@ -38,12 +39,13 @@ public class ElasticsearchBertrandConsumer<T> : BertrandPollingConsumerBase
         : base(name, loggerFactory.CreateLogger<ElasticsearchBertrandConsumer<T>>())
     {
         var repository = repositoryFactory.CreateRepository();
-        var elasticSearchQuery = repository.Search<T>(index, query).Bind(Convert);
+        var elasticSearchQueryFunc = () =>
+            repository
+                .Search<T>(index, query)
+                .Bind(Convert)
+                .Match(r => r, () => throw new Exception("Empty message"), ex => throw ex);
 
-        PollingConsumer = pollingConsumerFactory.Create(
-            () => elasticSearchQuery,
-            pollingIntervalMs
-        );
+        PollingConsumer = pollingConsumerFactory.Create(elasticSearchQueryFunc, pollingIntervalMs);
     }
 
     protected override IPollingConsumer<object> PollingConsumer { get; }

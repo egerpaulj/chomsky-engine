@@ -32,10 +32,10 @@ namespace Crawler.Configuration.Server
                     options.SerializerSettings.Converters.Add(new BaseClassConverter())
                 );
 
-            services.AddTransient<ICrawlerConfigurationService, CrawlerConfigurationService>();
-            services.AddTransient<ISchedulerRepository, SchedulerRepository>();
-            services.AddTransient<IConfigurationRepository, MongoDbConfigurationRepository>();
-            services.AddTransient<
+            services.AddSingleton<ICrawlerConfigurationService, CrawlerConfigurationService>();
+            services.AddSingleton<ISchedulerRepository, SchedulerRepository>();
+            services.AddSingleton<IConfigurationRepository, MongoDbConfigurationRepository>();
+            services.AddSingleton<
                 IMongoDbRepository<CrawlRequestModel>,
                 MongoDbRepository<CrawlRequestModel>
             >();

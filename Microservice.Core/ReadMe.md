@@ -308,8 +308,8 @@ Once the certificate is generated, then it can be copied to the runtime folder/d
 
 E.g.
 ```
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
-COPY bin/Release/net8.0/publish/ App/
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+COPY bin/Release/net9.0/publish/ App/
 WORKDIR /App
 
 COPY certificate.pfx /opt/certs/certificate.pfx
@@ -332,7 +332,7 @@ Client containers, that communicate with the kestrel service; should trust the n
 
 E.g.
 ```
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 
 COPY certificate.pem /usr/local/share/ca-certificates/configurationservice.crt
 RUN update-ca-certificates

@@ -23,6 +23,7 @@ using Crawler.Core.Management;
 using Crawler.Core.Metrics;
 using Crawler.Core.Parser;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Requests;
 using Crawler.Core.Strategy;
 using Crawler.DataModel.Scheduler;
@@ -154,7 +155,8 @@ namespace Crawler.Strategies.General.UnitTest
             );
             var testee = new CrawlerStrategyGeneric(
                 _webDriverMock.Object,
-                Mock.Of<IMetricRegister>()
+                Mock.Of<IMetricRegister>(),
+                Mock.Of<IDataExtractor>()
             );
             var request = new Request(
                 testee,
@@ -177,6 +179,103 @@ namespace Crawler.Strategies.General.UnitTest
         }
 
         [TestMethod]
+        [Ignore]
+        public async Task Crawl_EvaluateStrategyTest2()
+        {
+            var testcase = await GetEvaluateTestCaseAsync();
+            _webDriverMock = CrawlerStrategyGenericTest.CreateMockWebDriver(testcase);
+            var uri = "https://www.continueTestCase";
+            // <a _ngcontent-ng-lseg-c96=\"\" class=\"page-number dots\" title=\"Go to page 6\" href=\"/live-markets/market-data-dashboard/price-explorer?page=6\">
+            var crawlRequest = new CrawlRequest()
+            {
+                LoadPageRequest = new LoadPageRequest { Uri = uri },
+                RequestDocument = new Document
+                {
+                    RequestDocumentPart = new DocumentPartArticle(uri)
+                    {
+                        Timestamp = new DocumentPartText(uri)
+                        {
+                            Selector = new DocumentPartSelector
+                            {
+                                Xpath = "//div[@class='fair_post_meta_data fair_list_date']",
+                            },
+                        },
+                        Title = new DocumentPartText(uri)
+                        {
+                            Selector = new DocumentPartSelector { Xpath = "//title" },
+                        },
+                        Content = new DocumentPartText(uri)
+                        {
+                            Selector = new DocumentPartSelector
+                            {
+                                Xpath = "//div[@class='entry-content']",
+                            },
+                        },
+                        SubParts = new List<DocumentPart>
+                        {
+                            new DocumentPartLink(uri)
+                            {
+                                Selector = new DocumentPartSelector { Xpath = "//a" },
+                            },
+                            new DocumentPartTable(uri),
+                        },
+                    },
+                    DownloadContent = false,
+                },
+            };
+
+            List<DocumentPartLink> publishedLinks = [];
+
+            _requestPublisherMock
+                .Setup(m =>
+                    m.PublishUri(
+                        It.IsAny<Option<string>>(),
+                        It.IsAny<Option<List<DocumentPartLink>>>(),
+                        It.IsAny<UriType>()
+                    )
+                )
+                .Callback<Option<string>, Option<List<DocumentPartLink>>, UriType>(
+                    (_, l, _) => publishedLinks = l.Match(r => r, () => [])
+                )
+                .Returns(Option<Unit>.Some(Unit.Default).ToTryOptionAsync());
+
+            // Arrange
+            _continuationStrategyTestee = new CrawlDomainOnlyContinuationStrategy(
+                Mock.Of<ILogger<ICrawlContinuationStrategy>>(),
+                _requestPublisherMock.Object
+            );
+            var testee = new CrawlerStrategyGeneric(
+                _webDriverMock.Object,
+                Mock.Of<IMetricRegister>(),
+                Mock.Of<IDataExtractor>()
+            );
+            var request = new Request(
+                testee,
+                Option<ICrawlContinuationStrategy>.Some(_continuationStrategyTestee),
+                crawlRequest
+            );
+            var noLinksStored = 0;
+
+            // ACT
+            var result = CrawlerStrategyGenericTest.StartCrawl(testee, request);
+
+            //ASSERT
+            var documentPart = CrawlerStrategyGenericTest.GetDocumentPart<DocumentPartArticle>(
+                result
+            );
+            var tables = documentPart.GetAllParts<DocumentPartTable>();
+            var article = documentPart.GetAllParts<DocumentPartArticle>().First();
+
+            article.Content.Match(t => t, () => throw new Exception(""));
+            article.Title.Match(t => t, () => throw new Exception(""));
+            article.Timestamp.Match(t => t, () => throw new Exception(""));
+
+            var links = documentPart.GetAllParts<DocumentPartLink>();
+            Console.WriteLine(documentPart.GetBriefSummary());
+            Assert.AreEqual(3, noLinksStored);
+        }
+
+        [TestMethod]
         public void Crawl_DomainLinks_ContinuationRequestPublished()
         {
             // Arrange
@@ -186,7 +285,8 @@ namespace Crawler.Strategies.General.UnitTest
             );
             var testee = new CrawlerStrategyGeneric(
                 _webDriverMock.Object,
-                Mock.Of<IMetricRegister>()
+                Mock.Of<IMetricRegister>(),
+                Mock.Of<IDataExtractor>()
             );
             var request = new Request(
                 testee,
@@ -227,7 +327,8 @@ namespace Crawler.Strategies.General.UnitTest
             );
             var testee = new CrawlerStrategyGeneric(
                 _webDriverMock.Object,
-                Mock.Of<IMetricRegister>()
+                Mock.Of<IMetricRegister>(),
+                Mock.Of<IDataExtractor>()
             );
             var request = new Request(
                 testee,

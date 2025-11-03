@@ -85,7 +85,7 @@ namespace Crawler.Stategies.Core
                     links.AddRange(fileLinks);
             }
 
-            return links;
+            return links.Where(l => l.Uri.IsSome);
         }
 
         protected virtual IEnumerable<DocumentPartLink> Filter(

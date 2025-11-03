@@ -1,0 +1,31 @@
+[project]
+name = "llm_ner_nel"
+version = "0.4.0"
+description = "Use an LLM to run inference, for NER (named entity recognition) and/or NEL (named entity linking). Build a knowledge graph. Evaluate results."
+readme = "readme.py.md"
+requires-python = ">=3.10.16"
+authors = [
+    {name = "Paul Eger"},
+]
+dependencies = [
+    "typing",  # For type hints
+    "py2neo",  # Neo4j graph database client
+    "pydantic",  # Data validation and settings management
+    "ollama",  # Ollama API client
+    "pika",  # AMQP client (for RabbitMQ)
+    "prometheus_client",  # Prometheus client for Python
+    "psutil",  # Process and system utilities
+    "pymongo",  # MongoDB driver
+    "mlflow",  # MLflow for managing machine learning experiments
+]
+
+[project.urls]
+homepage = "https://github.com/egerpaulj/LlmKnowledgeGraph"
+repository = "https://github.com/egerpaulj/LlmKnowledgeGraph.git"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["llm_ner_nel", "*"]
+
+
+

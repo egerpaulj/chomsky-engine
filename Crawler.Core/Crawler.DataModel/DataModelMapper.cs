@@ -77,6 +77,7 @@ namespace Crawler.DataModel
                 {
                     RequestDocumentPart = model.DocumentPartDefinition,
                     DownloadContent = model.ShouldDownloadContent,
+                    SkipList = model.UrlSkipList,
                 },
                 ProvideRaw = model.ShouldProvideRawSource,
                 CrawlId = crawlId,

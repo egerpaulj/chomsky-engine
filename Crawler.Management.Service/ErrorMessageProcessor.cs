@@ -47,9 +47,9 @@ public class ErrorMessageProcessor : IErrorMessageProcessor
             configuration
         );
 
-        _responseRepository = mongodbFactory.CreateRepository<CrawlResponseModel>(
-            databaseConfiguration
-        );
+        _responseRepository = mongodbFactory
+            .CreateRepositoryAsync<CrawlResponseModel>(databaseConfiguration)
+            .Result;
         this.logger = logger;
         this.jsonConverterProvider = jsonConverterProvider;
         this.requestPublisher = requestPublisher;

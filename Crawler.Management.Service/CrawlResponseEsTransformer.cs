@@ -15,6 +15,8 @@
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
+using System.Configuration;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +26,7 @@ using Crawler.DataModel;
 using LanguageExt;
 using Microservice.Exchange;
 using Microservice.Exchange.Core.Bertrand;
+using Microsoft.VisualBasic;
 
 public class CrawlResponseEsTransformer<TIn>(string name) : IBertrandTransformer
     where TIn : CrawlResponse
@@ -45,7 +48,7 @@ public class CrawlResponseEsTransformer<TIn>(string name) : IBertrandTransformer
             if (!message.ShouldIndex)
                 return output;
 
-            output = inputMessage.CopyData(output);
+            output = inputMessage.CopyDataInto(output);
             output.RoutingKey = name;
 
             output.Payload = MapToEs(message);
@@ -60,9 +63,11 @@ public class CrawlResponseEsTransformer<TIn>(string name) : IBertrandTransformer
             .Result.Bind(r => r.RequestDocumentPart)
             .Match(d => d, () => throw new Exception("Empty result"));
 
+        string fileData = GetFileDataStr(documentPart);
+
         if (documentPart is DocumentPartArticle article1)
         {
-            return CreateResponseModel(response, article1);
+            return CreateResponseModel(response, article1, fileData);
         }
 
         var article = documentPart.GetAllParts<DocumentPartArticle>().FirstOrDefault();
@@ -81,14 +86,37 @@ public class CrawlResponseEsTransformer<TIn>(string name) : IBertrandTransformer
             };
         }
 
-        return CreateResponseModel(response, article);
+        return CreateResponseModel(response, article, fileData);
+    }
+
+    private static string GetFileDataStr(DocumentPart documentPart)
+    {
+        var documentPartFiles = documentPart.GetAllParts<DocumentPartFile>();
+        var fileData = string.Empty;
+
+        if (documentPartFiles != null)
+        {
+            var dataStrings = documentPartFiles
+                .SelectMany(f => f.FileDataList)
+                .SelectMany(r => r)
+                .Where(f => f.DataStr.IsSome);
+
+            fileData = dataStrings.Aggregate(
+                new StringBuilder(),
+                (builder, val) => builder.AppendLine(val.DataStr.Match(r => r, () => string.Empty)),
+                b => b.ToString()
+            );
+        }
+
+        return fileData;
     }
 
     private const string DateStrFormat = "yyyy-MM-dd'T'HH:mm:ss.fff";
 
     private static CrawlEsResponseModel CreateResponseModel(
         CrawlResponse response,
-        DocumentPartArticle article
+        DocumentPartArticle article,
+        string fileData
     )
     {
         var title = article.Title.Bind(t => t.Text).Match(r => r, () => string.Empty);
@@ -97,10 +125,26 @@ public class CrawlResponseEsTransformer<TIn>(string name) : IBertrandTransformer
             () => throw new Exception("Empty content")
         );
         var content = GetText(contentDocPart);
+        content += $" {fileData}";
         var heading = GetText(article.GetAllParts("Heading").FirstOrDefault());
+        var now = DateTime.UtcNow.ToString(DateStrFormat);
+        var timestamp = article.Timestamp.Match(
+            t => (t as DocumentPartText)?.Text.Match(str => str, () => now) ?? now,
+            () => now
+        );
 
-        if (string.IsNullOrEmpty(content))
-            throw new Exception("Content empty - avoid indexing");
+        if (
+            DateTime.TryParseExact(
+                s: timestamp,
+                format: DateStrFormat,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var validTimestamp
+            )
+        )
+        {
+            now = validTimestamp.ToString(DateStrFormat);
+        }
 
         return new CrawlEsResponseModel
         {
@@ -110,10 +154,7 @@ public class CrawlResponseEsTransformer<TIn>(string name) : IBertrandTransformer
             CorrelationId = response.CorrelationId.Match(c => c.ToString(), () => string.Empty),
             CrawlerId = response.CrawlerId.Match(c => c.ToString(), () => string.Empty),
             Uri = response.Uri,
-            Timestamp = response.Timestamp.Match(
-                t => t.ToString(DateStrFormat),
-                () => DateTime.UtcNow.ToString(DateStrFormat)
-            ),
+            Timestamp = now,
         };
     }
 

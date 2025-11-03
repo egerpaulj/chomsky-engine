@@ -65,13 +65,7 @@ public abstract class BertrandPollingConsumerBase : IBertrandConsumer
                 },
                 async req =>
                 {
-                    await messageHandler
-                        .Handle(req)
-                        .Match(
-                            r => r,
-                            () => throw new Exception("Failed to process message"),
-                            ex => throw ex
-                        );
+                    await messageHandler.Handle(req).Match(r => { }, () => { }, ex => throw ex);
                     return Unit.Default;
                 }
             );

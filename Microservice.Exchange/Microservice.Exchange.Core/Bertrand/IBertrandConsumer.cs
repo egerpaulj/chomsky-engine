@@ -20,7 +20,7 @@ namespace Microservice.Exchange.Core.Bertrand;
 
 public interface IBertrandMessageHandler
 {
-    TryOptionAsync<object> Handle(Option<Message<object>> message);
+    TryOptionAsync<object> Handle(Option<Message<object>> message, bool withDeadletter = true);
 }
 
 /// <summary>

@@ -8,9 +8,11 @@ using Caching.Redis;
 using Crawler.Core.Cache;
 using Crawler.Core.Management;
 using Crawler.Core.Metrics;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
 using Crawler.Core.Strategy;
+using Crawler.DataModel;
 using Crawler.Management.Core.RequestHandling.Core.Amqp;
 using Crawler.Management.Core.RequestHandling.Core.FileBased;
 using Crawler.Microservice.Core;
@@ -144,6 +146,7 @@ namespace Crawler.IntegrationTest
             var crawlConfiguration = new CrawlerConfigurationGeneric(
                 webDriver,
                 metricRegister,
+                Mock.Of<IDataExtractor>(),
                 _loggerFactory.CreateLogger<CrawlerConfigurationGeneric>()
             );
 
@@ -158,6 +161,7 @@ namespace Crawler.IntegrationTest
                 _loggerFactory.CreateLogger<ICrawlContinuationStrategy>(),
                 testRepository,
                 webDriver,
+                Mock.Of<IDataExtractor>(),
                 metricRegister
             );
 
@@ -169,7 +173,11 @@ namespace Crawler.IntegrationTest
                 new RabbitMqConnectionFactory()
             );
 
-            _requestPublisher = new AmqpRequestPublisher(_amqpProvider, _amqpBootstrapper);
+            _requestPublisher = new AmqpRequestPublisher(
+                _amqpProvider,
+                _amqpBootstrapper,
+                Mock.Of<IConfigurationRepository>()
+            );
 
             _testee = new CrawlerManager(
                 _loggerFactory.CreateLogger<CrawlerManager>(),

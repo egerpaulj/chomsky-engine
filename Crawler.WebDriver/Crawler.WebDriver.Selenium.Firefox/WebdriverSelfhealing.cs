@@ -45,7 +45,7 @@ public class WebDriverSelfHealing : IWebDriverService
         return IsReady().Bind(_ => _webDriverFirefoxRobust.Download(uri));
     }
 
-    public TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request)
+    public TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request, bool isRetrying = false)
     {
         return IsReady().Bind(_ => _webDriverFirefoxRobust.LoadPage(request));
     }

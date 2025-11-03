@@ -16,6 +16,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Crawler.Data.Repository;
 using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using LanguageExt;
@@ -24,6 +25,7 @@ using Microservice.Exchange.Core.Bertrand;
 using Microservice.Mongodb.Repo;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using Prometheus;
 
@@ -33,7 +35,7 @@ public class UriTransformer<TIn>(
     ILogger<UriTransformer<TIn>> logger,
     ISchedulerRepository schedulerRepository,
     IConfigurationRepository configurationRepository,
-    IMongoDbRepository<CrawlResponseModel> responseRepository,
+    ICrawlerResponseShardedRepository responseRepository,
     string name,
     string routingKey
 ) : IBertrandTransformer
@@ -56,26 +58,35 @@ public class UriTransformer<TIn>(
                 input
                     .Bind(mes => mes.Payload)
                     .Match(mes => mes, () => throw new System.Exception("Empty message"));
-            var uri = crawlUri.Uri.Match(u => u, () => throw new Exception("Uri is empty"));
+            var uri = crawlUri.Uri.Match(u => u, () => string.Empty);
+
+            // Random bug on sites to force subsription logic
+            uri = uri.Replace(".com./", ".com/");
 
             logger.LogInformation($"Procesing Uri: {uri}: {crawlUri.UriTypeId}");
             _counter.WithLabels("processing").Inc();
 
             var output = new Message<object>();
-            output = inputMessage.CopyData(output);
+            output = inputMessage.CopyDataInto(output);
             output.RoutingKey = routingKey;
+
+            if (string.IsNullOrEmpty(uri))
+            {
+                logger.LogWarning(
+                    $"Empty uri was published. Correlation: {inputMessage.CorrelationId.Match(g => g, () => Guid.Empty)}, {crawlUri.UriTypeId}"
+                );
+                return output;
+            }
 
             var uriExists = await schedulerRepository
                 .UriLinkExists(uri.ToLowerInvariant())
                 .Match(r => r, () => false);
+            var hasResponse = await responseRepository.HasResponse(uri).Match(r => r, () => false);
 
-            if (
-                await responseRepository
-                    .Get(Builders<BsonDocument>.Filter.Eq("Uri", uri))
-                    .Match(r => true, () => false)
-            )
+            if (hasResponse)
             {
                 _counter.WithLabels("duplicate_uri_response_exist").Inc();
+
                 logger.LogInformation($"Duplicate Uri (response exists): {uri}");
                 output.RoutingKey = "response_exists_duplicate_uri";
             }

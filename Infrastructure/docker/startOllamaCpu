@@ -1,0 +1,1 @@
+docker run -d --rm -v /usr/share/ollama/.ollama:/root/.ollama -p 11434:11434 --network development_network --name ollama --hostname ollama  ollama/ollama

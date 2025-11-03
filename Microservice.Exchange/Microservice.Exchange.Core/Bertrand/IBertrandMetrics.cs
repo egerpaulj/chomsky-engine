@@ -25,46 +25,50 @@ public interface IBertrandMetrics
     void IncPublished(string key);
 }
 
-public class BertrandMetrics : IBertrandMetrics
+public class BertrandMetrics(string exchangeName) : IBertrandMetrics
 {
     private readonly Counter _incomingCounter = Prometheus.Metrics.CreateCounter(
-        "data_incoming",
-        "count of incoming messages",
-        "context"
+        name: "data_incoming",
+        help: "count of incoming messages",
+        "context",
+        "exchange_name"
     );
     private readonly Counter _transformerCounter = Prometheus.Metrics.CreateCounter(
-        "data_transformed",
-        "count of transormed messages",
-        "context"
+        name: "data_transformed",
+        help: "count of transormed messages",
+        "context",
+        "exchange_name"
     );
     private readonly Counter _publishedCounter = Prometheus.Metrics.CreateCounter(
-        "data_published",
-        "count of published messages",
-        "context"
+        name: "data_published",
+        help: "count of published messages",
+        "context",
+        "exchange_name"
     );
     private readonly Counter _errorCounter = Prometheus.Metrics.CreateCounter(
-        "errors",
-        "count of errors",
-        "context"
+        name: "errors",
+        help: "count of errors",
+        "context",
+        "exchange_name"
     );
 
     public void IncErrors(string key)
     {
-        _errorCounter.WithLabels(key).Inc();
+        _errorCounter.WithLabels(key, exchangeName).Inc();
     }
 
     public void IncIncoming(string key)
     {
-        _incomingCounter.WithLabels(key).Inc();
+        _incomingCounter.WithLabels(key, exchangeName).Inc();
     }
 
     public void IncPublished(string key)
     {
-        _publishedCounter.WithLabels(key).Inc();
+        _publishedCounter.WithLabels(key, exchangeName).Inc();
     }
 
     public void IncTransformed(string key)
     {
-        _transformerCounter.WithLabels(key).Inc();
+        _transformerCounter.WithLabels(key, exchangeName).Inc();
     }
 }

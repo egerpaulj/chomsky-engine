@@ -37,6 +37,7 @@ namespace Microservice.Exchange
         /// Creates an <see cref="IMessageExchange"/> based on the <see cref="IConfiguratonSection" />.
         /// </summar>
         TryOptionAsync<IMessageExchange<T, R>> CreateMessageExchange<T, R>(
+            Option<string> exchangeName,
             Option<IConfigurationSection> config
         );
 
@@ -64,24 +65,22 @@ namespace Microservice.Exchange
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ExchangeFactory> _logger;
         private readonly IJsonConverterProvider _jsonConverterProvider;
-        private readonly IExchangeMetrics _exchangeMetrics;
 
         public ExchangeFactory(
             ILoggerFactory loggerFactory,
             IJsonConverterProvider jsonConverterProvider,
-            IServiceProvider serviceProvider,
-            IExchangeMetrics exchangeMetrics
+            IServiceProvider serviceProvider
         )
         {
             _loggerFactory = loggerFactory;
             _jsonConverterProvider = jsonConverterProvider;
             _serviceProvider = serviceProvider;
-            _exchangeMetrics = exchangeMetrics;
 
             _logger = _loggerFactory.CreateLogger<ExchangeFactory>();
         }
 
         public TryOptionAsync<IMessageExchange<T, R>> CreateMessageExchange<T, R>(
+            Option<string> exchangeName,
             Option<IConfigurationSection> config
         )
         {
@@ -154,7 +153,12 @@ namespace Microservice.Exchange
                             deadletterPublisher,
                             filter,
                             _jsonConverterProvider,
-                            _exchangeMetrics,
+                            new ExchangeMetrics(
+                                exchangeName.Match(
+                                    n => n,
+                                    () => $"Exchange-{Guid.NewGuid().ToString()}"
+                                )
+                            ),
                             configuration.Key
                         );
                     }
@@ -170,12 +174,15 @@ namespace Microservice.Exchange
                 .ToTryOptionAsync()
                 .Bind(config =>
                 {
-                    var exchange = exchangeName.Match(
+                    var exchangeNameStr = exchangeName.Match(
                         ex => ex,
                         () => throw new ArgumentNullException("exchangeName")
                     );
-                    var exchangeConfig = config.GetSection("MessageExchanges").GetSection(exchange);
+                    var exchangeConfig = config
+                        .GetSection("MessageExchanges")
+                        .GetSection(exchangeNameStr);
                     return CreateMessageExchange<T, R>(
+                        exchangeNameStr,
                         Option<IConfigurationSection>.Some(exchangeConfig)
                     );
                 });

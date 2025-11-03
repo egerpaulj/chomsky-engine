@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+COPY bin/Release/net9.0/publish/ App/
+WORKDIR /App
+RUN update-ca-certificates
+ENV ENVIRONMENT=Production
+ENV ASPNETCORE_ENVIRONMENT=Production
+EXPOSE 443
+EXPOSE 7777
+ENTRYPOINT ["./Crawler.Data.Service"]

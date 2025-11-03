@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Crawler.Core.Metrics;
 using Crawler.Core.Parser;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Core.Parser.File;
 using Crawler.WebDriver.Core;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
@@ -29,8 +30,12 @@ namespace Crawler.Core.Strategy
     {
         private readonly IMetricRegister _metricRegister;
 
-        public CrawlerStrategyGeneric(IWebDriverService driver, IMetricRegister metricRegister)
-            : base(driver)
+        public CrawlerStrategyGeneric(
+            IWebDriverService driver,
+            IMetricRegister metricRegister,
+            IDataExtractor dataExtractor
+        )
+            : base(driver, dataExtractor)
         {
             _metricRegister = metricRegister;
         }

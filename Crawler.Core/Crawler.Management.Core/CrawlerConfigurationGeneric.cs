@@ -20,6 +20,7 @@ using Crawler.Configuration.Core;
 using Crawler.Core.Metrics;
 using Crawler.Core.Parser;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Requests;
 using Crawler.Core.Strategy;
 using Crawler.Core.UserActions;
@@ -35,17 +36,19 @@ namespace Crawler.Core.Management
     {
         private readonly IWebDriverService _driver;
         private readonly IMetricRegister _metricRegister;
-
+        private readonly IDataExtractor dataExtractor;
         private readonly ILogger<CrawlerConfigurationGeneric> _logger;
 
         public CrawlerConfigurationGeneric(
             IWebDriverService driver,
             IMetricRegister metricRegister,
+            IDataExtractor dataExtractor,
             ILogger<CrawlerConfigurationGeneric> logger
         )
         {
             _driver = driver;
             _metricRegister = metricRegister;
+            this.dataExtractor = dataExtractor;
             _logger = logger;
         }
 
@@ -68,7 +71,7 @@ namespace Crawler.Core.Management
             {
                 return await Task.FromResult(
                     new Request(
-                        new CrawlerStrategyGeneric(_driver, _metricRegister),
+                        new CrawlerStrategyGeneric(_driver, _metricRegister, dataExtractor),
                         null,
                         crawlRequest
                     )

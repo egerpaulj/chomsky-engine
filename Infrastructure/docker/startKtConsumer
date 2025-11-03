@@ -1,0 +1,16 @@
+docker run -e RABBITMQ_PORT=5672 \
+           -e RABBITMQ_HOST=rabbitmq \
+           -e RABBITMQ_VHOST=dev \
+           -e RABBITMQ_QUEUE=DatapipelineCleanData \
+           -e RABBITMQ_USER=guest \
+           -e RABBITMQ_PASSWORD=guest \
+           -e OLLAMA_MODEL=llama3.2 \
+           -e OLLAMA_HOST=http://ollama:11434 \
+           -e NEO4J_URI=bolt://neo4j-apoc:7687 \
+           -e NEO4J_USERNAME=neo4j \
+           -e NEO4J_PASSWORD=password \
+           --network development_network \
+           --rm \
+           --name knowledge_consumer \
+           --hostname knowledge_consumer \
+           kt-consumer

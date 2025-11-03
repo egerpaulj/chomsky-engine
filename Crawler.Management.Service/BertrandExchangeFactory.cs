@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
+using Crawler.Data.Repository;
 using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using Crawler.Scheduler.Repository;
@@ -22,8 +22,6 @@ using Microservice.Mongodb.Repo;
 using Microservice.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using MongoDB.Bson;
-using MongoDB.Driver;
 using IElasticRepositoryFactory = Microservice.Elasticsearch.Repo.IRepositoryFactory;
 using IMongRepositoryFactory = Microservice.Mongodb.Repo.IRepositoryFactory;
 
@@ -44,13 +42,12 @@ public class BertrandExchangeFactory(
     IConfigurationRepository configurationRepository,
     IConfiguration configuration,
     ICrawlStrategyMapper crawlStrategyMapper,
-    IBertrandMetrics bertrandMetrics,
     IAmqpBootstrapper amqpBootstrapper,
-    IErrorMessageProcessor errorMessageProcessor
+    IErrorMessageProcessor errorMessageProcessor,
+    ICrawlerResponseShardedRepository crawlerResponseShardedRepository
 ) : IBertrandExchangeFactory
 {
     private const string Publisher_Uri = "crawler-uri-mongodb-publisher";
-    private const string Publisher_Stock_Mongodb = "stock-mongodb-publisher";
     private const string Publisher_Crawl_Mongodb = "crawler-result-mongodb-publisher";
     private const string Publisher_Crawl_Es = "crawler-result-elastic-publisher";
     private const string Transformer_Uri = "crawler-uri-transformer";
@@ -71,11 +68,6 @@ public class BertrandExchangeFactory(
             out var bertrandStateRepository
         );
 
-        // Cleanup existing state
-        var outstandingItems = await bertrandStateRepository
-            .GetMany(FilterDefinition<BsonDocument>.Empty)
-            .Match(r => r, []);
-
         await errorMessageProcessor.ProcessMessages(bertrandStateRepository, cancellationToken);
 
         // CONSUMERS
@@ -85,6 +77,14 @@ public class BertrandExchangeFactory(
             amqpProvider,
             "CrawlUri",
             "crawl-uri-consumer"
+        );
+
+        var legacyConsumer = new RabbitMqBertrandConsumer<CrawlRequest>(
+            amqpProvider,
+            contextName: "Legacy",
+            routingKeyBypass: Routing_Key_From_Queue_Bind_To_Transformer,
+            name: "legacy",
+            queueName: "legacy"
         );
 
         var crawlRequestConsumer = new RabbitMqBertrandConsumer<CrawlRequest>(
@@ -97,6 +97,7 @@ public class BertrandExchangeFactory(
 
         consumers.Add(crawlUrlConsumer);
         consumers.Add(crawlRequestConsumer);
+        consumers.Add(legacyConsumer);
 
         // TRANSFORMERS
         var transformers = CreateTransformers();
@@ -110,10 +111,6 @@ public class BertrandExchangeFactory(
             new BertrandRoutingKeyFilter(Routing_Key_Internal_Uri, Publisher_Uri),
             new BertrandRoutingKeyFilter(Transformer_Response_Es, Publisher_Crawl_Es),
             new BertrandRoutingKeyFilter(Transformer_Response_Mongodb, Publisher_Crawl_Mongodb),
-            new BertrandRoutingKeyFilter(
-                StockDataMongoDbTransformer<CrawlResponse>.StockDataTransormer,
-                Publisher_Stock_Mongodb
-            ),
         };
         var transformerFilters = new List<IBetrandTransformerFilter>()
         {
@@ -124,21 +121,17 @@ public class BertrandExchangeFactory(
             ),
             new BertrandRoutingKeyFilter(Routing_Key_Internal_Crawl, Transformer_Response_Es),
             new BertrandRoutingKeyFilter(Routing_Key_Internal_Crawl, Transformer_Response_Mongodb),
-            new BertrandUrlFilter<CrawlResponse>(
-                "live-markets/market-data-dashboard/price-explorer",
-                StockDataMongoDbTransformer<CrawlResponse>.StockDataTransormer
-            ),
         };
-
+        var exchangeName = "Crawler-Exchange";
         return new BertrandExchange(
-            "Crawler-Exchange",
+            exchangeName,
             consumers,
             transformers,
             transformerFilters,
             publisherFilters,
             publishers,
             loggerFactory.CreateLogger<BertrandExchange>(),
-            bertrandMetrics,
+            new BertrandMetrics(exchangeName),
             bertrandStateStore,
             bertrandExchangeStore,
             exchangeManager
@@ -198,21 +191,12 @@ public class BertrandExchangeFactory(
 
     private List<IBertrandTransformer> CreateTransformers()
     {
-        DatabaseConfiguration databaseConfiguration = new DatabaseConfiguration(
-            "crawler_responses",
-            configuration
-        );
-
-        var responseRepository = mongodbFactory.CreateRepository<CrawlResponseModel>(
-            databaseConfiguration
-        );
-
         var transformers = new List<IBertrandTransformer>();
         var uriTransformer = new UriTransformer<CrawlUri>(
             loggerFactory.CreateLogger<UriTransformer<CrawlUri>>(),
             schedulerRepository,
             configurationRepository,
-            responseRepository,
+            crawlerResponseShardedRepository,
             Transformer_Uri,
             Routing_Key_Internal_Uri
         );
@@ -231,12 +215,10 @@ public class BertrandExchangeFactory(
             Transformer_Response_Mongodb
         );
 
-        var stockDataTransformer = new StockDataMongoDbTransformer<CrawlResponse>();
         transformers.Add(uriTransformer);
         transformers.Add(crawlRequestTransformer);
         transformers.Add(crawlResponseTransformerElastic);
         transformers.Add(crawlResponseTransformerMongodb);
-        transformers.Add(stockDataTransformer);
 
         return transformers;
     }
@@ -249,14 +231,11 @@ public class BertrandExchangeFactory(
             configuration
         );
         // CRAWL RESPONSE - MONGO DB
-        var crawlerResponseRepository = mongodbFactory.CreateRepository<CrawlResponseModel>(
-            crawlerResponseConfiguration
-        );
         var crawlResultPublisherMongoDb = new BertrandPublisher<CrawlResponseModel>(
             Publisher_Crawl_Mongodb,
             new MongoDbPublisher<CrawlResponseModel>(
                 Publisher_Crawl_Mongodb,
-                crawlerResponseRepository
+                crawlerResponseShardedRepository
             )
         );
 
@@ -282,25 +261,11 @@ public class BertrandExchangeFactory(
             new MongoDbPublisher<UriDataModel>(Publisher_Uri, uriDataRepository)
         );
 
-        // Stock data - MONGO DB
-        var stockDataRepository = new MongoDbRepository<StockDataResponseModel>(
-            configuration,
-            new StockDataConfiguration(configuration),
-            jsonConverterProvider
-        );
 
-        var stockPublisherMongoDb = new BertrandPublisher<StockDataResponseModel>(
-            Publisher_Stock_Mongodb,
-            new MongoDbPublisher<StockDataResponseModel>(
-                Publisher_Stock_Mongodb,
-                stockDataRepository
-            )
-        );
 
         publishers.Add(crawlResultPublisherMongoDb);
         publishers.Add(crawlResultPublisherElastic);
         publishers.Add(uriPublisherMongoDb);
-        publishers.Add(stockPublisherMongoDb);
         //publishers.Add(new ConsolePublisher<object, object>(jsonConverterProvider));
 
         return publishers;
@@ -325,32 +290,25 @@ public class BertrandExchangeFactory(
             configuration
         );
 
-        bertrandStateRepository = mongodbFactory.CreateRepository<BertrandStateDataModel>(
-            stateStoreConfiguration
-        );
-        var bertrandStateDeadletterRepository =
-            mongodbFactory.CreateRepository<BertrandStateDataModel>(deadletterStoreConfiguration);
+        bertrandStateRepository = mongodbFactory
+            .CreateRepositoryAsync<BertrandStateDataModel>(stateStoreConfiguration)
+            .Result;
+        var bertrandStateDeadletterRepository = mongodbFactory
+            .CreateRepositoryAsync<BertrandStateDataModel>(deadletterStoreConfiguration)
+            .Result;
         bertrandStateStore = new MongoDbBertrandStateStore(
             jsonConverterProvider,
             bertrandStateRepository,
             bertrandStateDeadletterRepository
         );
 
-        var bertrandExchangeRepository = mongodbFactory.CreateRepository<BertrandExchangeDataModel>(
-            exchangeStoreConfiguration
-        );
+        var bertrandExchangeRepository = mongodbFactory
+            .CreateRepositoryAsync<BertrandExchangeDataModel>(exchangeStoreConfiguration)
+            .Result;
         bertrandExchangeStore = new MongoDbBertrandExchangeStore(bertrandExchangeRepository);
         return new BertrandExchangeManager(
             bertrandExchangeStore,
             loggerFactory.CreateLogger<BertrandExchangeManager>()
         );
-    }
-
-    public class StockDataConfiguration(IConfiguration configuration) : IDatabaseConfiguration
-    {
-        public string DatabaseName =>
-            configuration.GetSection(key: SchedulerRepository.MongoDbDatabaseNameKey).Value;
-
-        public string CollectionName => "stockdata";
     }
 }

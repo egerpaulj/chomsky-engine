@@ -16,10 +16,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Crawler.Core.Parser;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Parser.Xml;
 using Crawler.Core.Requests;
 using Crawler.Core.Results;
@@ -33,13 +36,15 @@ namespace Crawler.Core.Strategy
     public abstract class CrawlerStrategyBase : ICrawlStrategy
     {
         protected readonly IWebDriverService Driver;
+        private readonly IDataExtractor dataExtractor;
 
         // ToDo Do better - inject tracking (Everywhere)
         private Stopwatch _performanceTracker = new Stopwatch();
 
-        protected CrawlerStrategyBase(IWebDriverService driver)
+        protected CrawlerStrategyBase(IWebDriverService driver, IDataExtractor dataExtractor)
         {
             Driver = driver;
+            this.dataExtractor = dataExtractor;
         }
 
         public TryOptionAsync<CrawlResponse> Crawl(Option<Request> request)
@@ -217,6 +222,7 @@ namespace Crawler.Core.Strategy
                         DownloadFiles(
                             f,
                             f.DownloadLinks.Match(f => f, () => new List<DocumentPartLink>()),
+                            document.SkipList,
                             correlationId
                         )
                     )
@@ -273,28 +279,86 @@ namespace Crawler.Core.Strategy
         private TryOptionAsync<Unit> DownloadFiles(
             DocumentPartFile filePart,
             IEnumerable<DocumentPartLink> documentPartLinks,
+            IEnumerable<string> skipList,
             Guid correlationId
         )
         {
             return async () =>
             {
-                var downloadFuncs = documentPartLinks.Select(link =>
-                    Driver.Download(
-                        new DownloadRequest() { Uri = link.Uri, CorrelationId = correlationId }
+                if (documentPartLinks.Count() == 0)
+                    return Unit.Default;
+
+                var fileDataList = new List<FileData>();
+
+                foreach (var link in documentPartLinks)
+                {
+                    if (
+                        link.Uri.Match(l => skipList.Any(s => l.ToLower().Contains(s)), () => false)
                     )
-                );
+                    {
+                        fileDataList.Add(new FileData { Error = "Matched skip list" });
+                        continue;
+                    }
+                    var fileData = await Driver
+                        .Download(
+                            new DownloadRequest() { Uri = link.Uri, CorrelationId = correlationId }
+                        )
+                        .Match(
+                            r => r,
+                            () => new FileData { Error = "Failed" },
+                            ex => new FileData { Error = ex.Message }
+                        );
 
-                var fileDataTasks = downloadFuncs
-                    .AsParallel()
-                    .Select(data => data.MatchUnsafe(d => d, null, ex => null))
-                    .ToList();
+                    await Task.Delay(new Random().Next(1000, 3000));
 
-                var fileData = await Task.WhenAll(fileDataTasks);
+                    if (fileData.DataBytes.IsSome)
+                    {
+                        await ExtractTextOrDefault(fileData);
+                    }
 
-                filePart.FileDataList = fileData.Where(f => f != null).ToList();
+                    fileDataList.Add(fileData);
+                }
+
+                filePart.FileDataList = fileDataList;
 
                 return await Task.FromResult(Unit.Default);
             };
+        }
+
+        private async Task<FileData> ExtractTextOrDefault(FileData fileData)
+        {
+            var data = fileData.DataBytes.Match(
+                r => r,
+                () => throw new Exception("File data is empty")
+            );
+            var dataBytes = Encoding.GetEncoding("iso-8859-1").GetBytes(data);
+
+            var fileExtension = fileData.Name.Match(n => new FileInfo(n).Extension, () => "");
+
+            fileExtension = string.IsNullOrEmpty(fileExtension)
+                ? fileData.Uri.Match(
+                    u => u.ToLowerInvariant().Contains("pdf") ? ".pdf" : ".unknown",
+                    () => ".unknown"
+                )
+                : fileExtension;
+
+            switch (fileExtension)
+            {
+                case ".pdf":
+                    fileData.DataStr = await dataExtractor
+                        .ExtractFromPdf(dataBytes)
+                        .Match(r => r, data);
+                    fileData.DataBytes = null;
+                    return fileData;
+                case ".docx":
+                    fileData.DataStr = await dataExtractor
+                        .ExtractFromDocx(dataBytes)
+                        .Match(r => r, data);
+                    fileData.DataBytes = null;
+                    return fileData;
+                default:
+                    return fileData;
+            }
         }
     }
 }

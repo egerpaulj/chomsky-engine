@@ -18,6 +18,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +35,7 @@ using Crawler.WebDriver.Selenium.Firefox.UserActions;
 using Crawler.WebDriver.Selenium.UserActions;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Support.UI;
@@ -89,7 +92,10 @@ namespace Crawler.WebDriver.Selenium.Firefox
             return DownloadBytes(uri, correlationId).Bind(result => CreateFileData(result, uri));
         }
 
-        public TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request)
+        public TryOptionAsync<string> LoadPage(
+            Option<LoadPageRequest> request,
+            bool isRetrying = false
+        )
         {
             var correlationId = request
                 .Bind(r => r.CorrelationId)
@@ -126,13 +132,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
                         //throw new Exception($"Failed to load page within {WAIT_FOR_PAGE_LOAD_IN_SECONDS}s - document not ready");
                     }
 
-                    await WebDriverServiceFirefox
-                        .ExecuteUserActions(_logger, container, userActions, correlationId)
-                        .Match(
-                            r => r,
-                            () => throw new Exception("User Actions failed"),
-                            ex => throw new Exception("User Actions Failed", ex)
-                        );
+                    await ExecuteUserActions(correlationId, userActions, container);
 
                     _webDriverMetrics.IncPageLoad(uri);
                     return container.Driver.PageSource;
@@ -145,19 +145,34 @@ namespace Crawler.WebDriver.Selenium.Firefox
                             + uri
                     );
 
-                    await WebDriverServiceFirefox
-                        .ExecuteUserActions(_logger, container, userActions, correlationId)
-                        .Match(
-                            r => r,
-                            () => throw new Exception("User Actions failed"),
-                            ex => throw new Exception("User Actions Failed", ex)
-                        );
+                    try
+                    {
+                        await ExecuteUserActions(correlationId, userActions, container);
+                    }
+                    catch { }
+
+                    var source = container.Driver.PageSource;
                     _webDriverMetrics.IncPageLoad(uri);
 
-                    return container.Driver.PageSource;
+                    return source;
                 }
                 catch (Exception ex)
                 {
+                    if (!isRetrying)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "RETRY: retrying due to web driver exception. Cleaning up web drivers"
+                        );
+
+                        CleanUpWebDrivers(uri);
+                        return await LoadPage(request, isRetrying: true)
+                            .Match(
+                                r => r,
+                                () => throw new Exception("Retry failed"),
+                                ex => throw new Exception("Retry failed", ex)
+                            );
+                    }
                     _webDriverMetrics.IncPageLoadFail();
                     _logger.LogError(ex, $"Failed to load page: {uri}");
                     CleanUpWebDrivers(uri);
@@ -170,6 +185,21 @@ namespace Crawler.WebDriver.Selenium.Firefox
                 return d =>
                     container.Driver.ExecuteScript("return document.readyState").Equals("complete");
             }
+        }
+
+        private async Task ExecuteUserActions(
+            Guid correlationId,
+            IEnumerable<UserAction> userActions,
+            FirefoxContainer container
+        )
+        {
+            await WebDriverServiceFirefox
+                .ExecuteUserActions(_logger, container, userActions, correlationId)
+                .Match(
+                    r => r,
+                    () => throw new Exception("User Actions failed"),
+                    ex => throw new Exception("User Actions Failed", ex)
+                );
         }
 
         private static TryOptionAsync<FileData> CreateFileData(
@@ -189,7 +219,7 @@ namespace Crawler.WebDriver.Selenium.Firefox
                     {
                         Name = fileName,
                         Uri = uri,
-                        Data = binaryData,
+                        DataBytes = binaryData,
                     }
                 );
             };
@@ -199,14 +229,8 @@ namespace Crawler.WebDriver.Selenium.Firefox
         {
             return async () =>
             {
-                var client = new WebClient();
-                client.Headers.Add(
-                    "user-agent",
-                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)"
-                );
-
                 _logger.LogInformation($"Downloading: {uri}. CorrelationId: {correlationId}");
-                var data = client.DownloadData(uri);
+                var data = await DownloadBytes(uri);
                 _logger.LogInformation(
                     $"Successfully Downloaded: {uri}. CorrelationId: {correlationId}"
                 );
@@ -214,6 +238,24 @@ namespace Crawler.WebDriver.Selenium.Firefox
 
                 return await Task.FromResult(Encoding.GetEncoding("iso-8859-1").GetString(data));
             };
+        }
+
+        static async Task<byte[]> DownloadBytes(string url)
+        {
+            using HttpClient client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+            );
+            using var response = await client.GetAsync(
+                url,
+                HttpCompletionOption.ResponseHeadersRead
+            );
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            return memoryStream.ToArray();
         }
 
         private async Task<FirefoxContainer> GetFirefoxContainer(Uri indicator)
@@ -253,24 +295,32 @@ namespace Crawler.WebDriver.Selenium.Firefox
             _firefoxContainerSemaphoreSlim.Wait();
             try
             {
+                var indicator = new Uri(uri.ToLowerInvariant());
+
                 if (!_activeDrivers.Any())
                     return;
 
-                foreach (var driverKey in _activeDrivers.Keys)
+                if (_activeDrivers.TryGetValue(indicator.Host, out var driver))
                 {
-                    var driver = _activeDrivers[driverKey];
-
-                    try
-                    {
-                        driver.Driver.Quit();
-                        _activeDrivers.Remove(driverKey);
-                        _logger.LogWarning($"Removed expired web driver: {driver.HostUri}");
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError(e, $"Failed to Stop Web Driver: {driver.HostUri}");
-                    }
+                    driver.Discard();
+                    _activeDrivers.Remove(indicator.Host);
                 }
+
+                // foreach (var driverKey in _activeDrivers.Keys)
+                // {
+                //     var driver = _activeDrivers[driverKey];
+
+                //     try
+                //     {
+                //         driver.Driver.Quit();
+                //         _activeDrivers.Remove(driverKey);
+                //         _logger.LogWarning($"Removed expired web driver: {driver.HostUri}");
+                //     }
+                //     catch (Exception e)
+                //     {
+                //         _logger.LogError(e, $"Failed to Stop Web Driver: {driver.HostUri}");
+                //     }
+                // }
             }
             finally
             {

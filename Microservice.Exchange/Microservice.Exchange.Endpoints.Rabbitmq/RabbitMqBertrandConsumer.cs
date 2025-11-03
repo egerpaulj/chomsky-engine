@@ -56,7 +56,7 @@ public class RabbitMqBertrandConsumer<T>(
         };
 
         return await _messageHandler
-            .Handle(exchangeMessage)
+            .Handle(exchangeMessage, withDeadletter: false)
             .Match(r => r, () => throw new Exception("Failed to handle message"), ex => throw ex);
     }
 

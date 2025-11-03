@@ -29,7 +29,7 @@ This Endpoint is based on the Microservice.Amqp.Rabbitmq library. Please refer t
               "Rabbitmq" : {
                 "Host": "localhost",
                 "VirtHost": "test",
-                "Port": "5671",
+                "Port": "5672",
                 "Username": "guest",
                 "Password": "guest"
               }
@@ -60,7 +60,7 @@ This Endpoint is based on the Microservice.Amqp.Rabbitmq library. Please refer t
                   "Rabbitmq" : {
                     "Host": "localhost",
                     "VirtHost": "test",
-                    "Port": "5671",
+                    "Port": "5672",
                     "Username": "guest",
                     "Password": "guest"
                   }

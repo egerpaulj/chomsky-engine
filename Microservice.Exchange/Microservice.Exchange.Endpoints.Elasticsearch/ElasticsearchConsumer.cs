@@ -17,6 +17,7 @@
 using System;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Timers;
 using LanguageExt;
@@ -86,7 +87,14 @@ namespace Microservice.Exchange.Endpoints.Elasticsearch
 
                         _pollingConsumer = new PollingConsumer<T>(
                             _logger,
-                            () => _repository.Search<T>(_index, _query),
+                            () =>
+                                _repository
+                                    .Search<T>(_index, _query)
+                                    .Match(
+                                        r => r,
+                                        () => throw new Exception("Empty result"),
+                                        ex => throw ex
+                                    ),
                             config.GetValue<int>(PollingConfiguration.IntervalInMsKey)
                         );
 

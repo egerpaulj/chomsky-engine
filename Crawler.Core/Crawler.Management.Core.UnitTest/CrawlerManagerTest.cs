@@ -23,6 +23,7 @@ using Crawler.Core.Cache;
 using Crawler.Core.Management;
 using Crawler.Core.Metrics;
 using Crawler.Core.Parser.DocumentParts.Serialilzation;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Parser.Xml;
 using Crawler.Core.Requests;
 using Crawler.Core.Strategy;
@@ -91,6 +92,7 @@ namespace Crawler.Management.Core.UnitTest
             var crawlConfiguration = new CrawlerConfigurationGeneric(
                 webDriverMock.Object,
                 _metricRegisterMock.Object,
+                Mock.Of<IDataExtractor>(),
                 Mock.Of<ILogger<CrawlerConfigurationGeneric>>()
             );
 
@@ -109,21 +111,21 @@ namespace Crawler.Management.Core.UnitTest
             var strategyMapperMock = new Mock<ICrawlStrategyMapper>();
             strategyMapperMock
                 .Setup(m => m.GetCrawlStrategy(It.IsAny<Option<CrawlRequest>>()))
-                .Returns(
-                    async () =>
-                        await Task.FromResult(
-                            Option<ICrawlStrategy>.Some(
-                                new CrawlerStrategyGeneric(
-                                    webDriverMock.Object,
-                                    Mock.Of<IMetricRegister>()
-                                )
+                .Returns(async () =>
+                    await Task.FromResult(
+                        Option<ICrawlStrategy>.Some(
+                            new CrawlerStrategyGeneric(
+                                webDriverMock.Object,
+                                Mock.Of<IMetricRegister>(),
+                                Mock.Of<IDataExtractor>()
                             )
                         )
+                    )
                 );
             strategyMapperMock
                 .Setup(m => m.GetContinuationStrategy(It.IsAny<Option<CrawlRequest>>()))
-                .Returns(
-                    async () => await Task.FromResult(Option<ICrawlContinuationStrategy>.None)
+                .Returns(async () =>
+                    await Task.FromResult(Option<ICrawlContinuationStrategy>.None)
                 );
 
             _testee = new CrawlerManager(

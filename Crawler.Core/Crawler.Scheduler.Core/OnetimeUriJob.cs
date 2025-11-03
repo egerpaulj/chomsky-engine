@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
+using Crawler.Core.Results;
 using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
@@ -73,9 +74,32 @@ namespace Crawler.Scheduler.Core
             {
                 await Task.WhenAll(
                     uriDataModels
-                        .Select(model =>
+                        .Select(async model =>
                         {
-                            return _crawlerConfiguration
+                            if (
+                                !CrawlResponseData.WhiteList.Any(w =>
+                                    model.Uri.ToLower().StartsWith(w)
+                                )
+                            )
+                            {
+                                _logger.LogInformation(
+                                    $"Skip Scheduling. Uri not in whitelist. Uri: {model.Uri}"
+                                );
+
+                                model.IsCompleted = true;
+                                model.IsSkipped = true;
+
+                                await _schedulerRepository
+                                    .AddOrUpdate(model)
+                                    .Match(
+                                        r => r,
+                                        () => throw new Exception("Failed to update model"),
+                                        ex => throw ex
+                                    );
+
+                                return Unit.Default;
+                            }
+                            return await _crawlerConfiguration
                                 .CreateRequest(model.Uri, correlationId: Guid.NewGuid(), model.Id)
                                 .Bind(request => _requestPublisher.PublishRequest(request))
                                 .Bind<Unit, Unit>(_ =>

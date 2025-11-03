@@ -13,6 +13,7 @@
 
 //      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using Crawler.Core.Parser.DocumentParts;
@@ -29,6 +30,8 @@ namespace Crawler.Core.Parser
         public Option<DocumentPart> RequestDocumentPart { get; set; }
 
         public Option<bool> DownloadContent { get; set; }
+
+        public List<string> SkipList { get; set; } = [];
 
         public string GetBriefSummary()
         {

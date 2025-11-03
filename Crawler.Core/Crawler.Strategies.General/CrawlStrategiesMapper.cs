@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
 using Crawler.Core.Metrics;
+using Crawler.Core.Parser.File;
 using Crawler.Core.Requests;
 using Crawler.Core.Strategy;
 using Crawler.Management.Core.RequestHandling.Core;
@@ -49,6 +50,7 @@ namespace Crawler.Strategies.General
             ILogger<ICrawlContinuationStrategy> logger,
             IRequestPublisher requestPublisher,
             IWebDriverService webDriver,
+            IDataExtractor dataExtractor,
             IMetricRegister metricRegister
         )
         {
@@ -59,7 +61,7 @@ namespace Crawler.Strategies.General
             );
             _crawlTrackLinksContStrategy = new TrackLinksContinuationStrategy(requestPublisher);
 
-            _genericStrategy = new CrawlerStrategyGeneric(webDriver, metricRegister);
+            _genericStrategy = new CrawlerStrategyGeneric(webDriver, metricRegister, dataExtractor);
             _crawlOneTimeStrategy = new OnetimeContinuationStrategy(requestPublisher);
 
             // ToDo Non custom continuation strategy mappings in Database (and allow Factory injection)

@@ -18,6 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using LanguageExt;
 using LanguageExt.SomeHelp;
@@ -150,28 +151,67 @@ public class BertrandExchange(
         };
     }
 
-    public TryOptionAsync<object> Handle(Option<Message<object>> message)
+    public TryOptionAsync<object> Handle(Option<Message<object>> message, bool storeState = true)
     {
-        return Handle(message, shouldStoreState: true);
+        return async () =>
+        {
+            return await HandleInternal(message, shouldStoreState: storeState)
+                .MatchAsync(
+                    r => Task.CompletedTask,
+                    () =>
+                    {
+                        logger.LogWarning("Handle output is empty");
+                        return Task.CompletedTask;
+                    },
+                    async ex =>
+                    {
+                        logger.LogError(ex, "Handle failed!");
+                        if (storeState)
+                        {
+                            await bertrandStateStore
+                                .StoreInDeadletter(message)
+                                .Match(
+                                    r => r,
+                                    () => throw new Exception("Failed to store in deadletter"),
+                                    ex => throw ex
+                                );
+                            await bertrandStateStore
+                                .Delete(message.Bind(m => m.Id))
+                                .Match(
+                                    r => r,
+                                    () => throw new Exception("Failed to delete state message"),
+                                    ex => throw ex
+                                );
+                        }
+                        throw ex;
+                    }
+                );
+        };
     }
 
-    private TryOptionAsync<object> Handle(Option<Message<object>> message, bool shouldStoreState)
+    private TryOptionAsync<object> HandleInternal(
+        Option<Message<object>> message,
+        bool shouldStoreState
+    )
     {
-        var correlationId = Guid.NewGuid();
-        var handleTryOption = message
-            .ToTryOptionAsync()
-            .Bind(IncrementIncoming)
-            .Bind(m => EnrichMessage(m, correlationId));
+        var stateId = shouldStoreState
+            ? Guid.NewGuid()
+            : message.Bind(m => m.Id).Match(i => i, () => Guid.NewGuid());
+
+        var handleTryOption = message.ToTryOptionAsync().Bind(IncrementIncoming);
 
         if (shouldStoreState)
+        {
+            handleTryOption = handleTryOption.Bind(m => EnrichMessage(m, stateId));
             handleTryOption = handleTryOption.Bind(StoreMessage);
+        }
 
         return handleTryOption
             .Bind(LogMessageReceived)
             .Bind(TransformMessage)
             .Bind(PublishMessages)
             .Bind(_ => message.Bind(m => m.Payload).ToTryOptionAsync())
-            .Bind(p => DeleteSuccessfulMessage(p, correlationId));
+            .Bind(p => DeleteSuccessfulMessage(p, stateId));
     }
 
     private TryOptionAsync<Unit> ProcessOutstandingWork(Unit _)
@@ -211,7 +251,7 @@ public class BertrandExchange(
 
                 foreach (var outstanding in outstandingWork)
                 {
-                    await Handle(outstanding, false)
+                    await HandleInternal(outstanding, shouldStoreState: false)
                         .Match(
                             r => { },
                             () =>
@@ -243,10 +283,19 @@ public class BertrandExchange(
                 .Match(
                     r => r,
                     () =>
-                        throw new Exception(
-                            "Failed to delete successfully processed message: " + id.ToString()
-                        ),
-                    ex => throw ex
+                    {
+                        logger.LogWarning("Failed to delete document with ID: {Id}", id.ToString());
+                        return Unit.Default;
+                    },
+                    ex =>
+                    {
+                        logger.LogError(
+                            ex,
+                            "Failed to delete document with ID: {Id}",
+                            id.ToString()
+                        );
+                        return Unit.Default;
+                    }
                 );
             return await Task.FromResult(payload);
         };
@@ -259,7 +308,7 @@ public class BertrandExchange(
             await bertrandStateStore
                 .StoreIncomingMessage(message)
                 .Match(r => r, () => throw new Exception("Failed to store state"), ex => throw ex);
-            return await Task.FromResult(message);
+            return message;
         };
     }
 
@@ -274,14 +323,14 @@ public class BertrandExchange(
 
     private static TryOptionAsync<Message<object>> EnrichMessage(
         Message<object> message,
-        Guid correlationId
+        Guid stateId
     )
     {
         return async () =>
         {
-            message.Id = correlationId;
+            message.Id = stateId;
             if (message.CorrelationId.IsNone)
-                message.CorrelationId = correlationId;
+                message.CorrelationId = stateId;
             return await Task.FromResult(message);
         };
     }
@@ -316,11 +365,7 @@ public class BertrandExchange(
                     await transformer
                         .Transform(message)
                         .Bind(output => ProcessTransformedMessage(message, output, results))
-                        .MatchAsync(
-                            result => Unit.Default,
-                            async () => await HandleError(message, "Empty transformation"),
-                            async ex => await HandleError(message, "Empty transformation", ex)
-                        );
+                        .Match(result => { }, () => { }, ex => throw ex);
 
                     LogInformation(message, "Completed transformation without filters");
 
@@ -353,11 +398,7 @@ public class BertrandExchange(
                         await transformer
                             .Transform(message)
                             .Bind(output => ProcessTransformedMessage(message, output, results))
-                            .MatchAsync(
-                                result => Unit.Default,
-                                async () => await HandleError(message, "Empty transformation"),
-                                async ex => await HandleError(message, "Empty transformation", ex)
-                            );
+                            .Match(result => { }, () => { }, ex => throw ex);
 
                         LogInformation(
                             message,
@@ -410,7 +451,7 @@ public class BertrandExchange(
                     foreach (var item in enumerable)
                     {
                         var message = new Message<object>();
-                        output.CopyData(message);
+                        output.CopyDataInto(message);
 
                         message.Id = Guid.NewGuid();
                         message.Payload = item;
@@ -426,10 +467,14 @@ public class BertrandExchange(
                 results.Add(output);
 
                 await TransformMessage(output)
-                    .Match(
-                        Some: r => results.AddRange(r),
+                    .MatchAsync(
+                        Some: r =>
+                        {
+                            results.AddRange(r);
+                            return Unit.Default;
+                        },
                         async () => await HandleError(output, "Transformation"),
-                        async ex => await HandleError(output, "Transformation", ex)
+                        async ex => throw ex
                     );
             }
             else

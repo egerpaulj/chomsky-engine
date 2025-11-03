@@ -13,6 +13,8 @@
 
 //      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using System;
+using System.Threading.Tasks;
 using Microservice.DataModel.Core;
 using Microservice.Serialization;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +24,9 @@ namespace Microservice.Mongodb.Repo;
 
 public interface IRepositoryFactory
 {
-    IMongoDbRepository<T> CreateRepository<T>(IDatabaseConfiguration databaseConfiguration)
+    Task<IMongoDbRepository<T>> CreateRepositoryAsync<T>(
+        IDatabaseConfiguration databaseConfiguration
+    )
         where T : IDataModel;
 }
 
@@ -34,13 +38,21 @@ public class RepositoryFactory(
     readonly IConfiguration configuration = configuration;
     readonly IJsonConverterProvider jsonConverterProvider = jsonConverterProvider;
 
-    public IMongoDbRepository<T> CreateRepository<T>(IDatabaseConfiguration databaseConfiguration)
+    public async Task<IMongoDbRepository<T>> CreateRepositoryAsync<T>(
+        IDatabaseConfiguration databaseConfiguration
+    )
         where T : IDataModel
     {
-        return new MongoDbRepository<T>(
+        var respository = new MongoDbRepository<T>(
             configuration,
             databaseConfiguration,
             jsonConverterProvider
         );
+
+        await respository
+            .EnsureCollectionExists()
+            .Match(r => r, () => throw new Exception("Failed to collection for repository"));
+
+        return respository;
     }
 }

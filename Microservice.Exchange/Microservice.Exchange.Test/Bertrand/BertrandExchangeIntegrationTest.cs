@@ -69,7 +69,7 @@ public class BertrandExchangeIntegrationTest
 
     readonly List<IPublisher<object>> Publishers;
     readonly List<IBertrandPublisherFilter> PublisherFilters;
-    readonly MongoDbBertrandConsumer<TestOutputMessage> mongoDbConsumer;
+    readonly MongoDbBertrandPollingConsumer<TestOutputMessage> mongoDbConsumer;
     private readonly IBertrandStateStore bertrandStateStore;
     readonly IBertrandExchangeStore bertrandExchangeStore;
     readonly IJsonConverterProvider jsonConverterProvider;
@@ -127,11 +127,11 @@ public class BertrandExchangeIntegrationTest
             configuration,
             jsonConverterProvider
         );
-        _mongodbRepository = repositoryFactory.CreateRepository<TestOutputMessage>(
-            databaseConfiguration
-        );
+        _mongodbRepository = repositoryFactory
+            .CreateRepositoryAsync<TestOutputMessage>(databaseConfiguration)
+            .Result;
 
-        mongoDbConsumer = new MongoDbBertrandConsumer<TestOutputMessage>(
+        mongoDbConsumer = new MongoDbBertrandPollingConsumer<TestOutputMessage>(
             "mongo-integration-test",
             databaseConfiguration,
             loggerFactory,
@@ -230,22 +230,21 @@ public class BertrandExchangeIntegrationTest
             "test"
         );
 
-        _bertrandStateRepository = repositoryFactory.CreateRepository<BertrandStateDataModel>(
-            stateStoreConfiguration
-        );
-        _bertrandStateDeadletterRepository =
-            repositoryFactory.CreateRepository<BertrandStateDataModel>(
-                deadletterStoreConfiguration
-            );
+        _bertrandStateRepository = repositoryFactory
+            .CreateRepositoryAsync<BertrandStateDataModel>(stateStoreConfiguration)
+            .Result;
+        _bertrandStateDeadletterRepository = repositoryFactory
+            .CreateRepositoryAsync<BertrandStateDataModel>(deadletterStoreConfiguration)
+            .Result;
         bertrandStateStore = new MongoDbBertrandStateStore(
             jsonConverterProvider,
             _bertrandStateRepository,
             _bertrandStateDeadletterRepository
         );
 
-        _bertrandExchangeRepository = repositoryFactory.CreateRepository<BertrandExchangeDataModel>(
-            exchangeStoreConfiguration
-        );
+        _bertrandExchangeRepository = repositoryFactory
+            .CreateRepositoryAsync<BertrandExchangeDataModel>(exchangeStoreConfiguration)
+            .Result;
         bertrandExchangeStore = new MongoDbBertrandExchangeStore(_bertrandExchangeRepository);
         exchangeManager = new BertrandExchangeManager(
             bertrandExchangeStore,
@@ -578,7 +577,7 @@ public class TestTransformer(string routingKey, bool isEs, string name) : IBertr
         return async () =>
         {
             var output = new Message<object>();
-            output = input.CopyData(output);
+            output = input.CopyDataInto(output);
             output.RoutingKey = routingKey;
 
             if (isEs)

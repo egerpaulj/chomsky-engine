@@ -25,8 +25,14 @@ namespace Crawler.DataModel
 {
     public class CrawlRequestModel : IDataModel
     {
-        [JsonProperty("_id")]
         public Guid Id { get; set; }
+
+        [JsonProperty("_id")]
+        public string IdStr
+        {
+            get { return Id.ToString(); }
+            set { Id = Guid.Parse(value); }
+        }
 
         public CrawlContinuationStrategy ContinuationStrategyDefinition { get; set; }
         public const string AllUriMatch = "*";

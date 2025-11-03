@@ -1,24 +1,23 @@
-//      Microservice Message Exchange Libraries for .Net C#                                                                                                                                       
-//      Copyright (C) 2022  Paul Eger                                                                                                                                                                     
+//      Microservice Message Exchange Libraries for .Net C#
+//      Copyright (C) 2022  Paul Eger
 
-//      This program is free software: you can redistribute it and/or modify                                                                                                                                          
-//      it under the terms of the GNU General Public License as published by                                                                                                                                          
-//      the Free Software Foundation, either version 3 of the License, or                                                                                                                                             
-//      (at your option) any later version.                                                                                                                                                                           
+//      This program is free software: you can redistribute it and/or modify
+//      it under the terms of the GNU General Public License as published by
+//      the Free Software Foundation, either version 3 of the License, or
+//      (at your option) any later version.
 
-//      This program is distributed in the hope that it will be useful,                                                                                                                                               
-//      but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                                                                
-//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                                                                                                                                 
-//      GNU General Public License for more details.                                                                                                                                                                  
+//      This program is distributed in the hope that it will be useful,
+//      but WITHOUT ANY WARRANTY; without even the implied warranty of
+//      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//      GNU General Public License for more details.
 
-//      You should have received a copy of the GNU General Public License                                                                                                                                             
+//      You should have received a copy of the GNU General Public License
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
-
 using Crawler.DataModel.Scheduler;
 using Crawler.RequestHandling.Core;
 using LanguageExt;
@@ -37,7 +36,12 @@ namespace Crawler.Scheduler.Core
         private readonly StdSchedulerFactory _factory;
         private IScheduler _scheduler;
 
-        public CrawlerScheduler(ILogger<CrawlerScheduler> logger, IJobFactory jobFactory, Quartz.Spi.IJobFactory quartzJobFactory, IRequestPublisher requestPublisher)
+        public CrawlerScheduler(
+            ILogger<CrawlerScheduler> logger,
+            IJobFactory jobFactory,
+            Quartz.Spi.IJobFactory quartzJobFactory,
+            IRequestPublisher requestPublisher
+        )
         {
             _logger = logger;
             _jobFactory = jobFactory;
@@ -50,12 +54,13 @@ namespace Crawler.Scheduler.Core
         {
             return async () =>
             {
-                _logger.LogInformation("starting scheduler");   
+                _logger.LogInformation("starting scheduler");
                 _scheduler = await _factory.GetScheduler();
 
-                if(_quartzJobFactory != null)
+                if (_quartzJobFactory != null)
                     _scheduler.JobFactory = _quartzJobFactory;
 
+                await Schedule(_jobFactory.GetStockCollectorJob());
                 await Schedule(_jobFactory.GetUnscheduledCrawlsJob());
                 await Schedule(await _jobFactory.GetPeriodicUriJobs());
                 await Schedule(await _jobFactory.GetUriCollectorJobs());
@@ -82,16 +87,18 @@ namespace Crawler.Scheduler.Core
         private async Task<DateTimeOffset> Schedule(Tuple<IJobDetail, ITrigger> jobDefinition)
         {
             var offset = await _scheduler.ScheduleJob(jobDefinition.Item1, jobDefinition.Item2);
-            _logger.LogInformation($"Scheduled: {jobDefinition.Item1.Description}. Next Fire Time: {jobDefinition.Item2.GetNextFireTimeUtc().ToString()}");
+            _logger.LogInformation(
+                $"Scheduled: {jobDefinition.Item1.Description}. Next Fire Time: {jobDefinition.Item2.GetNextFireTimeUtc().ToString()}"
+            );
             return offset;
         }
 
         private async Task Schedule(IEnumerable<Tuple<IJobDetail, ITrigger>> jobDefinitions)
         {
-            if(jobDefinitions == null)
+            if (jobDefinitions == null)
                 return;
-                
-            foreach(var job in jobDefinitions)
+
+            foreach (var job in jobDefinitions)
             {
                 await Schedule(job);
             }

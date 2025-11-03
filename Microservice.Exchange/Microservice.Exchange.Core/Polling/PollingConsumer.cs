@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Timers;
 using LanguageExt;
@@ -38,7 +39,7 @@ namespace Microservice.Exchange.Core.Polling
 
     public class PollingConsumer<T>(
         ILogger<IConsumer<T>> logger,
-        Func<TryOptionAsync<List<T>>> queryDataFunc,
+        Func<Task<List<T>>> queryDataFunc,
         int pollingIntervalInMs,
         string routingKey = ""
     ) : IPollingConsumer<T>
@@ -50,7 +51,7 @@ namespace Microservice.Exchange.Core.Polling
 
         private readonly int _IntervalInMs = pollingIntervalInMs;
         private readonly string _routingKey = routingKey;
-        readonly Func<TryOptionAsync<List<T>>> _queryDataFunc = queryDataFunc;
+        readonly Func<Task<List<T>>> _queryDataFunc = queryDataFunc;
 
         public TryOptionAsync<Unit> Start(IObserver<Either<Message<T>, ConsumerException>> observer)
         {
@@ -86,61 +87,47 @@ namespace Microservice.Exchange.Core.Polling
 
         private async Task RunQuery()
         {
-            await _queryDataFunc()
-                .Match(
-                    resultList =>
-                    {
-                        _logger.LogInformation(
-                            $"Polling timer elapsed. Data Query Successfull. #Items: {resultList.Count}"
-                        );
-
-                        if (resultList.Count == 0)
-                            return;
-
-                        foreach (var result in resultList)
-                        {
-                            var id = (result as IDataModel)?.Id ?? Guid.NewGuid();
-                            var correlationId = id;
-                            var routingKey = _routingKey;
-
-                            if (result is IMessage message)
-                            {
-                                id = message.Id.Match(i => i, () => id);
-                                correlationId = message.CorrelationId.Match(
-                                    i => i,
-                                    () => correlationId
-                                );
-                                routingKey = message.RoutingKey.Match(r => r, () => string.Empty);
-                            }
-
-                            _observer.OnNext(
-                                new Message<T>
-                                {
-                                    Payload = result,
-                                    Id = id,
-                                    CorrelationId = correlationId,
-                                    RoutingKey = string.IsNullOrEmpty(routingKey)
-                                        ? _routingKey
-                                        : routingKey,
-                                }
-                            );
-                        }
-                    },
-                    // EMPTY
-                    () =>
-                    {
-                        _logger.LogWarning("Data Query Empty result.");
-                        _observer.OnNext(
-                            new ConsumerException(new Exception("Query returned an Empty result"))
-                        );
-                    },
-                    // ERROR
-                    ex =>
-                    {
-                        _logger.LogError(ex, "Data Query Error.");
-                        _observer.OnNext(new ConsumerException(ex));
-                    }
+            try
+            {
+                var resultList = await _queryDataFunc();
+                _logger.LogInformation(
+                    $"Polling timer elapsed. Data Query Successfull. #Items: {resultList.Count}"
                 );
+
+                if (resultList.Count == 0)
+                    return;
+
+                foreach (var result in resultList)
+                {
+                    var id = (result as IDataModel)?.Id ?? Guid.NewGuid();
+                    var correlationId = id;
+                    var routingKey = _routingKey;
+
+                    if (result is IMessage message)
+                    {
+                        id = message.Id.Match(i => i, () => id);
+                        correlationId = message.CorrelationId.Match(i => i, () => correlationId);
+                        routingKey = message.RoutingKey.Match(r => r, () => string.Empty);
+                    }
+
+                    _observer.OnNext(
+                        new Message<T>
+                        {
+                            Payload = result,
+                            Id = id,
+                            CorrelationId = correlationId,
+                            RoutingKey = string.IsNullOrEmpty(routingKey)
+                                ? _routingKey
+                                : routingKey,
+                        }
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Data Query Error.");
+                _observer.OnNext(new ConsumerException(ex));
+            }
         }
     }
 }
