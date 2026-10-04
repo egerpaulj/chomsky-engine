@@ -15,6 +15,7 @@
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microservice.Amqp.Rabbitmq.Configuration;
 using Microservice.Serialization;
@@ -48,8 +49,6 @@ namespace Microservice.Amqp.Rabbitmq.Test
                 VirtHost = "TestVirtualHost",
             };
 
-            model.Setup(m => m.CreateBasicProperties()).Returns(Mock.Of<IBasicProperties>());
-
             var testee = new MessagePublisher(
                 rabbitmqConfig,
                 connectionFactoryMock.Object,
@@ -67,12 +66,13 @@ namespace Microservice.Amqp.Rabbitmq.Test
 
             model.Verify(
                 m =>
-                    m.BasicPublish(
+                    m.BasicPublishAsync(
                         expectedExchange,
                         expectedRoutingKey,
                         It.IsAny<bool>(),
-                        It.IsAny<IBasicProperties>(),
-                        It.IsAny<ReadOnlyMemory<byte>>()
+                        It.IsAny<BasicProperties>(),
+                        It.IsAny<ReadOnlyMemory<byte>>(),
+                        It.IsAny<CancellationToken>()
                     ),
                 Times.Once
             );

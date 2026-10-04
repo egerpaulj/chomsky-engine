@@ -20,9 +20,13 @@ using LanguageExt;
 
 namespace Crawler.WebDriver.Core
 {
-    public interface IWebDriverService
+    public interface IWebDriverService : IWebDriverDownloader
     {
         TryOptionAsync<string> LoadPage(Option<LoadPageRequest> request, bool isRetrying = false);
+    }
+
+    public interface IWebDriverDownloader
+    {
         TryOptionAsync<FileData> Download(Option<DownloadRequest> Uri);
     }
 }

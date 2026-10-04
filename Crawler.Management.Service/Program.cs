@@ -43,9 +43,7 @@ using Microservice.Mongodb.Repo;
 using Microservice.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using IRepositoryFactory = Microservice.Elasticsearch.Repo.IRepositoryFactory;
 using IRepositoryFactoryMongodb = Microservice.Mongodb.Repo.IRepositoryFactory;
-using RepositoryFactory = Microservice.Elasticsearch.Repo.RepositoryFactory;
 using RepositoryFactoryMongodb = Microservice.Mongodb.Repo.RepositoryFactory;
 
 namespace Crawler.Management.Service
@@ -122,7 +120,6 @@ namespace Crawler.Management.Service
 
                         // Bertrand exchange
                         services.AddTransient<IBertrandExchangeFactory, BertrandExchangeFactory>();
-                        services.AddTransient<IRepositoryFactory, RepositoryFactory>();
                         services.AddTransient<
                             IRepositoryFactoryMongodb,
                             RepositoryFactoryMongodb

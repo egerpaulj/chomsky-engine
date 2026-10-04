@@ -20,6 +20,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Crawler.Core.Parser.DocumentParts;
+using Crawler.Data.Repository;
 using Crawler.DataModel;
 using LanguageExt;
 using Microservice.Exchange;
@@ -31,9 +32,8 @@ namespace Crawler.Data.Service;
 
 public class CrawlerResponseCleanerTransformer<TIn>(
     ILogger<IBertrandTransformer> logger,
-    IMongoDbRepository<CrawlResponseModel> readRepository,
-    IMongoDbRepository<DataPipelineCleanText> writeRepository,
-    IPublisher<DataPipelineCleanText> workerQueuePublisher,
+    ICrawlerResponseShardedRepository readRepository,
+    IMongoDbAddOrUpdate<DataPipelineCleanText> writeRepository,
     IConfigurationRepository configurationRepository
 ) : IBertrandTransformer
     where TIn : CrawlResponseModel
@@ -50,14 +50,14 @@ public class CrawlerResponseCleanerTransformer<TIn>(
             var crawlerResponseModel = (TIn)
                 input
                     .Bind(mes => mes.Payload)
-                    .Match(mes => mes, () => throw new System.Exception("Empty message"));
+                    .Match(mes => mes, () => throw new Exception("Empty message"));
 
             var uri = crawlerResponseModel.UriText;
 
             if (await configurationRepository.IsCollectable(uri).Match(r => r, () => false))
             {
                 logger.LogWarning("Skipping collectable: {uri}", uri);
-                await UpdateReadDataWithTimestamp(crawlerResponseModel, uri);
+                await MarkDataPipelineProcessed(crawlerResponseModel, uri);
                 return null;
             }
 
@@ -67,7 +67,8 @@ public class CrawlerResponseCleanerTransformer<TIn>(
 
             if (crawlRequest.UrlSkipList.Any(l => uri.Contains(l)))
             {
-                logger.LogWarning("Skipping: {uri}", uri);
+                logger.LogWarning("SkipList -> Skipping data cleansing for: {uri}", uri);
+                await MarkDataPipelineProcessed(crawlerResponseModel, uri);
                 return null;
             }
 
@@ -76,66 +77,42 @@ public class CrawlerResponseCleanerTransformer<TIn>(
                 .Match(r => r, () => new DocumentPartArticle(uri));
 
             var text = new StringBuilder();
-            var article = documentPart.GetAllParts<DocumentPartArticle>().ToList().FirstOrDefault();
+            var articles = documentPart.GetAllParts<DocumentPartArticle>().ToList();
 
-            if (article == null)
+            if (articles != null)
             {
-                logger.LogWarning("Failed to process message without article: {uri}", uri);
-                await UpdateReadDataWithTimestamp(crawlerResponseModel, uri);
-                return null;
+                foreach (var article in articles)
+                {
+                    var cleanedText = CleanArticle(article, uri, crawlerResponseModel)
+                        .Match(r => r, () => new());
+                    if (!string.IsNullOrEmpty(cleanedText.CleanedText))
+                        await AddCleanedDataToDatabase(cleanedText);
+                }
             }
 
-            var content = article.Content.Match(c => c, () => new DocumentPartText(uri));
-            var documentPartTexts = content.GetAllParts<DocumentPartText>().ToList();
+            var files = documentPart.GetAllParts<DocumentPartFile>();
 
-            if (!documentPartTexts.Any())
+            if (files != null)
             {
-                logger.LogWarning($"Response does not have any text: {uri}");
-                await UpdateReadDataWithTimestamp(crawlerResponseModel, uri);
-                return null;
+                foreach (var file in files)
+                {
+                    var cleanedText = CleanFile(file, uri, crawlerResponseModel)
+                        .Match(r => r, () => new());
+                    if (!string.IsNullOrEmpty(cleanedText.CleanedText))
+                        await AddCleanedDataToDatabase(cleanedText);
+                }
             }
 
-            foreach (var documentPartText in documentPartTexts)
+            if (files == null && articles == null)
             {
-                var data = documentPartText.Text.Match(r => r, string.Empty);
-                data = data.Replace(".", " . ");
-                data = data.ToLowerInvariant();
-                data = data.Replace("headlines", "");
-
-                data = Regex.Replace(
-                    input: data,
-                    pattern: @"this article is more than \d+ years old",
-                    replacement: string.Empty
+                logger.LogWarning(
+                    "No articles nor files found. Skipping text clean for: {uri}",
+                    uri
                 );
-
-                data = Regex.Replace(
-                    input: data,
-                    pattern: @"this article is more than \d+ months old",
-                    replacement: string.Empty
-                );
-
-                data = Regex.Replace(
-                    input: data,
-                    pattern: @"this article is more than \d+ days old",
-                    replacement: string.Empty
-                );
-
-                text.Append(data);
-                text.Append(" ");
             }
 
-            var cleanedText = new DataPipelineCleanText
-            {
-                DataSource = uri,
-                DataSourceType = "media",
-                CleanedText = text.ToString().Trim(),
-                Uri = uri,
-                Id = inputMessage.Id.Match(i => i, Guid.NewGuid()),
-            };
-
-            await AddCleanedDataToDatabase(cleanedText);
             //await PublishToWorkerQueue(inputMessage, uri, cleanedText);
-            await UpdateReadDataWithTimestamp(crawlerResponseModel, uri);
+            await MarkDataPipelineProcessed(crawlerResponseModel, uri);
 
             return null;
         };
@@ -152,30 +129,124 @@ public class CrawlerResponseCleanerTransformer<TIn>(
             );
     }
 
-    private async Task PublishToWorkerQueue(
-        Message<object> inputMessage,
+    private Option<DataPipelineCleanText> CleanFile(
+        DocumentPartFile file,
         string uri,
-        DataPipelineCleanText cleanedText
+        TIn crawlerResponseModel
     )
     {
-        await workerQueuePublisher
-            .Publish(
-                new Message<DataPipelineCleanText>
-                {
-                    CorrelationId = inputMessage.CorrelationId,
-                    Id = inputMessage.Id,
-                    RoutingKey = "*",
-                    Payload = cleanedText,
-                }
-            )
-            .Match(
-                r => { },
-                () => logger.LogError("Failed to publish cleaned text for: {Uri}", uri),
-                ex => logger.LogError(ex, "Failed to publish cleaned text for: {Uri}", uri)
-            );
+        var fileData = file.FileDataList.Match(c => c, () => new());
+        var dataList = fileData
+            .SelectMany(f => f.DataStr)
+            .Where(s => !string.IsNullOrEmpty(s))
+            .ToList();
+
+        if (!dataList.Any())
+        {
+            logger.LogWarning($"File data does not have any text: {uri}");
+            return null;
+        }
+
+        StringBuilder text = new();
+
+        foreach (var textData in dataList)
+        {
+            var data = CleanData(textData);
+            text.Append(data);
+            text.Append(" ");
+        }
+
+        return new DataPipelineCleanText
+        {
+            DataSource = uri,
+            DataSourceType = "media",
+            CleanedText = text.ToString().Trim(),
+            Uri = uri,
+            Id = crawlerResponseModel.Id,
+        };
     }
 
-    private async Task UpdateReadDataWithTimestamp(TIn crawlerResponseModel, string uri)
+    private Option<DataPipelineCleanText> CleanArticle(
+        DocumentPartArticle article,
+        string uri,
+        TIn crawlerResponseModel
+    )
+    {
+        var content = article.Content.Match(c => c, () => new DocumentPartText(uri));
+        var documentPartTexts = content.GetAllParts<DocumentPartText>().ToList();
+
+        if (!documentPartTexts.Any())
+        {
+            logger.LogWarning($"Article does not have any text: {uri}");
+            return null;
+        }
+
+        StringBuilder text = new();
+
+        foreach (var documentPartText in documentPartTexts)
+        {
+            var data = documentPartText.Text.Match(r => r, string.Empty);
+            data = CleanData(data);
+
+            text.Append(data);
+            text.Append(" ");
+        }
+
+        return new DataPipelineCleanText
+        {
+            DataSource = uri,
+            DataSourceType = "media",
+            CleanedText = text.ToString().Trim(),
+            Uri = uri,
+            Id = crawlerResponseModel.Id,
+        };
+    }
+
+    private static string CleanData(string data)
+    {
+        data = data.ToLowerInvariant();
+        data = Regex.Replace(
+            input: data,
+            pattern: @"this article is more than \d+ years old",
+            replacement: string.Empty
+        );
+
+        data = Regex.Replace(
+            input: data,
+            pattern: @"this article is more than \d+ months old",
+            replacement: string.Empty
+        );
+
+        data = Regex.Replace(
+            input: data,
+            pattern: @"this article is more than \d+ days old",
+            replacement: string.Empty
+        );
+
+        var dataBuilder = new StringBuilder(data);
+        dataBuilder.Replace(".", " . ");
+        dataBuilder.Replace("+", " ");
+        dataBuilder.Replace("\n", " ");
+        dataBuilder.Replace("headlines", "");
+        dataBuilder.Replace("ENSocial media", " ");
+        dataBuilder.Replace("In-depth investigations from a changing Europe,in your inbox", " ");
+        dataBuilder.Replace("Share this page:", " ");
+        dataBuilder.Replace("Sign up for mail updates;", " ");
+        dataBuilder.Replace("LinkedIn&nbsp;", " ");
+        dataBuilder.Replace("WhatsApp&nbsp;", " ");
+        dataBuilder.Replace("Facebook&nbsp;", " ");
+        dataBuilder.Replace("X&nbsp;", " ");
+        dataBuilder.Replace("&nbsp;", " ");
+        dataBuilder.Replace("Share this page on Facebook (opens in a new window)", " ");
+        dataBuilder.Replace("Share this page on X (opens in a new window)", " ");
+        dataBuilder.Replace("Share this page on X (opens in a new window)", " ");
+        dataBuilder.Replace("Share this page on LinkedIn (opens in a new window)", " ");
+        dataBuilder.Replace("Sign up for mail updates", " ");
+
+        return dataBuilder.ToString();
+    }
+
+    private async Task MarkDataPipelineProcessed(TIn crawlerResponseModel, string uri)
     {
         var DateStrFormat = "yyyy-MM-dd-HH:mm:ss.fff";
         crawlerResponseModel.DataPipelineUpdated = DateTime.UtcNow.ToString(DateStrFormat);

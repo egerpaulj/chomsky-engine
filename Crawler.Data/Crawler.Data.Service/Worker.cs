@@ -46,7 +46,7 @@ namespace Crawler.Data.Service
             logger.LogInformation("Starting Data Exchange at: {time}", DateTime.Now);
             var exchange = await bertrandCleanerExchangeFactory.CreateExchange(stoppingToken);
 
-            var adhocExchange = await bertrandAdhocExchangeFactory.CreateExchange(stoppingToken);
+            // var adhocExchange = await bertrandAdhocExchangeFactory.CreateExchange(stoppingToken);
 
             var stateStoreConfiguration = new DatabaseConfiguration(
                 "bertrand_exchange_datapipeline_state",

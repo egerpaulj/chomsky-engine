@@ -34,7 +34,6 @@ namespace Microservice.Amqp.Rabbitmq
                 VirtualHost = config.VirtHost,
                 UserName = config.Username,
                 Password = config.Password,
-                DispatchConsumersAsync = true,
             };
         }
     }

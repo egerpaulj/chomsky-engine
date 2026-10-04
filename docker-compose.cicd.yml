@@ -1,0 +1,47 @@
+services:
+  jenkins:
+    container_name: jenkins
+    hostname: jenkins
+    build:
+      context: ./Infrastructure/docker/jenkins
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Raise the open-files limit: the default soft limit (1024) is too low for
+    # `dotnet build`/`dotnet test` on a large multi-project solution and causes
+    # MSBuild worker nodes to crash mid-build ("Child node exited prematurely").
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    # Disable SELinux confinement for this container. It already has full,
+    # root-equivalent access to the host via the docker socket bind mount
+    # below, so per-container SELinux labeling is not a meaningful boundary
+    # here — and without this, SELinux (enforcing mode, e.g. Fedora/RHEL
+    # hosts) denies access to /var/run/docker.sock even for root inside the
+    # container ("permission denied while trying to connect to the docker
+    # API"), since SELinux checks apply independently of DAC/root.
+    security_opt:
+      - label:disable
+    ports:
+      - "8080:8080"   # Web UI / Blue Ocean
+      - "50000:50000" # Inbound agent listener
+    environment:
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:-admin}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?set JENKINS_ADMIN_PASSWORD in .env}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
+      GITHUB_USERNAME: ${GITHUB_USERNAME:-egerpaulj}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:?set GITHUB_TOKEN in .env (repo + admin:repo_hook scopes)}
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # Docker "wormhole": mount the host daemon socket so Jenkins can build
+      # images and drive docker compose without running Docker-in-Docker.
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - development_network
+
+networks:
+  development_network:
+    external: true
+
+volumes:
+  jenkins_home:

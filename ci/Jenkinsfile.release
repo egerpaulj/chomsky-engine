@@ -1,0 +1,46 @@
+// Builds the latest .NET code into the crawler service images and brings the
+// stack up with docker compose, then cuts a GitHub release for the build.
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    BRANCH_NAME = "${env.BRANCH_NAME ?: 'main'}"
+    BUILD_ID    = "${env.BUILD_NUMBER}"
+    GITHUB_REPO = 'egerpaulj/chomsky-engine-pri'
+  }
+
+  stages {
+    stage('Build, publish and start services') {
+      steps {
+        sh './publish-service.sh'
+      }
+    }
+
+    stage('GitHub release') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
+          sh '''
+            set -euo pipefail
+            TAG="release-${BRANCH_NAME}-${BUILD_ID}"
+            curl -sf -X POST \
+              -H "Authorization: token ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPO}/releases" \
+              -d "{\\"tag_name\\":\\"${TAG}\\",\\"target_commitish\\":\\"${BRANCH_NAME}\\",\\"name\\":\\"${TAG}\\",\\"body\\":\\"Automated release built by Jenkins build ${BUILD_ID}\\",\\"draft\\":false,\\"prerelease\\":false}"
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}

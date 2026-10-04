@@ -451,8 +451,14 @@ public class BertrandExchangeIntegrationTest
         Transformers.Clear();
         Transformers.Add(failingTransformer);
 
-        // SETUP - exchange consumers
-        Consumers = [rabbitMqConsumer];
+        // SETUP - exchange consumers with deadletter enabled
+        var deadletterRabbitMqConsumer = new RabbitMqBertrandConsumer<TestOutputMessage>(
+            _amqpProvider,
+            RabbitMqInputContext,
+            "rabbit-integration-test-deadletter",
+            withDeadletter: true
+        );
+        Consumers = [deadletterRabbitMqConsumer];
 
         // ACT - start exchange
         var exchange = CreateExchange();

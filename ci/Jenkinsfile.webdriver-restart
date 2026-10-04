@@ -1,0 +1,22 @@
+// Restarts the webdriver_server compose service every hour to recover from
+// stuck/leaked browser sessions.
+pipeline {
+  agent any
+
+  triggers {
+    cron('H * * * *')
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  stages {
+    stage('Restart webdriver_server') {
+      steps {
+        sh 'docker compose -f docker-compose.yml restart webdriver_server'
+      }
+    }
+  }
+}

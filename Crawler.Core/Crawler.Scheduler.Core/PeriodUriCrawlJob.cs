@@ -16,7 +16,9 @@
 using System;
 using System.Threading.Tasks;
 using Crawler.Configuration.Core;
+using Crawler.DataModel;
 using Crawler.DataModel.Scheduler;
+using Crawler.RequestHandling.Core;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
 using Prometheus;
@@ -29,6 +31,8 @@ namespace Crawler.Scheduler.Core
         private ILogger<PeriodUriCrawlJob> _logger;
         private readonly ICrawlerConfigurationService _crawlerConfiguration;
 
+        private readonly IRequestPublisher _requestPublisher;
+
         private static Counter _counter = Prometheus.Metrics.CreateCounter(
             $"job_periodic",
             "Runs periodically",
@@ -37,11 +41,13 @@ namespace Crawler.Scheduler.Core
 
         public PeriodUriCrawlJob(
             ILogger<PeriodUriCrawlJob> logger,
-            ICrawlerConfigurationService crawlerConfiguration
+            ICrawlerConfigurationService crawlerConfiguration,
+            IRequestPublisher requestPublisher = null
         )
         {
             _logger = logger;
             _crawlerConfiguration = crawlerConfiguration;
+            _requestPublisher = requestPublisher;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -62,6 +68,27 @@ namespace Crawler.Scheduler.Core
         {
             return async () =>
             {
+                if (_requestPublisher != null)
+                {
+                    string host = uri;
+                    try
+                    {
+                        host = new Uri(uri).Host;
+                    }
+                    catch { }
+
+                    uint currentQueueSize = await _requestPublisher.GetQueueSize(host)
+                        .Match(s => s, () => 0u, _ => 0u);
+
+                    if (currentQueueSize >= 100)
+                    {
+                        _logger.LogInformation(
+                            $"Skip scheduling Periodic Uri for {uri}. Target queue {host} size limit (100) reached (Current: {currentQueueSize})."
+                        );
+                        return Unit.Default;
+                    }
+                }
+
                 await _crawlerConfiguration
                     .Add(new CrawlUriDataModel { UriId = uriId })
                     .Match(

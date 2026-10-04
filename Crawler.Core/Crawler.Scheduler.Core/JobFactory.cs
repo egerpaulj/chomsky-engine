@@ -69,7 +69,7 @@ public class JobFactory : IJobFactory
 
     public Tuple<IJobDetail, ITrigger> GetStockCollectorJob() =>
         new(
-            JobBuilder.Create<UriCollectionJob>().WithDescription($"Stock collector job").Build(),
+            JobBuilder.Create<StockCollectionJob>().WithDescription($"Stock collector job").Build(),
             TriggerBuilder
                 .Create()
                 .WithDescription($"Stock collector job")
@@ -151,11 +151,8 @@ public class JobFactory : IJobFactory
         var unscheduledTrigger = TriggerBuilder
             .Create()
             .WithDescription("Unscheduled Crawl Processing")
-            .WithSimpleSchedule(s =>
-            {
-                s.WithIntervalInSeconds(120);
-                s.RepeatForever();
-            })
+            .StartNow()
+            .WithSimpleSchedule(x => x.WithIntervalInMinutes(5).RepeatForever())
             .ForJob(unscheduledJob)
             .Build();
 
@@ -171,11 +168,8 @@ public class JobFactory : IJobFactory
         var unscheduledTrigger = TriggerBuilder
             .Create()
             .WithDescription("Found URI Processing")
-            .WithSimpleSchedule(s =>
-            {
-                s.WithIntervalInSeconds(120);
-                s.RepeatForever();
-            })
+            .StartNow()
+            .WithSimpleSchedule(x => x.WithIntervalInMinutes(1).RepeatForever())
             .ForJob(unscheduledJob)
             .Build();
 
@@ -191,11 +185,8 @@ public class JobFactory : IJobFactory
         var unscheduledTrigger = TriggerBuilder
             .Create()
             .WithDescription("Onetime URI Prcessing")
-            .WithSimpleSchedule(s =>
-            {
-                s.WithIntervalInSeconds(120);
-                s.RepeatForever();
-            })
+            .StartNow()
+            .WithSimpleSchedule(x => x.WithIntervalInMinutes(5).RepeatForever())
             .ForJob(unscheduledJob)
             .Build();
 

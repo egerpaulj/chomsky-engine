@@ -1,0 +1,37 @@
+// Deletes CrawlUriDataModel documents from MongoDB once they have been
+// completed (CompletedTimestamp is set), running daily via the mongodb
+// container that is already part of docker-compose.dependencies.yml.
+pipeline {
+  agent any
+
+  triggers {
+    cron('H 3 * * *')
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    MONGO_CONTAINER  = 'mongodb'
+    MONGO_DATABASE   = 'Crawler'
+    MONGO_COLLECTION = 'crawl_uri'
+  }
+
+  stages {
+    stage('Delete completed crawl URIs') {
+      steps {
+        sh '''
+          set -euo pipefail
+          docker exec "${MONGO_CONTAINER}" mongosh --quiet "${MONGO_DATABASE}" --eval '
+            const result = db.getCollection("'"${MONGO_COLLECTION}"'").deleteMany({
+              CompletedTimestamp: { $ne: null }
+            });
+            print("Deleted " + result.deletedCount + " completed crawl_uri documents");
+          '
+        '''
+      }
+    }
+  }
+}

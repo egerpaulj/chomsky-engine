@@ -1,0 +1,62 @@
+services:
+  grafana:
+    container_name: grafana_crawler
+    image: chomsky-grafana
+    build:
+      context: ./Infrastructure/docker
+      dockerfile: grafana/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - development_network
+
+  kibana:
+    container_name: kibana
+    image: chomsky-kibana
+    build:
+      context: ./Infrastructure/docker
+      dockerfile: kibana/Dockerfile
+    ports:
+      - "5601:5601"
+    volumes:
+      - kibana_data:/usr/share/kibana/data
+    networks:
+      - development_network
+
+  kibana-init:
+    container_name: kibana-init
+    image: curlimages/curl:latest
+    depends_on:
+      - kibana
+    networks:
+      - development_network
+    command: >
+      sh -c '
+        echo "Waiting for Kibana to be ready...";
+        until curl -s -f http://kibana:5601/api/status | grep -q "\"overall\":{\"level\":\"available\""; do
+          sleep 5;
+        done;
+        echo "Creating index pattern crawler-logs-*...";
+        curl -X POST "http://kibana:5601/api/saved_objects/index-pattern/crawler-logs-pattern" \
+          -H "kbn-xsrf: true" \
+          -H "Content-Type: application/json" \
+          -d "{\"attributes\":{\"title\":\"crawler-logs-*\",\"timeFieldName\":\"@timestamp\"}}" \
+          -o /dev/null -s -w "%{http_code}\n";
+        echo "Setting default index pattern...";
+        curl -X POST "http://kibana:5601/api/kibana/settings/defaultIndex" \
+          -H "kbn-xsrf: true" \
+          -H "Content-Type: application/json" \
+          -d "{\"value\":\"crawler-logs-pattern\"}" \
+          -o /dev/null -s -w "%{http_code}\n";
+        echo "Default index pattern setup complete.";
+      '
+
+networks:
+  development_network:
+    external: true
+
+volumes:
+  grafana_data:
+  kibana_data:

@@ -73,85 +73,113 @@ namespace Crawler.Scheduler.Core
         {
             return async () =>
             {
-                await Task.WhenAll(
-                    crawlUriDataModel
-                        .Select(crawlUri =>
-                            _schedulerRepository
-                                .GetUriData(crawlUri.UriId)
-                                .Bind<UriDataModel, Tuple<UriDataModel, CrawlRequest>>(uriData =>
-                                    async () =>
-                                    {
-                                        var request = await _crawlerConfiguration
-                                            .CreateRequest(
-                                                uriData.Uri,
-                                                correlationId: Guid.NewGuid(),
-                                                crawlUri.Id
-                                            )
-                                            .Match(
-                                                r => r,
-                                                () =>
-                                                    throw new Exception(
-                                                        "Empty uri data is not allowed: {crawlUri.UriId}"
-                                                    ),
-                                                ex => throw ex
-                                            );
-                                        return new Tuple<UriDataModel, CrawlRequest>(
-                                            uriData,
-                                            request
-                                        );
-                                    }
-                                )
-                                .BindAsync(async tupleResponse =>
-                                {
-                                    var uriData = tupleResponse.Item1;
-                                    var request = tupleResponse.Item2;
-                                    var uri = request
-                                        .LoadPageRequest.Bind(r => r.Uri)
-                                        .Match(r => r, () => string.Empty);
+                var queuePublishCounts = new Dictionary<string, uint>();
 
-                                    if (
-                                        !CrawlResponseData.WhiteList.Any(w =>
-                                            uri.ToLowerInvariant().StartsWith(w)
-                                        )
+                foreach (var crawlUri in crawlUriDataModel)
+                {
+                    var tupleOption = await _schedulerRepository
+                        .GetUriData(crawlUri.UriId)
+                        .Bind<UriDataModel, Tuple<UriDataModel, CrawlRequest>>(uriData =>
+                            async () =>
+                            {
+                                var request = await _crawlerConfiguration
+                                    .CreateRequest(
+                                        uriData.Uri,
+                                        correlationId: Guid.NewGuid(),
+                                        crawlUri.Id
                                     )
-                                    {
-                                        _logger.LogInformation(
-                                            $"Skip Scheduling. Uri not in whitelist. Uri: {uri}"
-                                        );
-
-                                        uriData.IsCompleted = true;
-                                        uriData.IsSkipped = true;
-
-                                        await _schedulerRepository
-                                            .AddOrUpdate(uriData)
-                                            .Match(
-                                                r => r,
-                                                () => throw new Exception("Failed to update model"),
-                                                ex => throw ex
-                                            );
-
-                                        return async () => await Task.FromResult(Unit.Default);
-                                    }
-
-                                    _logger.LogInformation(
-                                        $"Scheduling crawl. RequestId: {request.Id}, Uri: {crawlUri.UriId}"
+                                    .Match(
+                                        r => r,
+                                        () =>
+                                            throw new Exception(
+                                                $"Empty uri data is not allowed: {crawlUri.UriId}"
+                                            ),
+                                        ex => throw ex
                                     );
-                                    return _requestPublisher.PublishRequest(request);
-                                })
-                                .Bind(_ =>
-                                    _crawlerConfiguration.UpdateScheduledTimeUtcNow(crawlUri.Id)
-                                )
-                                .Match(
-                                    u =>
-                                    {
-                                        _counter.WithLabels($"published").Inc();
-                                    },
-                                    () => LogUriError(crawlUri.UriId.ToString()),
-                                    ex => LogUriError(crawlUri.Id.ToString(), ex)
-                                )
+                                return new Tuple<UriDataModel, CrawlRequest>(
+                                    uriData,
+                                    request
+                                );
+                            }
                         )
-                        .ToArray()
-                );
+                        .Match(
+                            t => Option<Tuple<UriDataModel, CrawlRequest>>.Some(t),
+                            () => Option<Tuple<UriDataModel, CrawlRequest>>.None,
+                            ex => throw ex
+                        );
+
+                    if (tupleOption.IsNone)
+                        continue;
+
+                    var tupleResponse = tupleOption.Match(t => t, () => null);
+                    var uriData = tupleResponse.Item1;
+                    var request = tupleResponse.Item2;
+                    var uri = request
+                        .LoadPageRequest.Bind(r => r.Uri)
+                        .Match(r => r, () => string.Empty);
+
+                    if (
+                        !CrawlResponseData.WhiteList.Any(w =>
+                            uri.ToLowerInvariant().StartsWith(w)
+                        )
+                    )
+                    {
+                        _logger.LogInformation(
+                            $"Skip Scheduling. Uri not in whitelist. Uri: {uri}"
+                        );
+
+                        uriData.IsCompleted = true;
+                        uriData.IsSkipped = true;
+
+                        await _schedulerRepository
+                            .AddOrUpdate(uriData)
+                            .Match(
+                                r => r,
+                                () => throw new Exception("Failed to update model"),
+                                ex => throw ex
+                            );
+
+                        continue;
+                    }
+
+                    string host = uri;
+                    try
+                    {
+                        host = new Uri(uri).Host;
+                    }
+                    catch { }
+
+                    uint currentQueueSize = await _requestPublisher.GetQueueSize(host)
+                        .Match(s => s, () => 0u, _ => 0u);
+
+                    queuePublishCounts.TryGetValue(host, out var publishedCount);
+
+                    if (currentQueueSize + publishedCount >= 100)
+                    {
+                        _logger.LogInformation(
+                            $"Skip scheduling crawl for Uri: {uri}. Target queue {host} size limit (100) reached (Current: {currentQueueSize}, Published: {publishedCount})."
+                        );
+                        continue;
+                    }
+
+                    _logger.LogInformation(
+                        $"Scheduling crawl. RequestId: {request.Id}, Uri: {crawlUri.UriId}"
+                    );
+
+                    await _requestPublisher.PublishRequest(request)
+                        .Bind(_ =>
+                            _crawlerConfiguration.UpdateScheduledTimeUtcNow(crawlUri.Id)
+                        )
+                        .Match(
+                            u =>
+                            {
+                                _counter.WithLabels($"published").Inc();
+                                queuePublishCounts[host] = publishedCount + 1;
+                            },
+                            () => LogUriError(crawlUri.UriId.ToString()),
+                            ex => LogUriError(crawlUri.Id.ToString(), ex)
+                        );
+                }
 
                 return Unit.Default;
             };

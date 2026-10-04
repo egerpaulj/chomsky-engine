@@ -25,13 +25,13 @@ namespace Crawler.Core.UnitTest.Factories
                 @"<html><header></header>
                             <div>
                                 someOthertest1
-                                <a href='/firstLink'/>
+                                <a href='/firstLink.pdf'/>
                             </div>
                             <div>
                                 <div> 
                                     ParentTextDifferentStyle
                                     <div>
-                                        <a href='linkToSomewhere'>
+                                        <a href='linkToSomewhere.pdf'>
                                             It could just <p>be</p> me
                                         </a>
                                     </div>
@@ -54,8 +54,8 @@ namespace Crawler.Core.UnitTest.Factories
                 Xml = xml,
                 ExpectedResult = new List<string>
                 {
-                    @"https://something/firstLink",
-                    @"https://something/linkToSomewhere",
+                    @"https://something/firstLink.pdf",
+                    @"https://something/linkToSomewhere.pdf",
                     @"https://something/anotherLink",
                 },
             };
@@ -67,13 +67,13 @@ namespace Crawler.Core.UnitTest.Factories
                 @"<html><header></header>
                             <div>
                                 someOthertest1
-                                <a href='/firstLink'/>
+                                <a href='/firstLink.pdf'/>
                             </div>
                             <div>
                                 <div> 
                                     ParentTextDifferentStyle
                                     <div>
-                                        <a href='linkToSomewhere'>
+                                        <a href='linkToSomewhere.pdf'>
                                             It could just <p>be</p> me
                                         </a>
                                     </div>
@@ -95,7 +95,7 @@ namespace Crawler.Core.UnitTest.Factories
             {
                 CrawlRequest = request,
                 Xml = xml,
-                ExpectedResult = new List<string> { @"https://something/linkToSomewhere" },
+                ExpectedResult = new List<string> { @"https://something/linkToSomewhere.pdf" },
             };
         }
     }

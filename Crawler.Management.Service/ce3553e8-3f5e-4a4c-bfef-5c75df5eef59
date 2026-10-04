@@ -1,0 +1,73 @@
+﻿{
+    "Id": [
+        "ce3553e8-3f5e-4a4c-bfef-5c75df5eef59"
+    ],
+    "Payload": [
+        {
+            "Id": [
+                "00000000-0000-0000-0000-000000000000"
+            ],
+            "CrawlId": [
+                "0cfb4776-1bca-443a-b40e-98b48ee348a4"
+            ],
+            "CorrelationCrawlId": [
+                "58878869-981c-49e3-a3fa-34b68ec1c732"
+            ],
+            "ContinuationStrategy": [
+                3
+            ],
+            "LoadPageRequest": [
+                {
+                    "Uri": [
+                        "https://www.theguardian.com/uk"
+                    ],
+                    "UserActions": [],
+                    "CorrelationId": [
+                        "58878869-981c-49e3-a3fa-34b68ec1c732"
+                    ]
+                }
+            ],
+            "RequestDocument": [
+                {
+                    "XmlDocument": [],
+                    "RequestDocumentPart": [
+                        {
+                            "Text": [],
+                            "Uri": [],
+                            "BaseUri": [
+                                "https://www.theguardian.com/uk"
+                            ],
+                            "Raw": [],
+                            "StyleList": [],
+                            "SubParts": [],
+                            "Anomalies": [
+                                []
+                            ],
+                            "DocPartType": [
+                                1
+                            ],
+                            "Selector": [
+                                {
+                                    "Xpath": [
+                                        "//a"
+                                    ],
+                                    "ContentSpecificMatch": []
+                                }
+                            ]
+                        }
+                    ],
+                    "DownloadContent": [
+                        false
+                    ]
+                }
+            ],
+            "ProvideRaw": false,
+            "Error": []
+        }
+    ],
+    "RoutingKey": [],
+    "CorrelationId": [
+        "0993c33f-a84e-4adf-9f45-92a3845471d3"
+    ],
+    "Properties": []
+}

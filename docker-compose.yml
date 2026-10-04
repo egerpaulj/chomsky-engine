@@ -1,0 +1,75 @@
+services:
+  data_services:
+    container_name: data_services
+    image: registry:5000/crawler/data_services:${BRANCH_NAME:-latest}_${BUILD_ID:-latest}
+    build:
+      context: ./Crawler.Data/Crawler.Data.Service
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    networks:
+      - development_network
+
+  webdriver_server:
+    container_name: webdriver_server
+    image: registry:5000/crawler/webdriver_server:${BRANCH_NAME:-latest}_${BUILD_ID:-latest}
+    build:
+      context: ./Crawler.WebDriver/Crawler.WebDriver.Grpc.Server
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    networks:
+      - development_network
+
+  request_server:
+    container_name: request_server
+    image: registry:5000/crawler/request_server:${BRANCH_NAME:-latest}_${BUILD_ID:-latest}
+    build:
+      context: ./Crawler.RequestManager.Grpc.Server
+      dockerfile: Dockerfile
+    ports:
+      - "8882:443"
+    depends_on:
+      - webdriver_server
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    networks:
+      - development_network
+
+  management_service:
+    container_name: management_service
+    image: registry:5000/crawler/management_service:${BRANCH_NAME:-latest}_${BUILD_ID:-latest}
+    build:
+      context: ./Crawler.Management.Service
+      dockerfile: Dockerfile
+    depends_on:
+      webdriver_server:
+        condition: service_started
+      request_server:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    networks:
+      - development_network
+
+  scheduler:
+    container_name: scheduler
+    image: registry:5000/crawler/scheduler:${BRANCH_NAME:-latest}_${BUILD_ID:-latest}
+    build:
+      context: ./Crawler.Scheduler/Crawler.Scheduler.Service
+      dockerfile: Dockerfile
+    depends_on:
+      webdriver_server:
+        condition: service_started
+      request_server:
+        condition: service_started
+      management_service:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    networks:
+      - development_network
+
+networks:
+  development_network:
+    external: true

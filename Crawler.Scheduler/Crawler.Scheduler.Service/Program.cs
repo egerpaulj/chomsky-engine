@@ -56,6 +56,7 @@ namespace Crawler.Scheduler.Service
                             IRabbitMqConnectionFactory,
                             RabbitMqConnectionFactory
                         >();
+                        services.AddTransient<StockCollectionJob>();
                         services.AddTransient<UnscheduledUriCrawlJob>();
                         services.AddTransient<PeriodUriCrawlJob>();
                         services.AddTransient<UriCollectionJob>();

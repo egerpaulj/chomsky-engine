@@ -29,9 +29,13 @@ namespace Crawler.Scheduler.Repository
             jsonConverterProvider
         );
 
-        public TryOptionAsync<List<UriDataModel>> GetPeriodicUriData()
+        private static readonly SortDefinition<BsonDocument> CreatedAscendingSort =
+            Builders<BsonDocument>.Sort.Ascending("Created");
+
+        public TryOptionAsync<List<UriDataModel>> GetPeriodicUriData(int limit = 100)
         {
-            return GetPeriodicUriDataFilter().Bind(filter => _uriDataRepository.GetMany(filter));
+            return GetPeriodicUriDataFilter()
+                .Bind(filter => _uriDataRepository.GetMany(filter, limit, 0, CreatedAscendingSort));
         }
 
         public TryOptionAsync<UriDataModel> GetUriData(Option<string> uri)
@@ -69,16 +73,16 @@ namespace Crawler.Scheduler.Repository
                 );
         }
 
-        public TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData(int limit = 200)
+        public TryOptionAsync<List<CrawlUriDataModel>> GetUnscheduledCrawlUriData(int limit = 100)
         {
             return GetUnscheduledCrawlFilter()
-                .Bind(filter => _crawlUriRepository.GetMany(filter, limit));
+                .Bind(filter => _crawlUriRepository.GetMany(filter, limit, 0, CreatedAscendingSort));
         }
 
-        public TryOptionAsync<List<UriDataModel>> GetCollectorUriData()
+        public TryOptionAsync<List<UriDataModel>> GetCollectorUriData(int limit = 100)
         {
             return GetPeriodicCollectorUriFilter()
-                .Bind(filter => _uriDataRepository.GetMany(filter));
+                .Bind(filter => _uriDataRepository.GetMany(filter, limit, 0, CreatedAscendingSort));
         }
 
         public TryOptionAsync<Unit> UpdateCompletedTimeUtcNow(Guid id)
@@ -118,17 +122,19 @@ namespace Crawler.Scheduler.Repository
 
         public TryOptionAsync<List<UriDataModel>> GetUriFoundList(int limit = 100)
         {
-            return GetUriFoundFilter().Bind(filter => _uriDataRepository.GetMany(filter, limit));
+            return GetUriFoundFilter()
+                .Bind(filter => _uriDataRepository.GetMany(filter, limit, 0, CreatedAscendingSort));
         }
 
         public TryOptionAsync<List<UriDataModel>> GetIncompleteOnetimeUris(int limit = 100)
         {
-            return GetOnetimeFilter().Bind(filter => _uriDataRepository.GetMany(filter, limit));
+            return GetOnetimeFilter()
+                .Bind(filter => _uriDataRepository.GetMany(filter, limit, 0, CreatedAscendingSort));
         }
 
         public TryOptionAsync<List<UriDataModel>> GetNewCollectorUris(int limit = 10)
         {
-            return _uriDataRepository.GetMany(GetCollectorWithoutCronFilter(), limit);
+            return _uriDataRepository.GetMany(GetCollectorWithoutCronFilter(), limit, 0, CreatedAscendingSort);
         }
 
         private static TryOptionAsync<FilterDefinition<BsonDocument>> GetUriFilter(string uri)

@@ -121,6 +121,7 @@ public class UriTransformer<TIn>(
                 {
                     uriDataModel.IsSkipped = true;
                     uriDataModel.IsCompleted = true;
+                    logger.LogInformation($"Duplicate Uri: {uri}");
                     _counter.WithLabels("skipped").Inc();
                 }
 

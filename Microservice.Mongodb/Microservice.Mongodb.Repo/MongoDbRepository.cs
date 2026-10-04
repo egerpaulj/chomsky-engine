@@ -128,10 +128,11 @@ namespace Microservice.Mongodb.Repo
         public TryOptionAsync<List<T>> GetMany(
             Option<FilterDefinition<BsonDocument>> filter,
             int limit = 100,
-            int skip = 0
+            int skip = 0,
+            SortDefinition<BsonDocument> sort = null
         )
         {
-            return filter.ToTryOptionAsync().Bind(f => GetModels(f, limit, skip));
+            return filter.ToTryOptionAsync().Bind(f => GetModels(f, limit, skip, sort));
         }
 
         private static FilterDefinition<BsonDocument> GetIdFilter(Guid idGuid)
@@ -205,22 +206,33 @@ namespace Microservice.Mongodb.Repo
         private TryOptionAsync<List<T>> GetModels(
             FilterDefinition<BsonDocument> filter,
             int limit = 100,
-            int skip = 0
+            int skip = 0,
+            SortDefinition<BsonDocument> sort = null
         )
         {
             return async () =>
             {
                 var collection = Database.GetCollection<BsonDocument>(_collectionName);
-                //var contents = await collection.FindAsync(d => true);
+
+                var findOptions = new FindOptions<BsonDocument, BsonDocument>
+                {
+                    Limit = limit,
+                    Skip = skip
+                };
+                if (sort != null)
+                {
+                    findOptions.Sort = sort;
+                }
 
                 var result = await collection.FindAsync(
                     filter,
-                    new FindOptions<BsonDocument, BsonDocument> { Limit = limit, Skip = skip }
+                    findOptions
                 );
                 var results = await result.ToListAsync();
 
                 return results
                     .Select(m => _jsonConverterProvider.Deserialize<T>(m.ToJson()))
+                    .OrderBy(m => m.Created ?? string.Empty)
                     .ToList();
             };
         }

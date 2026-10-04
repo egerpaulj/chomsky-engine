@@ -72,6 +72,10 @@ namespace Crawler.Data.Service
                             CrawlerResponseShardedRepository
                         >();
 
+                        // services.AddSingleton<
+                        //     ICleanTextShardedRepository,
+                        //     CleanTextShardedRepository
+                        // >();
                         services.AddSingleton<ISchedulerRepository, SchedulerRepository>();
                         services.AddSingleton<IMongoDbRepository<CrawlRequestModel>>(
                             new MongoDbRepository<CrawlRequestModel>(

@@ -37,6 +37,11 @@ namespace Microservice.Amqp
         TryOptionAsync<Unit> Purge();
 
         TryOptionAsync<Unit> CreateQueue(string queueName, string exchangeName, string routingKey);
+
+        /// <summary>
+        /// Gets the number of ready messages in an existing queue without declaring it.
+        /// </summary>
+        TryOptionAsync<uint> GetQueueSize(string queueName);
         TryOptionAsync<Unit> DeleteQueues(IEnumerable<string> queues);
     }
 }

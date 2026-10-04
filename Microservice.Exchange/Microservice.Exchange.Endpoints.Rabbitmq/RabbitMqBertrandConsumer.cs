@@ -26,7 +26,8 @@ public class RabbitMqBertrandConsumer<T>(
     string contextName,
     string name,
     string routingKeyBypass = null,
-    string queueName = null
+    string queueName = null,
+    bool withDeadletter = false
 ) : IBertrandConsumer, IMessageHandler<T, object>
 {
     public string Name { get; } = name;
@@ -56,7 +57,7 @@ public class RabbitMqBertrandConsumer<T>(
         };
 
         return await _messageHandler
-            .Handle(exchangeMessage, withDeadletter: false)
+            .Handle(exchangeMessage, withDeadletter: withDeadletter)
             .Match(r => r, () => throw new Exception("Failed to handle message"), ex => throw ex);
     }
 

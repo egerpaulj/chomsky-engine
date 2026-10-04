@@ -26,6 +26,19 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "buildCrawlerData",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/Crawler.Data/Crawler.Data.Service/Crawler.Data.Service.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        
+        {
             "label": "buildScheduler",
             "command": "dotnet",
             "type": "process",

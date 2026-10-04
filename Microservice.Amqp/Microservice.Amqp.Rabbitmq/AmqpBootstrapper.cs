@@ -33,7 +33,7 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly AmqpConfiguration _amqpConfiguration;
 
         private IConnection connection;
-        private IModel channel;
+        private IChannel channel;
         private readonly ConcurrentBag<string> createdQueueNames = [];
         private bool disposedValue;
         private readonly ConnectionFactory connectionFactory;
@@ -49,8 +49,8 @@ namespace Microservice.Amqp.Rabbitmq
 
         private void ConnectToRabbitMq()
         {
-            connection = connectionFactory.CreateConnection();
-            channel = connection.CreateModel();
+            connection = connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult();
+            channel = connection.CreateChannelAsync().GetAwaiter().GetResult();
         }
 
         public TryOptionAsync<Unit> Bootstrap()
@@ -68,16 +68,16 @@ namespace Microservice.Amqp.Rabbitmq
                         createdQueueNames.Add(context.QueueName);
 
                         // Message in the Exchange will be directly sent to a Queue
-                        channel.ExchangeDeclare(context.Exchange, "direct", true, false);
+                        await channel.ExchangeDeclareAsync(context.Exchange, "direct", true, false);
 
                         // Configure a Deadletter Queue for message lost/NACKed
-                        channel.ExchangeDeclare($"{context.Exchange}_dlq", "direct", true, false);
+                        await channel.ExchangeDeclareAsync($"{context.Exchange}_dlq", "direct", true, false);
 
                         if (!string.IsNullOrEmpty(context.QueueName))
                         {
                             // Create a Queue and link to the exchange. Specify all message with the respective Routing Key, to be sent to this Queue.
                             // Also ensure NACKed message are sent to the Deadletter exchange.
-                            var queueResult = channel.QueueDeclare(
+                            await channel.QueueDeclareAsync(
                                 context.QueueName,
                                 true,
                                 false,
@@ -90,13 +90,13 @@ namespace Microservice.Amqp.Rabbitmq
                             );
 
                             // Setup a deadletter Queue and bind to the Exchange
-                            channel.QueueDeclare($"{context.QueueName}_dlq", true, false, false);
-                            channel.QueueBind(
+                            await channel.QueueDeclareAsync($"{context.QueueName}_dlq", true, false, false);
+                            await channel.QueueBindAsync(
                                 $"{context.QueueName}_dlq",
                                 $"{context.Exchange}_dlq",
                                 context.RoutingKey
                             );
-                            channel.QueueBind(
+                            await channel.QueueBindAsync(
                                 context.QueueName,
                                 context.Exchange,
                                 context.RoutingKey
@@ -123,12 +123,12 @@ namespace Microservice.Amqp.Rabbitmq
                 ConnectionFactory connectionFactory = CreateChanellFactory();
 
                 // Connect to RabbitMQ and Create Exchanges and Queues.
-                using (var connection = connectionFactory.CreateConnection())
-                using (var channel = connection.CreateModel())
+                using (var connection = connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult())
+                using (var channel = connection.CreateChannelAsync().GetAwaiter().GetResult())
                 {
                     foreach (var queueName in queues)
                     {
-                        channel.QueueDelete(queueName, ifUnused: false, ifEmpty: false);
+                        await channel.QueueDeleteAsync(queueName, ifUnused: false, ifEmpty: false);
                     }
                 }
 
@@ -153,7 +153,7 @@ namespace Microservice.Amqp.Rabbitmq
 
                     // Create a Queue and link to the exchange. Specify all message with the respective Routing Key, to be sent to this Queue.
                     // Also ensure NACKed message are sent to the Deadletter exchange.
-                    var queueResult = channel.QueueDeclare(
+                    await channel.QueueDeclareAsync(
                         queueName,
                         true,
                         false,
@@ -166,9 +166,9 @@ namespace Microservice.Amqp.Rabbitmq
                     );
 
                     // Setup a deadletter Queue and bind to the Exchange
-                    channel.QueueDeclare($"{queueName}_dlq", true, false, false);
-                    channel.QueueBind($"{queueName}_dlq", $"{exchangeName}_dlq", routingKey);
-                    channel.QueueBind(queueName, exchangeName, routingKey);
+                    await channel.QueueDeclareAsync($"{queueName}_dlq", true, false, false);
+                    await channel.QueueBindAsync($"{queueName}_dlq", $"{exchangeName}_dlq", routingKey);
+                    await channel.QueueBindAsync(queueName, exchangeName, routingKey);
                 }
                 catch
                 {
@@ -179,6 +179,25 @@ namespace Microservice.Amqp.Rabbitmq
                 }
 
                 return await Task.FromResult(Unit.Default);
+            };
+        }
+
+        public TryOptionAsync<uint> GetQueueSize(string queueName)
+        {
+            return async () =>
+            {
+                if (string.IsNullOrWhiteSpace(queueName))
+                    return (uint)0;
+
+                try
+                {
+                    var queue = await channel.QueueDeclarePassiveAsync(queueName);
+                    return queue.MessageCount;
+                }
+                catch
+                {
+                    return (uint)0;
+                }
             };
         }
 
@@ -205,18 +224,18 @@ namespace Microservice.Amqp.Rabbitmq
                     Password = _config.Password,
                 };
 
-                using (var connection = connectionFactory.CreateConnection())
-                using (var channel = connection.CreateModel())
+                using (var connection = connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult())
+                using (var channel = connection.CreateChannelAsync().GetAwaiter().GetResult())
                 {
                     foreach (var context in _amqpConfiguration.AmqpContexts)
                     {
-                        channel.ExchangeDeleteNoWait(context.Exchange);
-                        channel.ExchangeDeleteNoWait($"{context.Exchange}_dlq");
+                        await channel.ExchangeDeleteAsync(context.Exchange, ifUnused: false);
+                        await channel.ExchangeDeleteAsync($"{context.Exchange}_dlq", ifUnused: false);
 
                         if (!string.IsNullOrEmpty(context.QueueName))
                         {
-                            channel.QueueDeleteNoWait(context.QueueName);
-                            channel.QueueDeleteNoWait($"{context.QueueName}_dlq");
+                            await channel.QueueDeleteAsync(context.QueueName, ifUnused: false, ifEmpty: false);
+                            await channel.QueueDeleteAsync($"{context.QueueName}_dlq", ifUnused: false, ifEmpty: false);
                         }
                     }
                 }

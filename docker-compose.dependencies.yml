@@ -1,0 +1,84 @@
+services:
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - development_network
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:8.0.4
+    command: ["--wiredTigerCacheSizeGB", "16"]
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - development_network
+
+  prom:
+    container_name: prom
+    image: chomsky-prometheus
+    build:
+      context: ./Infrastructure/docker
+      dockerfile: prometheus/Dockerfile
+    user: root
+    ports:
+      - "9091:9090"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Test
+    volumes:
+      - prometheus_data:/prometheus
+    networks:
+      - development_network
+
+  es:
+    container_name: es
+    image: elasticsearch:7.17.4
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms2g -Xmx2g
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - development_network
+
+  rabbitmq:
+    container_name: rabbitmq
+    hostname: rabbitmq
+    image: chomsky-rabbitmq
+    build:
+      context: ./Infrastructure/docker
+      dockerfile: rabbitmq/Dockerfile
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbit:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - development_network
+
+networks:
+  development_network:
+    external: true
+
+volumes:
+  redis_data:
+  mongodb_data:
+  prometheus_data:
+  elasticsearch_data:
+  rabbit:

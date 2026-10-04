@@ -67,6 +67,24 @@ namespace Crawler.Scheduler.Core
         {
             return async () =>
             {
+                string host = uri;
+                try
+                {
+                    host = new Uri(uri).Host;
+                }
+                catch { }
+
+                uint currentQueueSize = await _requestPublisher.GetQueueSize(host)
+                    .Match(s => s, () => 0u, _ => 0u);
+
+                if (currentQueueSize >= 100)
+                {
+                    _logger.LogInformation(
+                        $"Skip scheduling URI Collection for {uri}. Target queue {host} size limit (100) reached (Current: {currentQueueSize})."
+                    );
+                    return Unit.Default;
+                }
+
                 await _crawlerConfiguration
                     .GetCollectorCrawlRequest(uri)
                     .Bind(request =>

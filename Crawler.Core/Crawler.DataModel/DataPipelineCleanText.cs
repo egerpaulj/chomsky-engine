@@ -14,6 +14,9 @@ public class DataPipelineCleanText : IDataModel
     [JsonProperty("text")]
     public string CleanedText { get; set; }
 
+    [JsonProperty("summary")]
+    public string Summary { get; set; }
+
     public string Uri { get; set; }
 
     [JsonProperty("_id")]

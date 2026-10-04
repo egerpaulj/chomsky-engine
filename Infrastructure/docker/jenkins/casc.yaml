@@ -1,0 +1,202 @@
+jenkins:
+  systemMessage: "Chomsky Engine CI/CD — managed by Jenkins Configuration as Code"
+  numExecutors: 2
+  mode: NORMAL
+  disableRememberMe: true
+  markupFormatter: "plainText"
+
+  # --- Locked down security ---------------------------------------------
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "Overall/Administer:${JENKINS_ADMIN_ID:-admin}"
+        - "Overall/Read:authenticated"
+        - "Job/Read:authenticated"
+        - "Job/Build:authenticated"
+        - "Job/Workspace:authenticated"
+        - "View/Read:authenticated"
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+  remotingSecurity:
+    enabled: true
+
+# --- Dark theme -----------------------------------------------------------
+appearance:
+  themeManager:
+    disableUserThemes: false
+    theme: dark
+
+# --- GitHub integration ----------------------------------------------------
+unclassified:
+  location:
+    url: "${JENKINS_URL:-http://localhost:8080}/"
+  gitHubPluginConfig:
+    configs:
+      - name: "github.com"
+        apiUrl: "https://api.github.com"
+        credentialsId: "github-token"
+        manageHooks: true
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github-token"
+              username: "${GITHUB_USERNAME:-egerpaulj}"
+              password: "${GITHUB_TOKEN}"
+              description: "GitHub PAT: repo checkout, webhook management, releases and commit status"
+
+# --- Pipelines (Job DSL, seeded on controller start) ------------------------
+jobs:
+  # Multibranch: build & test on every commit, and automatically picks up
+  # newly created branches (root ./Jenkinsfile).
+  - script: >
+      multibranchPipelineJob('chomsky-engine-pri') {
+        displayName('Chomsky Engine - Build & Test (multibranch)')
+        branchSources {
+          branchSource {
+            source {
+              github {
+                id('chomsky-engine-pri-source')
+                repoOwner('egerpaulj')
+                repository('chomsky-engine-pri')
+                repositoryUrl('')
+                configuredByUrl(false)
+                credentialsId('github-token')
+                traits {
+                  gitHubBranchDiscovery {
+                    strategyId(3) // discover all branches (covers "on commit" and "on branch creation")
+                  }
+                  gitHubPullRequestDiscovery {
+                    strategyId(1) // build merge commits for PRs
+                  }
+                }
+              }
+            }
+          }
+        }
+        orphanedItemStrategy {
+          discardOldItems {
+            numToKeep(20)
+          }
+        }
+        triggers {
+          periodicFolderTrigger {
+            interval('1m')
+          }
+        }
+      }
+
+  - script: >
+      pipelineJob('release-images') {
+        displayName('Chomsky Engine - Release images & compose up')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/egerpaulj/chomsky-engine-pri.git')
+                  credentials('github-token')
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('ci/Jenkinsfile.release')
+          }
+        }
+      }
+
+  - script: >
+      pipelineJob('webdriver-restart-hourly') {
+        displayName('Chomsky Engine - Restart webdriver (hourly)')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/egerpaulj/chomsky-engine-pri.git')
+                  credentials('github-token')
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('ci/Jenkinsfile.webdriver-restart')
+          }
+        }
+      }
+
+  - script: >
+      pipelineJob('cleanup-crawler-images-daily') {
+        displayName('Chomsky Engine - Cleanup old crawler images (daily)')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/egerpaulj/chomsky-engine-pri.git')
+                  credentials('github-token')
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('ci/Jenkinsfile.cleanup-images')
+          }
+        }
+      }
+
+  - script: >
+      pipelineJob('cleanup-completed-crawl-uris-daily') {
+        displayName('Chomsky Engine - Cleanup completed CrawlUriDataModel (daily)')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/egerpaulj/chomsky-engine-pri.git')
+                  credentials('github-token')
+                }
+                branches('*/main')
+              }
+            }
+            scriptPath('ci/Jenkinsfile.cleanup-mongo')
+          }
+        }
+      }
+
+  # --- Dashboard: build health & test results at a glance -----------------
+  - script: >
+      dashboardView('chomsky-cicd-dashboard') {
+        description('Build status, test results and pipeline health for Chomsky Engine')
+        filterBuildQueue()
+        filterExecutors()
+        jobs {
+          regex('chomsky-engine-pri.*|release-images|webdriver-restart-hourly|cleanup-.*')
+        }
+        columns {
+          status()
+          weather()
+          jobName()
+          lastSuccess()
+          lastFailure()
+          lastDuration()
+          buildButton()
+        }
+        topPortlets {
+          jenkinsJobsList()
+        }
+        leftPortlets {
+          testStatisticsChart()
+        }
+        rightPortlets {
+          testTrendChart()
+        }
+      }

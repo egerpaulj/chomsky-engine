@@ -1,0 +1,54 @@
+{
+  "users": [
+    {
+      "name": "guest",
+      "password_hash": "NOzSWnIH5HVDvuCccmqfpkFRKXzobHaT9BIOuu4riqVw4mx9",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "crawler"
+    },
+    {
+      "name": "test"
+    },
+    {
+      "name": "int_test"
+    },
+    {
+      "name": "dev"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "crawler",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "guest",
+      "vhost": "test",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "guest",
+      "vhost": "int_test",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "guest",
+      "vhost": "dev",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ]
+}

@@ -61,6 +61,9 @@ namespace Amqp.IntegrationTest
         [TestCleanup]
         public async Task Cleanup()
         {
+            if (_amqpBootstrapper is null)
+                return;
+
             await _amqpBootstrapper.Purge().Match(r => r, () => Unit.Default);
         }
 
@@ -412,6 +415,52 @@ namespace Amqp.IntegrationTest
                     () => throw new Exception("Failed to create a new Q"),
                     ex => throw ex
                 );
+        }
+
+        [TestMethod]
+        [TestCategory("IntegrationTest")]
+        public async Task GetQueueSize_ReturnsNumberOfReadyMessages()
+        {
+            const int numberOfMessages = 3;
+            var queueName = $"queue_size_test_{Guid.NewGuid():N}";
+
+            await _amqpBootstrapper
+                .CreateQueue(queueName, "crawler", "request*")
+                .Match(
+                    _ => _,
+                    () => throw new Exception("Failed to create queue"),
+                    ex => throw ex
+                );
+
+            try
+            {
+                var initialQueueSize = await _amqpBootstrapper
+                    .GetQueueSize(queueName)
+                    .Match(
+                        size => size,
+                        () => throw new Exception("Queue size missing"),
+                        ex => throw ex
+                    );
+
+                await Publish(numberOfMessages);
+                await Task.Delay(MillisecondsDelay);
+
+                var queueSize = await _amqpBootstrapper
+                    .GetQueueSize(queueName)
+                    .Match(
+                        size => size,
+                        () => throw new Exception("Queue size missing"),
+                        ex => throw ex
+                    );
+
+                Assert.AreEqual(initialQueueSize + (uint)numberOfMessages, queueSize);
+            }
+            finally
+            {
+                await _amqpBootstrapper
+                    .DeleteQueues(new[] { queueName })
+                    .Match(_ => _, () => Unit.Default);
+            }
         }
 
         private static string ThrowException()

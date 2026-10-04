@@ -196,5 +196,16 @@ namespace Crawler.Management.Core.RequestHandling.Core.Amqp
                     }
                 );
         }
+
+        public TryOptionAsync<uint> GetQueueSize(string queueName)
+        {
+            return amqpBootstrapper.GetQueueSize(queueName);
+        }
+
+        public TryOptionAsync<uint> GetQueueSizeForUri(string uriStr)
+        {
+            var host = new Uri(uriStr).Host;
+            return amqpBootstrapper.GetQueueSize(host);
+        }
     }
 }

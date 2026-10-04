@@ -52,6 +52,38 @@ namespace Crawler.Core.Strategy
             _performanceTracker.Reset();
             _performanceTracker.Start();
 
+            var uri = request
+                .Bind(r => r.CrawlRequest)
+                .Bind(r => r.LoadPageRequest)
+                .Bind(r => r.Uri)
+                .Match(
+                    url => url,
+                    () =>
+                        throw new CrawlException(
+                            "Requests' CrawlRequest' Load Page Uri is empty",
+                            ErrorType.RequestError
+                        )
+                );
+
+            var correlationId = request
+                .Bind(r => r.CrawlRequest)
+                .Bind(r => r.CorrelationCrawlId)
+                .Match(c => c, () => Guid.NewGuid());
+
+            if (IsDownloadUrl(uri))
+            {
+                return Driver
+                    .Download(new DownloadRequest() { Uri = uri, CorrelationId = correlationId })
+                    .Bind(fileData =>
+                        CreateResponse(
+                            fileData,
+                            request.Bind(r => r.CrawlRequest),
+                            correlationId,
+                            uri
+                        )
+                    );
+            }
+
             var requestEither = request.ToEitherAsync(
                 new CrawlException("Request is empty", ErrorType.RequestError)
             );
@@ -68,16 +100,7 @@ namespace Crawler.Core.Strategy
                     )
                 )
             );
-            var uriEither = crawlRequestEither.Bind(request =>
-                request
-                    .LoadPageRequest.Bind(r => r.Uri)
-                    .ToEitherAsync(
-                        new CrawlException(
-                            "Requests' CrawlRequest' Load Page Uri is empty",
-                            ErrorType.RequestError
-                        )
-                    )
-            );
+
             var requestDocumentEither = crawlRequestEither.Bind(request =>
                 request.RequestDocument.ToEitherAsync(
                     new CrawlException(
@@ -94,10 +117,6 @@ namespace Crawler.Core.Strategy
                     )
                 )
             );
-            var correlationId = request
-                .Bind(r => r.CrawlRequest)
-                .Bind(r => r.CorrelationCrawlId)
-                .Match(c => c, () => Guid.NewGuid());
 
             var continuationStrategy = request.Bind(r => r.CrawlContinuationStrategy);
 
@@ -121,10 +140,7 @@ namespace Crawler.Core.Strategy
                 )
                 .Bind(_ => requestDocumentEither.ToTryOption())
                 .Bind(doc => DownloadContent(doc, correlationId))
-                .SelectMany(
-                    doc => uriEither.ToTryOption().Bind(uri => ProcessAnamolies(doc, uri)),
-                    (doc, _) => doc
-                )
+                .SelectMany(doc => ProcessAnamolies(doc, uri), (doc, _) => doc)
                 .Bind(doc => generateResponse(doc, pageSource))
                 .Bind(r => ApplyContinuationStrategy(continuationStrategy, r));
 
@@ -184,36 +200,38 @@ namespace Crawler.Core.Strategy
                 var fileParts = document
                     .RequestDocumentPart.Bind<IEnumerable<DocumentPartFile>>(d =>
                     {
-                        var documentPartFiles = d.GetAllParts<DocumentPartFile>().Distinct();
+                        var documentPartFiles = d.GetAllParts<DocumentPartFile>()
+                            .Distinct()
+                            .ToList();
 
                         var filesInArticles = d.GetAllParts<DocumentPartArticle>()
                             .Select(f => f.Content.MatchUnsafe(c => c, () => null))
                             .Where(o => o is not null)
-                            .SelectMany(dp => dp.GetAllParts<DocumentPartFile>());
+                            .SelectMany(dp => dp.GetAllParts<DocumentPartFile>())
+                            .ToList();
 
                         var filesInTable = d.GetAllParts<DocumentPartTable>()
                             .SelectMany(f =>
-                                f.Rows.MatchUnsafe(
+                                f.Rows.Match(
                                     rlist =>
                                         rlist.SelectMany(r =>
-                                            r.Columns.MatchUnsafe(
+                                            r.Columns.Match(
                                                 c =>
                                                     c.SelectMany(col =>
                                                         col.GetAllParts<DocumentPartFile>()
                                                     ),
-                                                () => null
+                                                () => []
                                             )
                                         ),
-                                    () => null
+                                    () => []
                                 )
                             )
-                            .Where(o => o is not null);
+                            .ToList();
 
-                        filesInArticles = filesInArticles.Append(filesInTable);
+                        filesInArticles.AddRange(filesInTable);
+                        filesInArticles.AddRange(documentPartFiles);
 
-                        return Option<IEnumerable<DocumentPartFile>>.Some(
-                            filesInArticles.Append(documentPartFiles)
-                        );
+                        return Option<IEnumerable<DocumentPartFile>>.Some(filesInArticles);
                     })
                     .Match(f => f, Enumerable.Empty<DocumentPartFile>());
 
@@ -296,7 +314,10 @@ namespace Crawler.Core.Strategy
                         link.Uri.Match(l => skipList.Any(s => l.ToLower().Contains(s)), () => false)
                     )
                     {
-                        fileDataList.Add(new FileData { Error = "Matched skip list" });
+                        link.Text = "Matched skip list";
+                        fileDataList.Add(
+                            new FileData { Uri = link.Uri, Error = "Matched skip list" }
+                        );
                         continue;
                     }
                     var fileData = await Driver
@@ -359,6 +380,59 @@ namespace Crawler.Core.Strategy
                 default:
                     return fileData;
             }
+        }
+
+        private TryOptionAsync<CrawlResponse> CreateResponse(
+            FileData fileData,
+            Option<CrawlRequest> request,
+            Guid correlationId,
+            string uri
+        )
+        {
+            return async () =>
+            {
+                await Task.CompletedTask;
+
+                var fileDataWithStr = await ExtractTextOrDefault(fileData);
+                var document = request
+                    .Bind(r => r.RequestDocument)
+                    .Match(r => r, () => throw new Exception("Missing request document"));
+
+                var shouldIndex = request.Match(
+                    r => r.ShouldIndex,
+                    () => throw new Exception("Missing request document")
+                );
+
+                document.RequestDocumentPart = new DocumentPartFile(uri)
+                {
+                    FileDataList = new List<FileData> { fileDataWithStr },
+                };
+
+                return new CrawlResponse
+                {
+                    Result = document,
+                    CorrelationId = correlationId,
+                    CrawlerId = correlationId,
+                    Uri = uri,
+                    ShouldIndex = shouldIndex,
+                    Timestamp = DateTime.UtcNow,
+                };
+            };
+        }
+
+        private static bool IsDownloadUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return false;
+
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                var extension = Path.GetExtension(uri.AbsolutePath);
+                return FileExtensions.KnownFileExtensions.Contains(extension);
+            }
+
+            var relativeExtension = Path.GetExtension(url);
+            return FileExtensions.KnownFileExtensions.Contains(relativeExtension);
         }
     }
 }

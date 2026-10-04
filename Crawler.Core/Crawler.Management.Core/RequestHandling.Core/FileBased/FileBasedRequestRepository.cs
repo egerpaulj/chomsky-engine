@@ -396,5 +396,15 @@ namespace Crawler.Management.Core.RequestHandling.Core.FileBased
             && _inDirectory.Exists
             && _outDirectory.Exists
             && _errorDirectory.Exists;
+
+        public TryOptionAsync<uint> GetQueueSize(string queueName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TryOptionAsync<uint> GetQueueSizeForUri(string uri)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

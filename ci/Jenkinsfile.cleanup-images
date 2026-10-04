@@ -1,0 +1,36 @@
+// Removes old crawler service images daily, keeping only the most recent
+// KEEP_LATEST tags per service so the registry/host disk doesn't fill up.
+pipeline {
+  agent any
+
+  triggers {
+    cron('H 20 * * 5')
+  }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    KEEP_LATEST = '3'
+  }
+
+  stages {
+    stage('Prune old crawler images') {
+      steps {
+        sh '''
+          set -euo pipefail
+          for svc in webdriver_server request_server management_service scheduler data_service; do
+            echo "Pruning old images for registry:5000/crawler/${svc}..."
+            docker images "registry:5000/crawler/${svc}" --format '{{.ID}} {{.CreatedAt}}' \
+              | sort -k2,3r \
+              | awk -v keep="${KEEP_LATEST}" 'NR>keep {print $1}' \
+              | xargs -r docker rmi -f
+          done
+          docker image prune -f
+        '''
+      }
+    }
+  }
+}

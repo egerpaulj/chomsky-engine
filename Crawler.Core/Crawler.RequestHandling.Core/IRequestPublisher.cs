@@ -29,5 +29,7 @@ namespace Crawler.RequestHandling.Core
             Option<List<DocumentPartLink>> links,
             UriType uriType
         );
+        TryOptionAsync<uint> GetQueueSize(string queueName);
+        TryOptionAsync<uint> GetQueueSizeForUri(string uri);
     }
 }

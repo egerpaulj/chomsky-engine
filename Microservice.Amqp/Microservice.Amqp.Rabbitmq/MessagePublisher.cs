@@ -31,7 +31,7 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly string _routingKey;
         private readonly IConnectionFactory _connectionFactory;
         private readonly IJsonConverterProvider _jsonConverterProvider;
-        private IModel _channel;
+        private IChannel _channel;
         private bool disposedValue;
 
         public MessagePublisher(
@@ -47,9 +47,8 @@ namespace Microservice.Amqp.Rabbitmq
             _connectionFactory = connectionFactory.CreateConnectionFactory(_config);
             _connectionFactory.HandshakeContinuationTimeout = TimeSpan.FromMinutes(2);
 
-            var connection = _connectionFactory.CreateConnection();
-            _channel = connection.CreateModel();
-            _channel.ConfirmSelect();
+            var connection = _connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult();
+            _channel = connection.CreateChannelAsync().GetAwaiter().GetResult();
         }
 
         public TryOptionAsync<Unit> Publish<T>(Option<Message<T>> message)
@@ -94,7 +93,7 @@ namespace Microservice.Amqp.Rabbitmq
             var id = message.Id.Match(c => c, () => Guid.NewGuid());
 
             // Create Custom Properties for the message.
-            var properties = _channel.CreateBasicProperties();
+            var properties = new BasicProperties();
             properties.Persistent = true;
             properties.ContentType = "application/json";
             properties.Type = message.MessageType;
@@ -111,9 +110,7 @@ namespace Microservice.Amqp.Rabbitmq
                 () => { }
             );
 
-            var batch = _channel.CreateBasicPublishBatch();
-
-            _channel.BasicPublish(
+            _channel.BasicPublishAsync(
                 exchange,
                 routingKey,
                 false,
@@ -129,8 +126,7 @@ namespace Microservice.Amqp.Rabbitmq
                         )
                     )
                 )
-            );
-            _channel.WaitForConfirmsOrDie();
+            ).GetAwaiter().GetResult();
 
             return Unit.Default;
         }

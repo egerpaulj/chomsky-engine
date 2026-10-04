@@ -17,7 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Crawler.Core.Requests;
 using Crawler.WebDriver.Core;
+using Crawler.WebDriver.Playwright;
 using Crawler.WebDriver.Selenium.Firefox;
 using Microservice.Core.Middlewear;
 using Microservice.Grpc.Core;
@@ -36,6 +38,9 @@ namespace Crawler.WebDriver.Grpc.Server
         {
             services.AddTransient<IGrpcMetrics, GrpcMetrics>();
             services.AddSingleton<IWebDriverService, WebDriverFirefoxRobust>();
+            //services.AddSingleton<IWebDriverDownloader, WebDriverFirefoxDownloader>();
+            //services.AddSingleton<IWebDriverDownloader, WebDriverPlaywright>();
+            services.AddSingleton<IWebDriverDownloader, WebDriverFirefoxRobust>();
             services.AddTransient<IWebDriverMetrics, WebDriverMetrics>();
             services.AddTransient<IJsonConverterProvider, EmptyJsonConverterProvider>();
             services.AddGrpc();
@@ -48,6 +53,20 @@ namespace Crawler.WebDriver.Grpc.Server
                 .SetupMetrics()
                 .UseMiddleware<RequestDurationMetricsMiddlewear>()
                 .ConfigureGrpcService<WebDriverService>();
+
+            // Test downloaders
+            // var downloader = app.ApplicationServices.GetService<IWebDriverDownloader>();
+
+            // downloader
+            //     .Download(
+            //         new DownloadRequest
+            //         {
+            //             Uri =
+            //                 "url",
+            //             CorrelationId = Guid.NewGuid(),
+            //         }
+            //     )
+            //     .Match(r => r, () => throw new Exception());
             //app.Conf
         }
     }

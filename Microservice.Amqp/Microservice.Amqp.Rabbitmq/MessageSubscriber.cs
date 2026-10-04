@@ -33,7 +33,7 @@ namespace Microservice.Amqp.Rabbitmq
         private readonly IJsonConverterProvider _jsonConverterProvider;
         protected IMessageHandler<T, R> _messageHandler;
         private IConnection _connection;
-        private IModel _channel;
+        private IChannel _channel;
 
         private AsyncEventingBasicConsumer _consumer;
         private bool disposedValue;
@@ -93,14 +93,14 @@ namespace Microservice.Amqp.Rabbitmq
             if (_connection != null)
                 return;
 
-            _connection = _connectionFactory.CreateConnection();
-            _channel = _connection.CreateModel();
+            _connection = _connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult();
+            _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
 
-            _channel.BasicQos(0, _rabbitmqConfig.PrefetchCount, false);
+            _channel.BasicQosAsync(0, _rabbitmqConfig.PrefetchCount, false).GetAwaiter().GetResult();
             _consumer = new AsyncEventingBasicConsumer(_channel);
 
-            _consumer.Received += OnAmqpMessageReceived;
-            _channel.BasicConsume(
+            _consumer.ReceivedAsync += OnAmqpMessageReceived;
+            _channel.BasicConsumeAsync(
                 queue: _rabbitmqConfig.QueueName,
                 autoAck: false,
                 consumer: _consumer
@@ -116,7 +116,7 @@ namespace Microservice.Amqp.Rabbitmq
                 var result = await _messageHandler.HandleMessage(messageEvent.Message);
 
                 // ACK - message will be removed from queue
-                _channel.BasicAck(messageEvent.DeliveryTag, false);
+                    await _channel.BasicAckAsync(messageEvent.DeliveryTag, false);
                 return new Message<R>
                 {
                     Payload = result,
@@ -130,7 +130,7 @@ namespace Microservice.Amqp.Rabbitmq
                 // NACK - message will be moved to the Deadletter exchange=> queue
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                _channel.BasicNack(messageEvent.DeliveryTag, false, false);
+                await _channel.BasicNackAsync(messageEvent.DeliveryTag, false, false);
                 return e;
             }
         }
@@ -162,7 +162,7 @@ namespace Microservice.Amqp.Rabbitmq
             }
             catch (Exception)
             {
-                _channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: false);
+                _channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false).GetAwaiter().GetResult();
                 throw;
             }
         }
@@ -182,9 +182,7 @@ namespace Microservice.Amqp.Rabbitmq
                 if (disposing)
                 {
                     Console.WriteLine("Disposing - closing mq connections");
-                    _channel.Close();
                     _channel.Dispose();
-                    _connection.Close();
                     _connection.Dispose();
 
                     _consumer = null;

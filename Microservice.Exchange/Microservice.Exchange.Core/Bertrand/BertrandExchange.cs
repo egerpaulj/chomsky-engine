@@ -432,10 +432,10 @@ public class BertrandExchange(
     {
         return async () =>
         {
+            _metrics.IncTransformed(GetTypeName(input));
+
             if (output.Payload.IsSome)
             {
-                _metrics.IncTransformed(GetTypeName(input));
-
                 var payload = output.Payload.Match(
                     p => p,
                     () => throw new Exception("Payload is empty")

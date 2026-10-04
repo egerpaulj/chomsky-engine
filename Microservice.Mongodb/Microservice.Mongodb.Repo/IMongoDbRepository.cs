@@ -63,7 +63,8 @@ namespace Microservice.Mongodb.Repo
         TryOptionAsync<List<T>> GetMany(
             Option<FilterDefinition<BsonDocument>> filter,
             int limit = 100,
-            int skip = 0
+            int skip = 0,
+            SortDefinition<BsonDocument> sort = null
         );
 
         /// <summary>

@@ -60,6 +60,17 @@ namespace Crawler.Core.Results
             "http://www.docs.un.org",
             "www.docs.un.org",
             "docs.un.org",
+            "https://www.icj-cij.org",
+            "www.icj-cij.org",
+            "icj-cij.org",
+            "https://www.investigate-europe.eu",
+            "www.investigate-europe.eu",
+            "investigate-europe.eu",
+            "https://oeil.europarl.europa.eu",
+            "oeil.europarl.europa.eu",
+            "https://www.europarl.europa.eu",
+            "www.europarl.europa.eu",
+            "europarl.europa.eu",
         ];
     }
 

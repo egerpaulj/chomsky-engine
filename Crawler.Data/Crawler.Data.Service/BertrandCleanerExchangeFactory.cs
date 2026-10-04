@@ -1,12 +1,12 @@
-using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Crawler.Data.Repository;
 using Crawler.DataModel;
-using Microservice.Amqp;
 using Microservice.Exchange.Bertrand;
 using Microservice.Exchange.Core.Bertrand;
 using Microservice.Exchange.Endpoints.Mongodb;
-using Microservice.Exchange.Endpoints.Rabbitmq;
 using Microservice.Mongodb.Repo;
 using Microservice.Serialization;
 using Microsoft.Extensions.Configuration;
@@ -23,13 +23,11 @@ public class BertrandCleanerExchangeFactory(
     ILoggerFactory loggerFactory,
     IConfiguration configuration,
     IConfigurationRepository configurationRepository,
-    IAmqpProvider amqpProvider,
-    IAmqpBootstrapper amqpBootstrapper
+    ICrawlerResponseShardedRepository crawlerResponseShardedRepository
 ) : IBertrandExchangeFactory
 {
     private const string MongoDbResponseConsumerName = "mongo-crawler-response-consumer";
     private const string CrawlerResponseMongoDbConsumerRoutingKey = "mongo-crawler-response-route";
-    private const string CleanedRabbitMqContextName = "DatapipelineCleanData";
 
     public async Task<IBertrandExchange> CreateExchange(CancellationToken cancellationToken)
     {
@@ -40,72 +38,34 @@ public class BertrandCleanerExchangeFactory(
         );
 
         // CONSUMERS
-        var crawlerResponseDatabaseConfig = new DatabaseConfiguration(
-            collectionName: "crawler_responses_www.theguardian.com",
-            configuration
-        );
-
-        // READ FROM
-        var readRespository = await mongodbFactory.CreateRepositoryAsync<CrawlResponseModel>(
-            crawlerResponseDatabaseConfig
-        );
-
-        var crawlerResponseConsumer = new MongoDbBertrandBatchConsumer<CrawlResponseModel>(
-            name: MongoDbResponseConsumerName,
-            logger: loggerFactory.CreateLogger<MongoDbBertrandBatchConsumer<CrawlResponseModel>>(),
-            repository: readRespository,
-            queryFilterDefinition: Builders<BsonDocument>.Filter.Eq(
-                "DataPipelineUpdated",
-                BsonNull.Value
-            ),
-            routingKey: CrawlerResponseMongoDbConsumerRoutingKey,
-            batchSize: 100
-        );
+        var consumers = await CreateConsumers();
 
         var crawlerResponseConfiguration = new DatabaseConfiguration(
             "crawler_responses_cleaned",
             configuration
         );
 
-        // WRITE TO
-        var writeRepository = await mongodbFactory.CreateRepositoryAsync<DataPipelineCleanText>(
-            crawlerResponseConfiguration
+        // PUBLISHERS - None (Transformer publishes)
+        
+        // TRANSFORMER - clean and write to targets
+        var datalakeRepository = await mongodbFactory.CreateRepositoryAsync<DataPipelineCleanText>(
+            new DatabaseConfiguration(
+                "crawler_responses_datalake",
+                configuration
+            )
         );
 
-        // PUBLISH TO WORKER QUEUE
-        var cleanedAmqpPublisher = await amqpProvider
-            .GetPublisher(CleanedRabbitMqContextName)
-            .Match(r => r, () => throw new Exception("Failed to get publisher"));
-
-        var context = amqpProvider
-            .GetContext(CleanedRabbitMqContextName)
-            .Match(
-                r => r,
-                () => throw new Exception("Failed to find rabbitmq context: DatapipelineCleanData")
-            );
-
-        await amqpBootstrapper
-            .CreateQueue(context.Name, context.Exchange, context.RoutingKey)
-            .Match(r => r, () => throw new Exception("Failed to create queue"));
-
-        var cleanedRabbitMqPublisher = new RabbitMqPublisher<DataPipelineCleanText>(
-            CleanedRabbitMqContextName,
-            cleanedAmqpPublisher
-        );
-
-        // TRANSFORMER - clean and publish/write to targets
         var crawlerResponseTransformer = new CrawlerResponseCleanerTransformer<CrawlResponseModel>(
             loggerFactory.CreateLogger<IBertrandTransformer>(),
-            readRespository,
-            writeRepository,
-            cleanedRabbitMqPublisher,
+            readRepository: crawlerResponseShardedRepository,
+            writeRepository: datalakeRepository,
             configurationRepository
         );
 
         var exchangeName = "Data-Pipeline-Cleaner-Exchange";
         return new BertrandExchange(
             exchangeName,
-            consumers: [crawlerResponseConsumer],
+            consumers: consumers.ToList(),
             transformers: [crawlerResponseTransformer],
             transformerFilters: [],
             publisherFilters: [],
@@ -115,6 +75,57 @@ public class BertrandCleanerExchangeFactory(
             bertrandStateStore,
             bertrandExchangeStore,
             exchangeManager
+        );
+    }
+
+    private async Task<IEnumerable<IBertrandConsumer>> CreateConsumers()
+    {
+        // READ FROM Data sources
+        return
+        [
+            CreateMongoBatchConsumer(
+                await CreateRepository("crawler_responses_www.theguardian.com")
+            ),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_www.cdc.gov")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_www.amnesty.org")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_chomsky.info")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_www.medialens.org")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_press.un.org")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_main.un.org")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_undocs.org")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_www.undocs.org")),
+            CreateMongoBatchConsumer(await CreateRepository("crawler_responses_docs.un.org")),
+        ];
+    }
+
+    private async Task<IMongoDbRepository<CrawlResponseModel>> CreateRepository(
+        string collectionName
+    )
+    {
+        var databaseConfig = new DatabaseConfiguration(
+            collectionName: collectionName,
+            configuration
+        );
+        var repository = await mongodbFactory.CreateRepositoryAsync<CrawlResponseModel>(
+            databaseConfig
+        );
+        return repository;
+    }
+
+    private IBertrandConsumer CreateMongoBatchConsumer(
+        IMongoDbRepository<CrawlResponseModel> readRespository
+    )
+    {
+        return new MongoDbBertrandBatchConsumer<CrawlResponseModel>(
+            name: MongoDbResponseConsumerName,
+            logger: loggerFactory.CreateLogger<MongoDbBertrandBatchConsumer<CrawlResponseModel>>(),
+            repository: readRespository,
+            queryFilterDefinition: Builders<BsonDocument>.Filter.Eq(
+                "DataPipelineUpdated",
+                BsonNull.Value
+            ),
+            routingKey: CrawlerResponseMongoDbConsumerRoutingKey,
+            batchSize: 100
         );
     }
 

@@ -15,6 +15,7 @@
 //      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System.Collections.Generic;
+using System.Threading;
 using Microservice.Amqp.Rabbitmq.Configuration;
 using Microservice.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -64,14 +65,15 @@ namespace Microservice.Amqp.Rabbitmq.Test
 
             model.Verify(
                 m =>
-                    m.BasicConsume(
+                    m.BasicConsumeAsync(
                         _configuration.QueueName,
                         false,
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>(),
                         It.IsAny<Dictionary<string, object>>(),
-                        It.IsAny<AsyncEventingBasicConsumer>()
+                        It.IsAny<AsyncEventingBasicConsumer>(),
+                        It.IsAny<CancellationToken>()
                     ),
                 Times.Once
             );

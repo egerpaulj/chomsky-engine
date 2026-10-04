@@ -1,0 +1,34 @@
+# Core / security
+configuration-as-code
+matrix-auth
+cloudbees-folder
+credentials-binding
+ssh-agent
+timestamper
+ws-cleanup
+
+# Source control / GitHub integration
+git
+github
+github-branch-source
+job-dsl
+pipeline-githubnotify-step
+
+# Pipeline
+workflow-aggregator
+workflow-multibranch
+pipeline-graph-view
+blueocean
+docker-workflow
+
+# Appearance
+dark-theme
+
+# Test results / .NET
+junit
+mstest
+test-results-analyzer
+
+# Dashboard / status
+dashboard-view
+embeddable-build-status

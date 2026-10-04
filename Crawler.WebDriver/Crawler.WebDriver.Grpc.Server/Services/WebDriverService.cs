@@ -32,17 +32,20 @@ namespace Crawler.WebDriver.Grpc.Server
 {
     public class WebDriverService : RpcServiceBase<DriverRequest, DriverResponse>
     {
-        private readonly IWebDriverService _webDriverService;
+        private readonly IWebDriverService webDriverService;
+        private readonly IWebDriverDownloader webDriverDownloader;
 
         public WebDriverService(
             ILogger<Rpc.RpcBase> logger,
             IGrpcMetrics metrics,
             IWebDriverService webDriverService,
+            IWebDriverDownloader webDriverDownloader,
             IJsonConverterProvider jsonConverterProvider
         )
             : base(logger, metrics, jsonConverterProvider)
         {
-            _webDriverService = webDriverService;
+            this.webDriverService = webDriverService;
+            this.webDriverDownloader = webDriverDownloader;
         }
 
         protected override TryOptionAsync<DriverResponse> Execute(Option<DriverRequest> request)
@@ -65,7 +68,7 @@ namespace Crawler.WebDriver.Grpc.Server
 
         private TryOptionAsync<DriverResponse> LoadPage(LoadPageRequest request)
         {
-            return _webDriverService
+            return webDriverService
                 .LoadPage(request)
                 .Bind<string, DriverResponse>(r =>
                     async () =>
@@ -77,7 +80,7 @@ namespace Crawler.WebDriver.Grpc.Server
 
         private TryOptionAsync<DriverResponse> Download(DownloadRequest request)
         {
-            return _webDriverService
+            return webDriverDownloader
                 .Download(request)
                 .Bind<FileData, DriverResponse>(r =>
                     async () =>

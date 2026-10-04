@@ -72,61 +72,81 @@ namespace Crawler.Scheduler.Core
         {
             return async () =>
             {
-                await Task.WhenAll(
-                    uriDataModels
-                        .Select(async model =>
-                        {
-                            if (
-                                !CrawlResponseData.WhiteList.Any(w =>
-                                    model.Uri.ToLower().StartsWith(w)
-                                )
-                            )
+                var queuePublishCounts = new Dictionary<string, uint>();
+
+                foreach (var model in uriDataModels)
+                {
+                    if (
+                        !CrawlResponseData.WhiteList.Any(w =>
+                            model.Uri.ToLower().StartsWith(w)
+                        )
+                    )
+                    {
+                        _logger.LogInformation(
+                            $"Skip Scheduling. Uri not in whitelist. Uri: {model.Uri}"
+                        );
+
+                        model.IsCompleted = true;
+                        model.IsSkipped = true;
+
+                        await _schedulerRepository
+                            .AddOrUpdate(model)
+                            .Match(
+                                r => r,
+                                () => throw new Exception("Failed to update model"),
+                                ex => throw ex
+                            );
+
+                        continue;
+                    }
+
+                    string host = model.Uri;
+                    try
+                    {
+                        host = new Uri(model.Uri).Host;
+                    }
+                    catch { }
+
+                    uint currentQueueSize = await _requestPublisher.GetQueueSize(host)
+                        .Match(s => s, () => 0u, _ => 0u);
+
+                    queuePublishCounts.TryGetValue(host, out var publishedCount);
+
+                    if (currentQueueSize + publishedCount >= 100)
+                    {
+                        _logger.LogInformation(
+                            $"Skip scheduling Uri: {model.Uri}. Target queue {host} size limit (100) reached (Current: {currentQueueSize}, Published: {publishedCount})."
+                        );
+                        continue;
+                    }
+
+                    await _crawlerConfiguration
+                        .CreateRequest(model.Uri, correlationId: Guid.NewGuid(), model.Id)
+                        .Bind(request => _requestPublisher.PublishRequest(request))
+                        .Bind<Unit, Unit>(_ =>
+                            async () =>
                             {
-                                _logger.LogInformation(
-                                    $"Skip Scheduling. Uri not in whitelist. Uri: {model.Uri}"
-                                );
-
                                 model.IsCompleted = true;
-                                model.IsSkipped = true;
-
                                 await _schedulerRepository
                                     .AddOrUpdate(model)
                                     .Match(
-                                        r => r,
-                                        () => throw new Exception("Failed to update model"),
-                                        ex => throw ex
+                                        _ => { },
+                                        () => LogUriError(model.Uri),
+                                        ex => LogUriError(model.Uri, ex)
                                     );
-
                                 return Unit.Default;
                             }
-                            return await _crawlerConfiguration
-                                .CreateRequest(model.Uri, correlationId: Guid.NewGuid(), model.Id)
-                                .Bind(request => _requestPublisher.PublishRequest(request))
-                                .Bind<Unit, Unit>(_ =>
-                                    async () =>
-                                    {
-                                        model.IsCompleted = true;
-                                        await _schedulerRepository
-                                            .AddOrUpdate(model)
-                                            .Match(
-                                                _ => { },
-                                                () => LogUriError(model.Uri),
-                                                ex => LogUriError(model.Uri, ex)
-                                            );
-                                        return Unit.Default;
-                                    }
-                                )
-                                .Match(
-                                    u =>
-                                    {
-                                        _counter.WithLabels($"onetime_schedule").Inc();
-                                    },
-                                    () => LogUriError(model.Uri.ToString()),
-                                    ex => LogUriError(model.Uri, ex)
-                                );
-                        })
-                        .ToArray()
-                );
+                        )
+                        .Match(
+                            u =>
+                            {
+                                _counter.WithLabels($"onetime_schedule").Inc();
+                                queuePublishCounts[host] = publishedCount + 1;
+                            },
+                            () => LogUriError(model.Uri.ToString()),
+                            ex => LogUriError(model.Uri, ex)
+                        );
+                }
 
                 return Unit.Default;
             };
