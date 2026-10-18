@@ -15,7 +15,6 @@ using Microservice.Amqp;
 using Microservice.Exchange;
 using Microservice.Exchange.Bertrand;
 using Microservice.Exchange.Core.Bertrand;
-using Microservice.Exchange.Endpoints.Elasticsearch;
 using Microservice.Exchange.Endpoints.Mongodb;
 using Microservice.Exchange.Endpoints.Rabbitmq;
 using Microservice.Mongodb.Repo;
@@ -239,16 +238,6 @@ public class BertrandExchangeFactory(
             )
         );
 
-        // CRAWL RESPONSE - ELASTIC SEARCH
-        var elasticSearchRepository = elasticFactory.CreateRepository();
-        var crawlResultPublisherElastic = new BertrandPublisher<CrawlEsResponseModel>(
-            Publisher_Crawl_Es,
-            new ElasticsearchPublisher<CrawlEsResponseModel>(
-                Publisher_Crawl_Es,
-                "crawler_results",
-                elasticSearchRepository
-            )
-        );
 
         // URI FOUND - MONGO DB
         var uriDataRepository = new MongoDbRepository<UriDataModel>(
@@ -264,7 +253,6 @@ public class BertrandExchangeFactory(
 
 
         publishers.Add(crawlResultPublisherMongoDb);
-        publishers.Add(crawlResultPublisherElastic);
         publishers.Add(uriPublisherMongoDb);
         //publishers.Add(new ConsolePublisher<object, object>(jsonConverterProvider));
 
